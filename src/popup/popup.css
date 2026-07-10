@@ -1,9 +1,250 @@
+:root {
+  --popup-bg: var(--bg-color, #22272b);
+  --popup-card: #2d343d;
+  --popup-border: #3c4651;
+  --popup-muted: #9aa6b5;
+  --popup-text: #c0cad4;
+  --popup-accent: #8BA2A6;
+  --popup-success: #5ac193;
+  --popup-danger: #ff6b6b;
+  --popup-radius: 10px;
+}
+
 #app {
-	width: 400px;
-	height: 200px;
-	margin: 0 auto;
+  width: 460px;
+  min-height: 320px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  background: var(--popup-bg);
+  color: var(--popup-text);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 h4 {
-	margin: 0;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+h5 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.popupWrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.popupTabs {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: var(--popup-accent);
+}
+
+.popupTabs .button {
+  flex: 1;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  color: #22272b;
+  background: #e0e6e9;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.popupTabs .button:hover {
+  background: #f5f7f8;
+}
+
+.popupTabs .button.primary {
+  background: #22272b;
+  color: #fff;
+}
+
+.popupTabs .button.controlsToggle {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 38px;
+  padding: 8px;
+}
+
+.popupTabs .button.controlsToggle.muted {
+  background: #c8d0d4;
+  color: #3c4651;
+}
+
+.controlsToggleContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: center;
+}
+
+.controlsToggleIcon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+.popupTabs .button.controlsSettings {
+  flex: 0 0 auto;
+  min-width: 0;
+  width: 38px;
+  padding: 8px;
+}
+
+.controlsSettingsContent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.controlsSettingsIcon {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+}
+
+.popupTabContent {
+  background: var(--popup-card);
+  padding: 12px;
+  max-height: 560px;
+  overflow: auto;
+}
+
+.templatesTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.templatesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.templatesHeader h4 {
+  margin: 0;
+}
+
+.templatesHeader p {
+  margin: 2px 0 0;
+}
+
+.templatesActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.templatesStatus {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 22px;
+  color: var(--popup-muted);
+}
+
+.templatesList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.templateCard {
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--popup-card);
+}
+
+.templateHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.templateHeader h5 {
+  margin: 0;
+}
+
+.templatePreview {
+  margin: 6px 0 10px;
+  font-size: 0.95em;
+  color: var(--popup-muted);
+  word-break: break-word;
+}
+
+.templateCardActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.templateEditor input,
+.templateEditor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+  background: #2a3139;
+  color: var(--popup-text);
+}
+
+.templateEditor textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.emptyList {
+  padding: 18px;
+  text-align: center;
+  color: var(--popup-muted);
+  border: 1px dashed var(--popup-accent);
+  border-radius: 8px;
+  background: #252c33;
+}
+
+.tag.success {
+  background: rgba(43, 154, 102, 0.12);
+  color: #1e7c56;
+  border: 1px solid rgba(43, 154, 102, 0.2);
+}
+
+.tag.error {
+  background: rgba(209, 67, 75, 0.12);
+  color: #a12830;
+  border: 1px solid rgba(209, 67, 75, 0.2);
+}
+
+.button.icon-only {
+  padding: 0 8px;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-secondary {
+  color: var(--popup-muted);
+}
+
+.text-success {
+  color: #1e7c56;
+}
+
+.text-error {
+  color: #a12830;
 }

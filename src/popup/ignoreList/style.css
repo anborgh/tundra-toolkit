@@ -1,0 +1,125 @@
+@import "../../options/blackListOptions/style.css";
+
+.ignoreTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ignoreHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.ignoreHeader h4 {
+  margin: 0 0 4px;
+}
+
+.ignoreHeader p {
+  margin: 2px 0;
+}
+
+.ignoreActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ignoreStatus {
+  display: flex;
+  align-items: center;
+  min-height: 22px;
+  color: var(--popup-muted);
+}
+
+.ignoreList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.blackListBoardItem {
+  background: var(--popup-card);
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.blackListBoardItem > span,
+.blackListBoardItem > a {
+  font-weight: 600;
+  color: var(--popup-text);
+  text-decoration: none;
+}
+
+.blackListBoardItem > a:hover {
+  text-decoration: underline;
+}
+
+.blackListForum {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.blackListForumItem {
+  border-top: 1px solid var(--popup-border);
+  padding-top: 8px;
+}
+
+.blackListForumItem > span,
+.blackListForumItem > a {
+  font-weight: 600;
+  color: var(--popup-text);
+  text-decoration: none;
+}
+
+.blackListUsers {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blackListUserItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.blackListUserItem a {
+  color: var(--popup-text);
+  text-decoration: none;
+}
+
+.blackListUserItem a:hover {
+  text-decoration: underline;
+}
+
+.blackListRemoveItem {
+  border: 1px solid var(--popup-border);
+  border-radius: 8px;
+  background: #2a3139;
+  color: var(--popup-text);
+  font-weight: 700;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

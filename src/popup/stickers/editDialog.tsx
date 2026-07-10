@@ -4,7 +4,7 @@ import { checkImageURL } from '../../utils';
 type Props = {
   pack?: IStickerPack;
   onSave: (data: IStickerPack) => void;
-  onRemove: (packId: string) => void;
+  onRemove: (packId: number) => void;
   close: () => void;
 }
 
@@ -42,6 +42,8 @@ export function EditDialog<Props>({
   }
 
   const handleRemove = () => {
+    if (!pack) return;
+
     const isConfirmed = confirm('Удалить стикерпак? Это необратимо.')
 
     if (!isConfirmed) return;

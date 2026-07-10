@@ -1,4 +1,4 @@
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 
 type PackProps = {
   pack: IStickerPack;
@@ -15,6 +15,8 @@ export function StickerPack({
 }: PackProps) {
 
   const [titleImg, setTitleImg] = useState<string>('');
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimer = useRef<number | null>(null);
 
   const handleTitleClick = () => {
     onChange(pack.id)
@@ -26,14 +28,55 @@ export function StickerPack({
   }
 
   const handleStickerClick = async (event) => {
+    const src = event?.target?.src;
+    if (!src) return;
+
+    const showNotice = (message: string) => {
+      setNotice(message);
+      if (noticeTimer.current) {
+        clearTimeout(noticeTimer.current);
+      }
+      noticeTimer.current = window.setTimeout(() => {
+        setNotice(null);
+        noticeTimer.current = null;
+      }, 4000);
+    };
+
+    const copyWithNotice = async () => {
+      try {
+        await navigator.clipboard?.writeText(src);
+      } catch (e) {
+        // ignore clipboard errors; notify anyway
+      } finally {
+        showNotice('Вставка недоступна. Ссылка на картинку скопирована в буфер обмена.');
+      }
+    };
+
     chrome.tabs.query({currentWindow: true, active: true}, function (tabs){
-      const activeTab = tabs[0];
-      chrome.tabs.sendMessage(activeTab.id, {
+      const activeTabId = tabs?.[0]?.id;
+      if (!activeTabId) {
+        copyWithNotice();
+        return;
+      }
+
+      chrome.tabs.sendMessage(activeTabId, {
         type: 'tundra_toolkit_insert_sticker',
-        src: event.target.src,
+        src,
+      }, async (response) => {
+        if (chrome.runtime.lastError || !response?.success) {
+          await copyWithNotice();
+        }
       });
     });
   }
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimer.current) {
+        clearTimeout(noticeTimer.current);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!pack.items.length) return;
@@ -51,13 +94,25 @@ export function StickerPack({
             onClick={handleTitleClick}
           ></div>
         )}
-        <h4 class="stickerPackTitle" onClick={handleTitleClick}>{pack.name}</h4>
+        <div class="stickerPackTitle" onClick={handleTitleClick}>
+          <div class="stickerPackTitleText">{pack.name}</div>
+          {pack.updatedAt && (
+            <div class="stickerPackMeta">
+              Обновлено: { new Date(pack.updatedAt).toLocaleDateString('ru-RU') }
+            </div>
+          )}
+        </div>
         <div className="stickerPackTitleActions">
-          <button className="button small" onClick={handleEditPack}>🖋️</button>
+          <button className="button small clear" onClick={handleEditPack}>Править</button>
         </div>
       </div>
       {opened && (
         <div class="stickerPackContent">
+          {notice && (
+            <div class="text-secondary" style={{ margin: '0 0 8px 0', fontSize: '12px' }}>
+              {notice}
+            </div>
+          )}
           {pack.items.map(sticker => (
             <div class="stickerItem">
               <img src={sticker} key={sticker} onClick={handleStickerClick} />

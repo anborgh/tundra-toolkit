@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 
 import { StickerList } from './stickerList';
 import { EditDialog } from './editDialog';
@@ -12,6 +13,7 @@ export function Stickers() {
   const [ loaded, setLoaded ] = useState<boolean>(false);
   const [ loading, setLoading ] = useState<boolean>(true);
   const [ error, setError ] = useState<boolean>(false);
+  const [ warning, setWarning ] = useState<string | null>(null);
 
   const [ editPack, setEditPack ] = useState<IStickerPack | null>(null);
 
@@ -27,9 +29,8 @@ export function Stickers() {
       id: newIndex,
       name: `New Pack ${ newIndex + 1 }`,
       items: [],
+      updatedAt: Date.now(),
     } ]
-
-    console.log('newData', newData);
 
     setData(newData);
   }
@@ -46,6 +47,7 @@ export function Stickers() {
     const index = newData.findIndex(item => item.id === packId);
     newData[ index ].name = name || newData[ index ].name;
     newData[ index ].items = items || newData[ index ].items;
+    newData[ index ].updatedAt = Date.now();
     setData(newData);
   }
 
@@ -61,7 +63,7 @@ export function Stickers() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await chrome.storage.local.get('stickerPack');
+      const result = await safeStorageGet([ 'stickerPack' ]);
 
       const stickerPack = result.stickerPack || [];
 
@@ -85,50 +87,84 @@ export function Stickers() {
     if (!loaded) return;
 
     const updateData = async () => {
-      await chrome.storage.local.set({ stickerPack: data });
+      try {
+        const result = await safeStorageSet({ stickerPack: data });
+        if (result.fallback) {
+          setWarning('Память синхронизации переполнена. Стикеры сохранены только в этом браузере.');
+        } else {
+          setWarning(null);
+        }
+      } catch (e) {
+        setError(true);
+        setWarning('Не удалось сохранить стикеры: недостаточно памяти.');
+      }
     }
 
-    updateData().then(() => {
-      console.log('Storage updated');
-    })
+    updateData();
 
-  }, [ data ]);
+  }, [ data, loaded ]);
 
-  if (loading) {
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div class="stickerList_empty">
+          Загружаем…
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div class="stickerList_empty text-error">
+          Не удалось загрузить список
+        </div>
+      );
+    }
+
+    if (!data.length) {
+      return (
+        <div class="stickerList_empty" onClick={ addPack }>
+          <div class="stickerList_emptyIcon" />
+          <div class="stickerList_emptyTitle">Список пуст</div>
+          <div class="text-secondary">Нажмите, чтобы добавить первый пак</div>
+        </div>
+      );
+    }
+
     return (
-      <div>
-        . . . Loading . . .
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div>
-        Error
-      </div>
-    )
-  }
-
-  return (
-    <div class="stickerListWrapper">
-      { data.length
-        ? (
-          <div class="stickerList">
-            <StickerList
-              data={ data }
-              editStickerPack={ onEditPack }
-            />
-          </div>
-        )
-        : (
-          <div class="stickerList stickerList_empty">
-            <div class="stickerList_emptyIcon" onClick={ addPack }></div>
-            <div class="stickerList_emptyTitle" onClick={ addPack }>Список пуст</div>
+      <div class="stickerList">
+        { warning && (
+          <div class="text-secondary" style={{ marginBottom: '8px' }}>
+            { warning }
           </div>
         ) }
-      <div class="stickerListActions">
-        <button class="button small" onClick={ addPack }>Добавить стикерпак</button>
+        <StickerList
+          data={ data }
+          editStickerPack={ onEditPack }
+        />
+      </div>
+    );
+  };
+
+  return (
+    <div class="stickerTab">
+      <div class="stickerHeader">
+        <div class="text-secondary">
+          Наборы картинок для быстрых ответов
+        </div>
+      </div>
+
+      <div class="stickerStatus">
+        { loading && <span class="text-secondary">Загружаем…</span> }
+        { error && <span class="text-error">Ошибка загрузки</span> }
+        { !loading && !error && <span class="text-secondary">Паков: { data.length }</span> }
+      </div>
+
+      <div class="stickerListWrapper">
+        { renderContent() }
+        <div class="stickerListActions">
+          <button class="button small" onClick={ addPack }>Новый стикерпак</button>
+        </div>
       </div>
 
       <EditDialog
