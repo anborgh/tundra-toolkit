@@ -85,10 +85,10 @@ main {
 }
 
 .storageUsageCard {
-    border: 1px solid #32424f;
+    border: 1px solid var(--tt-border, #32424f);
     border-radius: 6px;
     padding: 10px;
-    background: #202c36;
+    background: var(--tt-card, #202c36);
 }
 
 .storageUsageTitle {
@@ -101,7 +101,7 @@ main {
     width: 100%;
     height: 10px;
     border-radius: 999px;
-    background: #0f1922;
+    background: var(--tt-card-alt, #0f1922);
     overflow: hidden;
 }
 
@@ -127,7 +127,7 @@ main {
 .optionsGuideLink {
     border: 0;
     background: transparent;
-    color: #9aa5af;
+    color: var(--tt-muted, #9aa5af);
     font-size: 0.85rem;
     text-align: left;
     padding: 0 2px;
@@ -138,11 +138,11 @@ main {
 }
 
 .optionsGuideLink:hover {
-    color: #c4ccd4;
+    color: var(--font-color, #c4ccd4);
 }
 
 .optionsGuideLink.active {
-    color: #d9e0e7;
+    color: var(--font-color, #d9e0e7);
 }
 
 .optionsGuide h3 {
@@ -152,9 +152,9 @@ main {
 .optionsGuideBlock {
     margin-top: 16px;
     padding: 12px;
-    border: 1px solid #32424f;
+    border: 1px solid var(--tt-border, #32424f);
     border-radius: 6px;
-    background: #202c36;
+    background: var(--tt-card, #202c36);
 }
 
 .optionsGuideBlock h5 {

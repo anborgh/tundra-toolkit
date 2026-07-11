@@ -1,12 +1,12 @@
 :root {
   --popup-bg: var(--bg-color, #22272b);
-  --popup-card: #2d343d;
-  --popup-border: #3c4651;
-  --popup-muted: #9aa6b5;
-  --popup-text: #c0cad4;
+  --popup-card: var(--tt-card, #2d343d);
+  --popup-border: var(--tt-border, #3c4651);
+  --popup-muted: var(--tt-muted, #9aa6b5);
+  --popup-text: var(--tt-text, #c0cad4);
   --popup-accent: #8BA2A6;
-  --popup-success: #5ac193;
-  --popup-danger: #ff6b6b;
+  --popup-success: var(--tt-success, #5ac193);
+  --popup-danger: var(--tt-danger, #ff6b6b);
   --popup-radius: 10px;
 }
 
@@ -198,7 +198,7 @@ h5 {
   padding: 8px 10px;
   border: 1px solid var(--popup-border);
   border-radius: 8px;
-  background: #2a3139;
+  background: var(--tt-input-bg, #2a3139);
   color: var(--popup-text);
 }
 
@@ -213,18 +213,18 @@ h5 {
   color: var(--popup-muted);
   border: 1px dashed var(--popup-accent);
   border-radius: 8px;
-  background: #252c33;
+  background: var(--tt-card-alt, #252c33);
 }
 
 .tag.success {
   background: rgba(43, 154, 102, 0.12);
-  color: #1e7c56;
+  color: var(--tt-success, #1e7c56);
   border: 1px solid rgba(43, 154, 102, 0.2);
 }
 
 .tag.error {
   background: rgba(209, 67, 75, 0.12);
-  color: #a12830;
+  color: var(--tt-danger, #a12830);
   border: 1px solid rgba(209, 67, 75, 0.2);
 }
 
@@ -242,9 +242,9 @@ h5 {
 }
 
 .text-success {
-  color: #1e7c56;
+  color: var(--tt-success, #1e7c56);
 }
 
 .text-error {
-  color: #a12830;
+  color: var(--tt-danger, #a12830);
 }

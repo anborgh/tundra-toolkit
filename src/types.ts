@@ -30,6 +30,23 @@ interface IBoardTopicsStore {
   topics: ITopicStore[];
 }
 
+interface IFavoriteTopic {
+  id: string; // `${boardUrl}:${topicID}`
+  boardUrl: string;
+  boardName: string;
+  topicID: string;
+  topicName: string;
+  myTurn: boolean;
+  lastPostDate?: number;
+  lastUsername?: string;
+  numReplies?: number;
+  lastSeenPostDate?: number;
+  seenNumReplies?: number;
+  lastCheckedAt?: number;
+  addedAt: number;
+  updatedAt?: number;
+}
+
 interface IStickerPack {
   id: number,
   name: string,

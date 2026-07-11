@@ -5,9 +5,14 @@
   "permissions": [
     "activeTab",
     "storage",
-    "contextMenus"
+    "contextMenus",
+    "alarms"
   ],
-  "version": "3.0",
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "version": "3.1",
   "action": {
     "default_popup": "index.html",
     "default_icon": "icon512.png"
@@ -22,6 +27,7 @@
         "<all_urls>"
       ],
       "js": [
+        "scripts/ttBridgeChannel.js",
         "scripts/main.js"
       ],
       "run_at": "document_end",
@@ -32,6 +38,7 @@
         "<all_urls>"
       ],
       "js": [
+        "scripts/ttBridgeChannel.js",
         "scripts/isolated.js"
       ],
       "run_at": "document_end",

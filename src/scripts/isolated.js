@@ -1,3 +1,83 @@
+const __ttFactory = globalThis.__TT_BRIDGE_FACTORY__;
+delete globalThis.__TT_BRIDGE_FACTORY__;
+
+const createTTBridge = () => {
+  const NUMERIC_ID = /^\d+$/;
+
+  const isNumericId = (value) => NUMERIC_ID.test(String(value ?? ''));
+
+  const isCurrentHost = (host) => String(host ?? '') === window.location.host;
+
+  const sanitizeText = (value, maxLen = 200) => {
+    if (value == null) return '';
+    return String(value)
+      .replace(/[\x00-\x1f\x7f]/g, '')
+      .slice(0, maxLen);
+  };
+
+  const sanitizeIgnoreUsers = (users) => {
+    if (!Array.isArray(users)) return [];
+    return users
+      .filter(user => user && isNumericId(user.userID))
+      .map(user => ({
+        userID: String(user.userID),
+        userName: sanitizeText(user.userName, 100),
+        updatedAt: typeof user.updatedAt === 'number' ? user.updatedAt : Date.now(),
+      }));
+  };
+
+  const sanitizeIgnoreTopics = (topics) => {
+    if (!Array.isArray(topics)) return [];
+    return topics
+      .filter(topic => topic && isNumericId(topic.topicID))
+      .map(topic => ({
+        topicID: String(topic.topicID),
+        topicName: sanitizeText(topic.topicName, 200),
+        updatedAt: typeof topic.updatedAt === 'number' ? topic.updatedAt : Date.now(),
+      }));
+  };
+
+  const checkImageURL = (url) => {
+    if (!url) return false;
+    return /^https?:\/\/.+\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(url);
+  };
+
+  const isAllowedBoardHost = (host) => {
+    if (!host || typeof host !== 'string') return false;
+
+    const raw = host.trim().toLowerCase();
+    if (!raw || raw.length > 253) return false;
+
+    let hostname = raw;
+
+    if (raw.startsWith('[')) return false;
+
+    const colonIdx = raw.lastIndexOf(':');
+    if (colonIdx > -1 && /^\d+$/.test(raw.slice(colonIdx + 1))) {
+      const port = Number(raw.slice(colonIdx + 1));
+      hostname = raw.slice(0, colonIdx);
+      if (!Number.isInteger(port) || port < 1 || port > 65535) return false;
+    }
+
+    if (!hostname.includes('.')) return false;
+    if (hostname === 'localhost' || hostname.endsWith('.localhost')) return false;
+    if (hostname.endsWith('.local') || hostname.endsWith('.internal')) return false;
+    if (/^\d{1,3}(\.\d{1,3}){3}$/.test(hostname)) return false;
+
+    return /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/.test(hostname);
+  };
+
+  return {
+    isNumericId,
+    isCurrentHost,
+    sanitizeText,
+    sanitizeIgnoreUsers,
+    sanitizeIgnoreTopics,
+    checkImageURL,
+    isAllowedBoardHost,
+  };
+};
+
 const getReplyField = () => document.querySelector('#main-reply') || document.querySelector('textarea[name="req_message"]');
 const hasForumMarkers = () => !!window['ForumAPITicket'] || !!window['FORUM'];
 const isForumAvailable = () => hasForumMarkers();
@@ -136,17 +216,39 @@ const availabilityObserver = new MutationObserver(() => {
 });
 availabilityObserver.observe(document.documentElement, { childList: true, subtree: true });
 
-window.addEventListener('message', ({ data }) => {
+const bridge = createTTBridge();
+const ttChannel = __ttFactory?.bridge
+  || (__ttFactory?.createBridge ? __ttFactory.createBridge('isolated') : null)
+  || {
+    post: () => false,
+    subscribe: () => () => {},
+    whenReady: () => {},
+    isReady: () => false,
+  };
 
+const ttPost = (payload) => {
+  ttChannel.post(payload);
+};
+
+ttChannel.subscribe((data) => {
   if (data.type === 'tundra_toolkit_init_data') {
     const {
       boardID,
       forumID,
       userID,
+      topicID,
+      topicName,
       needsTopicIgnore,
     } = data;
 
+    if (!bridge.isNumericId(boardID) || !bridge.isNumericId(userID)) return;
+    if (forumID != null && !bridge.isNumericId(forumID)) return;
+    if (topicID != null && !bridge.isNumericId(topicID)) return;
+
     ttNotifyAvailability(hasForumMarkers());
+
+    const boardUrl = window.location.host;
+    if (!bridge.isAllowedBoardHost(boardUrl)) return;
 
     // store data
     isoSafeStorageSet({
@@ -156,10 +258,33 @@ window.addEventListener('message', ({ data }) => {
         forumID,
       }
     });
-    currentForumData = { boardID, userID, forumID };
+    currentForumData = { boardID, userID, forumID, boardUrl, topicID, topicName };
+
+    // Пользователь открыл тему — отмечаем её прочитанной в «Избранном»
+    if (topicID) {
+      isoSafeStorageGet(['favoriteTopics']).then(({ favoriteTopics = [] }) => {
+        let changed = false;
+        const seenAt = Math.floor(Date.now() / 1000);
+        const updated = favoriteTopics.map(item => {
+          if (item.boardUrl !== boardUrl || `${ item.topicID }` !== `${ topicID }`) return item;
+          changed = true;
+          return {
+            ...item,
+            lastSeenPostDate: seenAt,
+            seenNumReplies: item.numReplies,
+            updatedAt: Date.now(),
+          };
+        });
+        if (changed) {
+          isoSafeStorageSet({
+            favoriteTopics: updated.filter(item => bridge.isAllowedBoardHost(item.boardUrl)),
+          });
+        }
+      });
+    }
 
     readControlsVisibility(`${ boardID }`).then(visible => {
-      window.postMessage({
+      ttPost({
         type: 'tundra_toolkit_controls_visibility',
         visible,
       });
@@ -178,14 +303,14 @@ window.addEventListener('message', ({ data }) => {
       const boardList = ignoreList.find(item => item.boardID === boardID);
       const forumList = boardList?.forums.find(item => item.forumID === forumID)?.users || [];
 
-      window.postMessage({
+      ttPost({
         type: 'tundra_toolkit_init_ignore',
         forumData: {
           boardID,
           forumID,
           userID,
         },
-        data: forumList,
+        data: bridge.sanitizeIgnoreUsers(forumList),
       })
     });
 
@@ -194,14 +319,15 @@ window.addEventListener('message', ({ data }) => {
         const boardList = ignoredTopicsList.find(item => item.boardID === boardID);
         const topics = boardList?.topics || [];
 
-        window.postMessage({
+        ttPost({
           type: 'tundra_toolkit_init_topic_ignore',
           boardData: { boardID },
-          data: topics,
+          data: bridge.sanitizeIgnoreTopics(topics),
         });
       });
     }
 
+    return;
   }
 
   if (data.type === 'tundra_toolkit_update_ignore_list') {
@@ -227,20 +353,20 @@ window.addEventListener('message', ({ data }) => {
           return {
             ...forum,
             users: newUsers,
-          }
+          };
         }) : [
           ...board.forums,
           {
             forumID,
             forumName,
             users: newUsers,
-          }
-        ]
+          },
+        ];
 
         return {
           ...board,
           forums: newForumData,
-        }
+        };
       }) : [
         ...ignoreList,
         {
@@ -252,15 +378,14 @@ window.addEventListener('message', ({ data }) => {
               forumID,
               forumName,
               users: newUsers,
-            }
+            },
           ],
-        }
+        },
       ];
 
       isoSafeStorageSet({
         ignoreList: newData,
-      })
-
+      });
     });
   }
 
@@ -373,7 +498,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       return;
     }
 
-    window.postMessage({
+    ttPost({
       type: 'tundra_toolkit_insert_sticker',
       src: request.src,
     });
@@ -382,7 +507,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.type === 'tundra_toolkit_ignore_toggle') {
-    window.postMessage({
+    ttPost({
       type: 'tundra_toolkit_ignore_toggle',
     })
   }
@@ -395,7 +520,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       writeControlsVisibility(boardID, visible);
     }
 
-    window.postMessage({
+    ttPost({
       type: 'tundra_toolkit_controls_visibility',
       visible,
     });

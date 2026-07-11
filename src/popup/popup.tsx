@@ -4,6 +4,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { Stickers } from './stickers';
 import { Templates } from './templates';
 import { IgnoreList } from './ignoreList';
+import { Favorites } from './favorites';
 import showIcon from './assets/show.svg';
 import hideIcon from './assets/hide.svg';
 import settingsIcon from './assets/settings.svg';
@@ -31,7 +32,7 @@ const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reje
 });
 
 export function App() {
-  const [ activeTab, setActiveTab ] = useState<'stickers' | 'templates' | 'ignore'>('stickers');
+  const [ activeTab, setActiveTab ] = useState<'stickers' | 'templates' | 'ignore' | 'favorites'>('stickers');
   const [ availability, setAvailability ] = useState<'unknown' | 'available' | 'unavailable'>('unknown');
   const [ boardId, setBoardId ] = useState<string | null>(null);
   const [ controlsVisible, setControlsVisible ] = useState(true);
@@ -123,6 +124,12 @@ export function App() {
           Игнор-лист
         </button>
         <button
+          class={ `button small ${ activeTab === 'favorites' ? 'primary' : '' }` }
+          onClick={ () => setActiveTab('favorites') }
+        >
+          Эпизоды
+        </button>
+        <button
           class={ `button small controlsToggle ${ !controlsVisible ? 'muted' : '' }` }
           onClick={ handleToggleControls }
           disabled={ toggleDisabled }
@@ -152,6 +159,7 @@ export function App() {
         { activeTab === 'templates' && <Templates /> }
         { activeTab === 'stickers' && <Stickers /> }
         { activeTab === 'ignore' && <IgnoreList /> }
+        { activeTab === 'favorites' && <Favorites /> }
       </div>
     </div>
   );

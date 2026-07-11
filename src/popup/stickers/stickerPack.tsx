@@ -1,4 +1,5 @@
 import {useEffect, useRef, useState} from "react";
+import { useBatchedItems } from '../../hooks/useBatchedItems';
 
 type PackProps = {
   pack: IStickerPack;
@@ -17,6 +18,7 @@ export function StickerPack({
   const [titleImg, setTitleImg] = useState<string>('');
   const [notice, setNotice] = useState<string | null>(null);
   const noticeTimer = useRef<number | null>(null);
+  const visibleStickers = useBatchedItems(pack.items, opened);
 
   const handleTitleClick = () => {
     onChange(pack.id)
@@ -113,9 +115,9 @@ export function StickerPack({
               {notice}
             </div>
           )}
-          {pack.items.map(sticker => (
-            <div class="stickerItem">
-              <img src={sticker} key={sticker} onClick={handleStickerClick} />
+          {visibleStickers.map(sticker => (
+            <div class="stickerItem" key={sticker}>
+              <img src={sticker} onClick={handleStickerClick} />
             </div>
           ))}
         </div>

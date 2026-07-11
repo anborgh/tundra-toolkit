@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
+import { useBatchedItems } from '../../hooks/useBatchedItems';
 import { checkImageURL } from '../../utils';
 
 import './style.css';
@@ -18,6 +19,7 @@ export default function ({ pack, onChange, onRemove }: Props) {
   const [ name, setName ] = useState<string>('');
   const [ items, setItems ] = useState<IStickerPack['items']>([]);
   const [ textItems, setTextItems ] = useState<string>('');
+  const visibleStickers = useBatchedItems(items, !edit);
 
   const handleNameChange = ({ target }) => {
     setName(target.value);
@@ -127,7 +129,7 @@ export default function ({ pack, onChange, onRemove }: Props) {
         </div>
       ) : (
         <div className="stickerListContent">
-          { items ? items.map((sticker, index) => (
+          { visibleStickers.map((sticker, index) => (
             <div
               onDragStart={ handleDragStart }
               onDragEnter={ handleDragEnter }
@@ -140,7 +142,7 @@ export default function ({ pack, onChange, onRemove }: Props) {
             >
               <img src={ sticker }/>
             </div>
-          )) : '' }
+          )) }
         </div>
       ) }
     </div>
