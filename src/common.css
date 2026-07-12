@@ -2,6 +2,16 @@
     --bg-color: #e8eced;
     --color-primary: #0C2028;
     --width: 860px;
+
+    /* Общая палитра поверхностей: светлая тема по умолчанию */
+    --tt-card: #ffffff;
+    --tt-card-alt: #dfe5e9;
+    --tt-border: #c3ccd3;
+    --tt-muted: #5f6b76;
+    --tt-text: #2a3138;
+    --tt-input-bg: #ffffff;
+    --tt-success: #1e7c56;
+    --tt-danger: #a12830;
 }
 
 .button.small {
@@ -13,5 +23,14 @@
         --font-color: #c0cad4;
         --bg-color: #22272b;
         --color-primary: #8BA2A6;
+
+        --tt-card: #2d343d;
+        --tt-card-alt: #252c33;
+        --tt-border: #3c4651;
+        --tt-muted: #9aa6b5;
+        --tt-text: #c0cad4;
+        --tt-input-bg: #2a3139;
+        --tt-success: #5ac193;
+        --tt-danger: #ff6b6b;
     }
 }

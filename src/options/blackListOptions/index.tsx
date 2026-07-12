@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import { decodeEntities } from '../../utils';
 
 import './style.css';
 
@@ -55,7 +56,7 @@ export function BlackListOptions() {
   }
 
   const handleRemoveTopicClick = (boardID: string, topic: { topicName: string, topicID: string }) => {
-    const isConfirmed = confirm(`Перестать игнорировать тему «${ topic.topicName }»?`);
+    const isConfirmed = confirm(`Перестать игнорировать тему «${ decodeEntities(topic.topicName) }»?`);
 
     if (!isConfirmed) return;
 
@@ -154,7 +155,7 @@ export function BlackListOptions() {
                         target="_blank"
                         rel="noopener noreferrer"
                       >
-                        { topic.topicName }
+                        { decodeEntities(topic.topicName) }
                       </a>
                       <button
                         className="button small icon-only blackListRemoveItem"

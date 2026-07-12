@@ -1,12 +1,12 @@
 :root {
   --popup-bg: var(--bg-color, #22272b);
-  --popup-card: #2d343d;
-  --popup-border: #3c4651;
-  --popup-muted: #9aa6b5;
-  --popup-text: #c0cad4;
+  --popup-card: var(--tt-card, #2d343d);
+  --popup-border: var(--tt-border, #3c4651);
+  --popup-muted: var(--tt-muted, #9aa6b5);
+  --popup-text: var(--tt-text, #c0cad4);
   --popup-accent: #8BA2A6;
-  --popup-success: #5ac193;
-  --popup-danger: #ff6b6b;
+  --popup-success: var(--tt-success, #5ac193);
+  --popup-danger: var(--tt-danger, #ff6b6b);
   --popup-radius: 10px;
 }
 
@@ -39,19 +39,64 @@ h5 {
 
 .popupTabs {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 6px;
   background: var(--popup-accent);
 }
 
-.popupTabs .button {
+.popupTabsMain,
+.popupTabsActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popupTabsMain {
   flex: 1;
+  min-width: 0;
+}
+
+.popupTabsActions {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.popupTabs .button {
+  flex: 0 0 auto;
+  min-width: 38px;
+  width: 38px;
+  padding: 8px;
   font-weight: 600;
   border: none;
   border-radius: 8px;
   color: #22272b;
   background: #e0e6e9;
   transition: background 0.15s ease, color 0.15s ease;
+}
+
+.popupTabs .button.tabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.tabBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e05252;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
 }
 
 .popupTabs .button:hover {
@@ -73,6 +118,20 @@ h5 {
 .popupTabs .button.controlsToggle.muted {
   background: #c8d0d4;
   color: #3c4651;
+}
+
+.popupTabs .button.forumPowerToggle.muted {
+  background: #c8d0d4;
+  color: #3c4651;
+}
+
+.popupTabs .button.forumPowerToggle.active {
+  background: #22272b;
+  color: #5ac193;
+}
+
+.popupTabs .button.forumPowerToggle.active:hover {
+  background: #2d343d;
 }
 
 .controlsToggleContent {
@@ -109,6 +168,7 @@ h5 {
 }
 
 .popupTabContent {
+  position: relative;
   background: var(--popup-card);
   padding: 12px;
   max-height: 560px;
@@ -198,7 +258,7 @@ h5 {
   padding: 8px 10px;
   border: 1px solid var(--popup-border);
   border-radius: 8px;
-  background: #2a3139;
+  background: var(--tt-input-bg, #2a3139);
   color: var(--popup-text);
 }
 
@@ -213,18 +273,18 @@ h5 {
   color: var(--popup-muted);
   border: 1px dashed var(--popup-accent);
   border-radius: 8px;
-  background: #252c33;
+  background: var(--tt-card-alt, #252c33);
 }
 
 .tag.success {
   background: rgba(43, 154, 102, 0.12);
-  color: #1e7c56;
+  color: var(--tt-success, #1e7c56);
   border: 1px solid rgba(43, 154, 102, 0.2);
 }
 
 .tag.error {
   background: rgba(209, 67, 75, 0.12);
-  color: #a12830;
+  color: var(--tt-danger, #a12830);
   border: 1px solid rgba(209, 67, 75, 0.2);
 }
 
@@ -242,9 +302,9 @@ h5 {
 }
 
 .text-success {
-  color: #1e7c56;
+  color: var(--tt-success, #1e7c56);
 }
 
 .text-error {
-  color: #a12830;
+  color: var(--tt-danger, #a12830);
 }

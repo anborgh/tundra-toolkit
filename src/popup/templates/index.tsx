@@ -203,16 +203,18 @@ export function Templates() {
         </div>
         <div class="templatesActions">
           <button class="button small" onClick={ addEmptyTemplate }>Добавить пустой</button>
-          <button class="button small" onClick={ handleSaveFromForm } disabled={ busy }>Сохранить из формы</button>
+          <button
+            class="button small"
+            onClick={ handleSaveFromForm }
+            disabled={ busy || canUse === false }
+            title={ canUse === false ? 'Откройте страницу форума с полем ответа' : undefined }
+          >
+            Сохранить из формы
+          </button>
         </div>
       </div>
 
       <div class="templatesStatus">
-        { canUse !== null && (
-          <span class={ `tag ${ canUse ? 'success' : 'error' }` }>
-            { canUse ? 'Поле доступно' : 'Поле недоступно' }
-          </span>
-        ) }
         { busy && <span class="text-secondary">В процессе…</span> }
         { info && <span class="text-success">{ info }</span> }
         { error && <span class="text-error">{ error }</span> }

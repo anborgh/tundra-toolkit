@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import { decodeEntities } from '../../utils';
 
 import './style.css';
 
@@ -11,7 +12,7 @@ type ForumContext = {
   boardUrl?: string;
 };
 
-type IgnoreState = 'loading' | 'unavailable' | 'noForum' | 'empty' | 'ready' | 'error';
+type IgnoreState = 'loading' | 'unavailable' | 'blocked' | 'noForum' | 'empty' | 'ready' | 'error';
 
 const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reject) => {
   chrome.tabs.query({ currentWindow: true, active: true }, (tabs) => {
@@ -31,18 +32,14 @@ const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reje
   });
 });
 
-const checkForumAvailability = async (): Promise<boolean> => {
+const checkForumAvailability = async (): Promise<'available' | 'blocked' | 'unavailable'> => {
   try {
-    const [ pingResp, forumResp ] = await Promise.all([
-      sendMessageToActiveTab({ type: 'tundra_toolkit_availability_ping' }).catch(() => null),
-      sendMessageToActiveTab({ type: 'tundra_toolkit_forum_info' }).catch(() => null),
-    ]);
-    if (pingResp?.available) return true;
-    const forumData = forumResp?.forumData;
-    if (forumData?.boardID) return true;
-    return false;
+    const pingResp = await sendMessageToActiveTab({ type: 'tundra_toolkit_availability_ping' }).catch(() => null);
+    if (pingResp?.available) return 'available';
+    if (pingResp?.hasForum) return 'blocked';
+    return 'unavailable';
   } catch (e) {
-    return false;
+    return 'unavailable';
   }
 };
 
@@ -87,14 +84,18 @@ export function IgnoreList() {
   const [ context, setContext ] = useState<ForumContext | null>(null);
   const [ board, setBoard ] = useState<IBoardStore | null>(null);
   const [ users, setUsers ] = useState<IUserStore[]>([]);
+  const [ topics, setTopics ] = useState<ITopicStore[]>([]);
   const [ loading, setLoading ] = useState<boolean>(false);
   const [ error, setError ] = useState<string | null>(null);
   const [ warning, setWarning ] = useState<string | null>(null);
 
   const lastUpdatedAt = useMemo(() => {
-    if (!users.length) return null;
-    return users.reduce((acc, user) => Math.max(acc, user.updatedAt || 0), 0);
-  }, [ users ]);
+    const userDates = users.map(user => user.updatedAt || 0);
+    const topicDates = topics.map(topic => topic.updatedAt || 0);
+    const allDates = [ ...userDates, ...topicDates ];
+    if (!allDates.length) return null;
+    return Math.max(...allDates);
+  }, [ users, topics ]);
 
   const load = async () => {
     setLoading(true);
@@ -102,20 +103,27 @@ export function IgnoreList() {
 
     try {
       const available = await checkForumAvailability();
-      if (!available) {
+      if (available === 'unavailable') {
         setContext(null);
         setUsers([]);
         setState('unavailable');
         return;
       }
+      if (available === 'blocked') {
+        setContext(null);
+        setUsers([]);
+        setState('blocked');
+        return;
+      }
 
-      const storage = await safeStorageGet([ 'ignoreList', 'forumData' ]);
+      const storage = await safeStorageGet([ 'ignoreList', 'ignoredTopicsList', 'forumData' ]);
       const activeCtx = await getActiveForumInfo();
       const forumData = activeCtx || storage?.forumData;
 
       if (!forumData?.boardID) {
         setContext(null);
         setUsers([]);
+        setTopics([]);
         setState('noForum');
         return;
       }
@@ -123,25 +131,29 @@ export function IgnoreList() {
       const boardID = `${ forumData.boardID }`;
       const forumID = forumData.forumID ? `${ forumData.forumID }` : null;
       const ignoreList: IBoardStore[] = storage?.ignoreList || [];
+      const ignoredTopicsList: IBoardTopicsStore[] = storage?.ignoredTopicsList || [];
 
       const currentBoard = ignoreList.find(item => `${ item.boardID }` === boardID) || null;
       const forum = forumID ? currentBoard?.forums?.find(item => `${ item.forumID }` === forumID) : null;
+      const topicsBoard = ignoredTopicsList.find(item => `${ item.boardID }` === boardID) || null;
 
       setBoard(currentBoard);
       setContext({
         boardID,
         forumID,
-        boardName: currentBoard?.boardName || 'Форум',
+        boardName: currentBoard?.boardName || topicsBoard?.boardName || 'Форум',
         forumName: forumID ? (forum?.forumName || 'Раздел') : 'Все разделы',
-        boardUrl: currentBoard?.boardUrl,
+        boardUrl: currentBoard?.boardUrl || topicsBoard?.boardUrl,
       });
 
       const usersList = forumID
         ? (forum?.users || [])
         : (currentBoard?.forums || []).flatMap(f => f.users || []);
+      const topicsList = topicsBoard?.topics || [];
 
       setUsers(usersList);
-      setState(usersList.length ? 'ready' : 'empty');
+      setTopics(topicsList);
+      setState(usersList.length || topicsList.length ? 'ready' : 'empty');
     } catch (e) {
       setError('Не удалось загрузить список');
       setState('error');
@@ -167,7 +179,7 @@ export function IgnoreList() {
 
       setUsers(prev => {
         const newUsers = prev.filter(item => `${ item.userID }` !== `${ user.userID }`);
-        setState(newUsers.length ? 'ready' : 'empty');
+        setState(newUsers.length || topics.length ? 'ready' : 'empty');
         return newUsers;
       });
 
@@ -183,13 +195,48 @@ export function IgnoreList() {
     }
   };
 
+  const handleRemoveTopic = async (topic: ITopicStore) => {
+    if (!context) return;
+
+    const confirmed = confirm(`Перестать игнорировать тему «${ decodeEntities(topic.topicName) }»?`);
+    if (!confirmed) return;
+
+    try {
+      const storage = await safeStorageGet([ 'ignoredTopicsList' ]);
+      const ignoredTopicsList: IBoardTopicsStore[] = storage?.ignoredTopicsList || [];
+      const newData = ignoredTopicsList.map(board => {
+        if (`${ board.boardID }` !== context.boardID) return board;
+
+        const newTopics = (board.topics || []).filter(item => `${ item.topicID }` !== `${ topic.topicID }`);
+        return newTopics.length ? { ...board, topics: newTopics } : null;
+      }).filter(Boolean) as IBoardTopicsStore[];
+
+      setTopics(prev => {
+        const newTopics = prev.filter(item => `${ item.topicID }` !== `${ topic.topicID }`);
+        setState(users.length || newTopics.length ? 'ready' : 'empty');
+        return newTopics;
+      });
+
+      const result = await safeStorageSet({ ignoredTopicsList: newData });
+      if (result.fallback) {
+        setWarning('Память синхронизации переполнена. Список сохранён только в этом браузере.');
+      } else {
+        setWarning(null);
+      }
+    } catch (e) {
+      setError('Не удалось обновить список');
+      setState('error');
+    }
+  };
+
   const renderStatus = () => {
     if (state === 'loading') return <span class="text-secondary">Загружаем…</span>;
     if (state === 'unavailable') return <span class="text-error">Текущая вкладка не поддерживает форум</span>;
+    if (state === 'blocked') return <span class="text-error">Добавьте форум в доверенные, чтобы использовать игнор-лист</span>;
     if (state === 'noForum') return <span class="text-error">Не нашли данные форума. Откройте вкладку с разделом.</span>;
     if (state === 'empty') {
       const scope = context?.forumID ? 'разделе' : 'форуме';
-      return <span class="text-secondary">В этом { scope } никого не игнорируете</span>;
+      return <span class="text-secondary">В этом { scope } никого и ничего не игнорируете</span>;
     }
     if (state === 'error') return <span class="text-error">{ error || 'Ошибка' }</span>;
     return null;
@@ -309,6 +356,35 @@ export function IgnoreList() {
                 )
               }
             </ul>
+            { topics.length > 0 && (
+              <>
+                <p class="ignoreTopicsTitle text-secondary">Игнорируемые темы</p>
+                <ul class="blackListTopics">
+                  { topics.map(topic => (
+                    <li class="blackListTopicItem" key={ topic.topicID }>
+                      { context?.boardUrl ? (
+                        <a
+                          href={ `https://${ context.boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          { decodeEntities(topic.topicName) }
+                        </a>
+                      ) : (
+                        <span>{ decodeEntities(topic.topicName) }</span>
+                      ) }
+                      <button
+                        class="button small icon-only blackListRemoveItem"
+                        title="Перестать игнорировать тему"
+                        onClick={ () => handleRemoveTopic(topic) }
+                      >
+                        X
+                      </button>
+                    </li>
+                  )) }
+                </ul>
+              </>
+            ) }
           </li>
         </ul>
       ) }

@@ -5,12 +5,13 @@ import { BlackListOptions } from './blackListOptions';
 import StickerPackOptions from './stickerPackOptions';
 import { ConflictResolver } from './conflictResolver';
 import TemplateOptions from './templateOptions';
+import { FavoritesOptions } from './favoritesOptions';
 
 import '../chota.min.css';
 import '../common.css';
 import './options.css';
 
-type SettingsSection = 'stickers' | 'templates' | 'blackList' | 'guide';
+type SettingsSection = 'stickers' | 'templates' | 'blackList' | 'favorites' | 'guide';
 
 export function App() {
 	const [ activeSection, setActiveSection ] = useState<SettingsSection>('stickers');
@@ -54,6 +55,7 @@ export function App() {
 		{ id: 'stickers', label: 'Стикеры' },
 		{ id: 'templates', label: 'Черновики' },
 		{ id: 'blackList', label: 'Черный список' },
+		{ id: 'favorites', label: 'Избранное' },
 	];
 
 	const renderSection = () => {
@@ -63,7 +65,7 @@ export function App() {
 					<section className="optionsGuide">
 						<h3>Инструкция по расширению</h3>
 						<p className="text-secondary">
-							Tundra Toolkit упрощает работу с форумом: хранит ваши черновики и шаблоны, собирает в одном месте все ваши стикеры, позволяет скрывать неприятный контент.
+							Tundra Toolkit упрощает работу с форумом: хранит ваши черновики и шаблоны, собирает в одном месте все ваши стикеры, позволяет скрывать неприятный контент и отслеживать новые сообщения в своих эпизодах.
 						</p>
 
 						<div className="optionsGuideBlock">
@@ -95,6 +97,18 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock">
+							<h5>Избранное</h5>
+							<ul>
+								<li>Добавляйте эпизоды с разных форумов в общий список избранного.</li>
+								<li>Расширение в фоне проверяет новые сообщения и показывает их в попапе и на иконке расширения. Частота зависит от числа форумов и тем (примерно до 120 запросов в час).</li>
+								<li>Отмечайте галочкой эпизоды, где следующим должны ответить вы — они выводятся сверху, начиная с самого старого долга.</li>
+								<li>Остальные темы сортируются по дате последнего поста: сверху недавно обновлённые.</li>
+								<li>В настройках можно переключать вид: группировка по форумам или общий список по дате последнего поста.</li>
+								<li>Если вы не авторизованы на каком-то форуме, строка помечается как «не обновляется», но остаётся в списке.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock">
 							<h5>Счётчик постов</h5>
 							<ul>
 								<li>Запускается с форума через пункт <code>TT: Счётчик постов</code> в профиле пользователя на форуме.</li>
@@ -117,6 +131,8 @@ export function App() {
 				return <TemplateOptions />;
 			case 'blackList':
 				return <BlackListOptions />;
+			case 'favorites':
+				return <FavoritesOptions />;
 			case 'stickers':
 			default:
 				return <StickerPackOptions />;

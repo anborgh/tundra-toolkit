@@ -17,7 +17,7 @@
 
 .templateOptionsHeader h6 {
   margin: 4px 0 0;
-  color: #666;
+  color: var(--tt-muted, #666);
 }
 
 .templateOptionsActions {
@@ -32,10 +32,10 @@
 }
 
 .templateOptionsItem {
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--tt-border, #e0e0e0);
   border-radius: 6px;
   padding: 12px;
-  background: #fff;
+  background: var(--tt-card, #fff);
 }
 
 .templateOptionsRow {
@@ -70,7 +70,7 @@
 .templateOptionsMeta {
   min-width: 180px;
   text-align: right;
-  color: #666;
+  color: var(--tt-muted, #666);
   font-size: 0.9em;
 }
 
