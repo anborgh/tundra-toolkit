@@ -1,6 +1,5 @@
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { Sticker, FilePen, Ban, Bookmark, Calculator, Power } from 'lucide-react';
 
 import { Stickers } from './stickers';
 import { Templates } from './templates';
@@ -9,27 +8,42 @@ import { Favorites } from './favorites';
 import showIcon from './assets/show.svg';
 import hideIcon from './assets/hide.svg';
 import settingsIcon from './assets/settings.svg';
-import { isTrustedBoardHost, normalizeBoardHost, TRUSTED_HOSTS_KEY, hostFromUrl, isAllowedBoardHost } from '../utils';
+import stickerIcon from '../assets/icons/sticker.svg';
+import filePenIcon from '../assets/icons/file-pen.svg';
+import banIcon from '../assets/icons/ban.svg';
+import bookmarkIcon from '../assets/icons/bookmark.svg';
+import calculatorIcon from '../assets/icons/calculator.svg';
+import powerIcon from '../assets/icons/power.svg';
+import { MaskIcon } from '../components/MaskIcon';
+import {
+  isTrustedBoardHost,
+  normalizeBoardHost,
+  TRUSTED_HOSTS_KEY,
+  hostFromUrl,
+  isAllowedBoardHost,
+  CONTROLS_VISIBILITY_OPT_IN_KEY,
+  isControlsVisibleForBoard,
+  formatUnreadCount,
+} from '../utils';
 import { safeStorageGet, safeStorageSet } from '../utils/storage';
 
 import '../chota.min.css';
 import '../common.css';
+import '../components/icon.css';
 import './popup.css';
 
 type TabId = 'stickers' | 'templates' | 'ignore' | 'favorites' | 'postCounter';
 
 const FAVORITES_META_KEY = 'favoritesRefreshMeta';
 
-const TAB_META: Record<Exclude<TabId, 'postCounter'>, { label: string; Icon: typeof Sticker }> = {
-  stickers: { label: 'Стикеры', Icon: Sticker },
-  templates: { label: 'Черновики', Icon: FilePen },
-  ignore: { label: 'Игнор-лист', Icon: Ban },
-  favorites: { label: 'Эпизоды', Icon: Bookmark },
+const TAB_META: Record<Exclude<TabId, 'postCounter'>, { label: string; icon: string }> = {
+  stickers: { label: 'Стикеры', icon: stickerIcon },
+  templates: { label: 'Черновики', icon: filePenIcon },
+  ignore: { label: 'Игнор-лист', icon: banIcon },
+  favorites: { label: 'Эпизоды', icon: bookmarkIcon },
 };
 
-const POST_COUNTER_TAB = { label: 'Счётчик постов', Icon: Calculator };
-
-const formatUnreadCount = (count: number) => (count > 99 ? '99+' : `${ count }`);
+const POST_COUNTER_TAB = { label: 'Счётчик постов', icon: calculatorIcon };
 
 const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reject) => {
   chrome.tabs.query({ currentWindow: true, active: true }, (tabs) => {
@@ -48,6 +62,18 @@ const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reje
     });
   });
 });
+
+const hasValidBoardId = (value?: string | null) => {
+  if (!value) return false;
+  const num = Number(value);
+  return Number.isInteger(num) && num > 0;
+};
+
+const controlsScopeKey = (boardId?: string | null, boardHost?: string | null) => {
+  if (hasValidBoardId(boardId)) return `${ boardId }`;
+  if (boardHost) return `host:${ boardHost }`;
+  return null;
+};
 
 export function App() {
   const [ activeTab, setActiveTab ] = useState<TabId>('stickers');
@@ -80,7 +106,10 @@ export function App() {
       const [ availabilityResp, forumResp, storage ] = await Promise.all([
         sendMessageToActiveTab({ type: 'tundra_toolkit_availability_ping' }).catch(() => null),
         sendMessageToActiveTab({ type: 'tundra_toolkit_forum_info' }).catch(() => null),
-        chrome.storage.local.get([ 'controlsVisibilityByBoard' ]).catch(() => ({})),
+        chrome.storage.local.get([
+          'controlsVisibilityByBoard',
+          CONTROLS_VISIBILITY_OPT_IN_KEY,
+        ]).catch(() => ({})),
       ]);
 
       const forumData = forumResp?.forumData;
@@ -109,11 +138,17 @@ export function App() {
       );
 
       const storedMap: Record<string, boolean> = ((storage as any)?.controlsVisibilityByBoard as Record<string, boolean> | undefined) || {};
+      const optIn = (storage as any)?.[CONTROLS_VISIBILITY_OPT_IN_KEY] === true;
+      const scopeKey = controlsScopeKey(board, host);
       setVisibilityMap(storedMap);
-      if (board) {
-        setControlsVisible(storedMap[board] === true);
+      if (hasValidBoardId(board)) {
+        setControlsVisible(isControlsVisibleForBoard(storedMap, `${ board }`, optIn));
+      } else if (scopeKey && Object.prototype.hasOwnProperty.call(storedMap, scopeKey)) {
+        setControlsVisible(storedMap[scopeKey] !== false);
       } else if (typeof availabilityResp?.visible === 'boolean') {
         setControlsVisible(availabilityResp.visible);
+      } else {
+        setControlsVisible(true);
       }
 
       await loadUnreadCount();
@@ -141,17 +176,21 @@ export function App() {
   }, []);
 
   const handleToggleControls = async () => {
-    if (!boardId || availability !== 'available') return;
+    if (availability !== 'available') return;
     const nextVisible = !controlsVisible;
+    const scopeKey = controlsScopeKey(boardId, boardHost);
     setControlsVisible(nextVisible);
     setToggling(true);
     try {
-      const nextMap = { ...visibilityMap, [boardId]: nextVisible };
-      setVisibilityMap(nextMap);
-      await chrome.storage.local.set({ controlsVisibilityByBoard: nextMap });
+      if (scopeKey) {
+        const nextMap = { ...visibilityMap, [scopeKey]: nextVisible };
+        setVisibilityMap(nextMap);
+        await chrome.storage.local.set({ controlsVisibilityByBoard: nextMap });
+      }
       await sendMessageToActiveTab({
         type: 'tundra_toolkit_controls_toggle',
         boardID: boardId,
+        boardUrl: boardHost,
         visible: nextVisible,
       });
     } catch (e) {
@@ -167,6 +206,7 @@ export function App() {
 
     setForumPowerBusy(true);
     try {
+      // Единственный writer trustedBoardHosts — popup; isolated только apply
       const storage = await safeStorageGet([ TRUSTED_HOSTS_KEY ]);
       const trustedHosts: string[] = storage?.[TRUSTED_HOSTS_KEY] || [];
       const normalized = normalizeBoardHost(host);
@@ -174,10 +214,15 @@ export function App() {
       if (isTrusted) {
         const nextHosts = trustedHosts.filter(item => normalizeBoardHost(item) !== normalized);
         await safeStorageSet({ [TRUSTED_HOSTS_KEY]: nextHosts });
-        await sendMessageToActiveTab({
+        const resp = await sendMessageToActiveTab({
           type: 'tundra_toolkit_untrust_board',
           boardUrl: normalized || host,
         });
+        // Вкладка перезагрузится — попап закрываем
+        if (resp?.reload) {
+          window.close();
+          return;
+        }
       } else if (normalized && !isTrustedBoardHost(normalized, trustedHosts)) {
         await safeStorageSet({
           [TRUSTED_HOSTS_KEY]: [ ...trustedHosts, normalized ],
@@ -202,8 +247,8 @@ export function App() {
     try {
       const resp = await sendMessageToActiveTab({ type: 'tundra_toolkit_open_post_counter' });
       if (resp?.success) {
-        // Дать content script поставить DOM-сигнал / открыть dialog до закрытия попапа
-        window.setTimeout(() => window.close(), 50);
+        // Дождаться DOM-сигнала / showModal на вкладке
+        window.setTimeout(() => window.close(), 150);
       }
     } catch (e) {
       // ignore
@@ -220,7 +265,8 @@ export function App() {
   };
 
   const controlsToggleLabel = controlsVisible ? 'Скрыть элементы' : 'Показать элементы';
-  const toggleDisabled = availability !== 'available' || !boardId || toggling;
+  const showControlsToggle = availability === 'available' && hasForum;
+  const toggleDisabled = toggling;
   const toggleIcon = controlsVisible ? hideIcon : showIcon;
 
   const handleOpenOptions = () => {
@@ -241,7 +287,7 @@ export function App() {
   };
 
   const renderTabButton = (tabId: Exclude<TabId, 'postCounter'>) => {
-    const { label, Icon } = TAB_META[tabId];
+    const { label, icon } = TAB_META[tabId];
     const showBadge = tabId === 'favorites' && unreadCount > 0;
     const forumOnly = tabId === 'ignore';
     const disabled = forumOnly && !hasForum;
@@ -255,13 +301,13 @@ export function App() {
         title={ disabled ? 'Доступно только на форуме' : label }
         aria-label={ label }
       >
-        <Icon size={ 16 } strokeWidth={ 2 } aria-hidden="true" />
+        <MaskIcon src={ icon } />
         { showBadge && renderTabBadge() }
       </button>
     );
   };
 
-  const { label: postCounterLabel, Icon: PostCounterIcon } = POST_COUNTER_TAB;
+  const { label: postCounterLabel, icon: postCounterIcon } = POST_COUNTER_TAB;
 
   return (
     <div class="popupWrapper">
@@ -280,7 +326,7 @@ export function App() {
             }
             aria-label={ postCounterLabel }
           >
-            <PostCounterIcon size={ 16 } strokeWidth={ 2 } aria-hidden="true" />
+            <MaskIcon src={ postCounterIcon } />
           </button>
         </div>
 
@@ -294,23 +340,22 @@ export function App() {
               aria-label={ isTrusted ? 'Выключить на форуме' : 'Включить на форуме' }
               aria-pressed={ isTrusted }
             >
-              <Power size={ 16 } strokeWidth={ 2 } aria-hidden="true" />
+              <MaskIcon src={ powerIcon } />
             </button>
           ) }
-          <button
-            class={ `button small controlsToggle ${ !controlsVisible ? 'muted' : '' }` }
-            onClick={ handleToggleControls }
-            disabled={ toggleDisabled }
-            aria-label={ controlsToggleLabel }
-            title={ availability !== 'available'
-              ? 'Сначала включите расширение на форуме'
-              : controlsToggleLabel
-            }
-          >
-            <span class="controlsToggleContent">
-              <img src={ toggleIcon } alt="" class="controlsToggleIcon" />
-            </span>
-          </button>
+          { showControlsToggle && (
+            <button
+              class={ `button small controlsToggle ${ !controlsVisible ? 'muted' : '' }` }
+              onClick={ handleToggleControls }
+              disabled={ toggleDisabled }
+              aria-label={ controlsToggleLabel }
+              title={ controlsToggleLabel }
+            >
+              <span class="controlsToggleContent">
+                <img src={ toggleIcon } alt="" class="controlsToggleIcon" />
+              </span>
+            </button>
+          ) }
           <button
             class="button small controlsSettings"
             onClick={ handleOpenOptions }
@@ -326,12 +371,7 @@ export function App() {
 
       <div class="popupTabContent">
         { activeTab === 'templates' && <Templates /> }
-        { activeTab === 'stickers' && (
-          <Stickers
-            unreadCount={ unreadCount }
-            onOpenFavorites={ () => setActiveTab('favorites') }
-          />
-        ) }
+        { activeTab === 'stickers' && <Stickers /> }
         { activeTab === 'ignore' && <IgnoreList /> }
         { activeTab === 'favorites' && <Favorites /> }
       </div>
@@ -339,4 +379,7 @@ export function App() {
   );
 }
 
-render(<App />, document.getElementById('app'));
+const root = document.getElementById('app');
+if (root) {
+  render(<App />, root);
+}

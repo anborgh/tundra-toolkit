@@ -2,7 +2,7 @@ function setupContextMenus() {
   chrome.contextMenus.removeAll(() => {
     chrome.contextMenus.create({
       id: 'tundra_toolkit_ignore_menu',
-      title: 'Список заблокированных',
+      title: 'Настройки',
       contexts: ['page'],
     });
 
@@ -14,7 +14,22 @@ function setupContextMenus() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(setupContextMenus);
+const CONTROLS_VISIBILITY_OPT_IN_KEY = 'controlsVisibilityOptIn';
+
+const ensureControlsVisibilityMode = async (reason) => {
+  const stored = await chrome.storage.local.get(CONTROLS_VISIBILITY_OPT_IN_KEY);
+  if (stored[CONTROLS_VISIBILITY_OPT_IN_KEY] === true || stored[CONTROLS_VISIBILITY_OPT_IN_KEY] === false) {
+    return;
+  }
+  await chrome.storage.local.set({
+    [CONTROLS_VISIBILITY_OPT_IN_KEY]: reason === 'install',
+  });
+};
+
+chrome.runtime.onInstalled.addListener((details) => {
+  setupContextMenus();
+  ensureControlsVisibilityMode(details?.reason);
+});
 
 chrome.contextMenus.onClicked.addListener((onClickData) => {
 
@@ -674,14 +689,15 @@ const doRefreshFavorites = async (force, manual = false) => {
   };
 };
 
-let favoritesRefreshPromise = null;
+// Сериализуем refresh: in-flight auto с длинным cooldown не должен
+// «проглатывать» ручной клик с FAVORITES_MANUAL_INTERVAL_MINUTES.
+let favoritesRefreshChain = Promise.resolve();
+
 const refreshFavorites = (force = false, manual = false) => {
-  if (!favoritesRefreshPromise) {
-    favoritesRefreshPromise = doRefreshFavorites(force, manual).finally(() => {
-      favoritesRefreshPromise = null;
-    });
-  }
-  return favoritesRefreshPromise;
+  const run = () => doRefreshFavorites(Boolean(force), Boolean(manual));
+  const next = favoritesRefreshChain.then(run, run);
+  favoritesRefreshChain = next.then(() => undefined, () => undefined);
+  return next;
 };
 
 chrome.alarms.onAlarm.addListener(alarm => {

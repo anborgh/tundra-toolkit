@@ -57,7 +57,22 @@ export const filterFavoritesByAllowedHost = <T extends { boardUrl: string }>(ite
   return items.filter(item => isAllowedBoardHost(item.boardUrl));
 };
 
+export const formatUnreadCount = (count: number) => (count > 99 ? '99+' : `${ count }`);
+
 export const TRUSTED_HOSTS_KEY = 'trustedBoardHosts';
+
+/** true = новые установки (нет ключа → скрыто); false/absent = апдейт (нет ключа → видно) */
+export const CONTROLS_VISIBILITY_OPT_IN_KEY = 'controlsVisibilityOptIn';
+
+export const isControlsVisibleForBoard = (
+  map: Record<string, boolean> | undefined,
+  boardId: string,
+  optIn: boolean,
+): boolean => {
+  if (!boardId) return false;
+  const value = map?.[boardId];
+  return optIn ? value === true : value !== false;
+};
 
 export const normalizeBoardHost = (host?: string): string | null => {
   if (!host || typeof host !== 'string') return null;
@@ -78,19 +93,6 @@ export const isTrustedBoardHost = (host: string | undefined, trustedHosts: strin
   const normalized = normalizeBoardHost(host);
   if (!normalized) return false;
   return trustedHosts.some(item => normalizeBoardHost(item) === normalized);
-};
-
-/** Типичные пути движка mybb/f-rpg — на любом хосте */
-const FORUM_ENGINE_PATH = /\/(viewtopic|viewforum|profile|posting|search|index)\.php/i;
-
-export const isForumPageUrl = (url?: string): boolean => {
-  if (!url) return false;
-  try {
-    const { pathname } = new URL(url);
-    return FORUM_ENGINE_PATH.test(pathname);
-  } catch (e) {
-    return false;
-  }
 };
 
 export const hostFromUrl = (url?: string): string | null => {

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost, isAllowedBoardHost, buildHttpsForumApiUrl, assertHttpsResponse } from '../../utils';
+import { MaskIcon } from '../../components/MaskIcon';
+import refreshIcon from '../../assets/icons/refresh-cw.svg';
 
+import '../../components/icon.css';
 import './style.css';
 
 const STORAGE_KEY = 'favoriteTopics';
@@ -114,6 +117,11 @@ export function Favorites() {
   const [ adding, setAdding ] = useState(false);
   const [ error, setError ] = useState<string | null>(null);
   const [ info, setInfo ] = useState<string | null>(null);
+
+  const refreshTitle = useMemo(() => {
+    if (refreshing || info || error || !lastRefreshAt) return ' Обновить (не чаще раза в 1 мин.)';
+    return `Обновлено: ${ new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) } · каждые ${ intervalMinutes } мин.`;
+  }, [ lastRefreshAt, intervalMinutes, refreshing, info, error ]);
 
   const persist = async (items: IFavoriteTopic[]) => {
     const safeItems = filterFavoritesByAllowedHost(items);
@@ -276,7 +284,7 @@ export function Favorites() {
     const status = boardStatuses[item.boardUrl];
     const stale = status === 'guest' || status === 'error';
     const isNew = hasNewPosts(item);
-    const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }&action=last`;
+    const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }&action=${isNew ? 'new' : 'last'}`;
 
     return (
       <li class={ `favoriteItem ${ stale ? 'stale' : '' }` } key={ item.id }>
@@ -290,7 +298,14 @@ export function Favorites() {
 
         <div class="favoriteBody">
           <div class="favoriteTitleRow">
-            <a href={ topicUrl } target="_blank" rel="noreferrer" class="favoriteTitle" title={ decodeEntities(item.topicName) }>
+            <a
+              href={ topicUrl }
+              target="_blank"
+              rel="noreferrer"
+              class="favoriteTitle"
+              title={ decodeEntities(item.topicName) }
+              onClick={ () => { if (isNew) handleMarkSeen(item); } }
+            >
               { decodeEntities(item.topicName) }
             </a>
             { isNew && !stale && (
@@ -345,15 +360,15 @@ export function Favorites() {
   return (
     <div class="favoritesTab">
       <div class="favoritesHeader">
-        <p class="text-secondary">Избранные эпизоды со всех форумов</p>
         <div class="favoritesActions">
           <button
-            class="button small"
+            class="button small icon-only"
             disabled={ refreshing }
-            title="Проверить новые сообщения (не чаще раза в 1 мин.)"
+            title={refreshTitle}
+            aria-label="Обновить"
             onClick={ () => requestRefresh(false, true) }
           >
-            Обновить
+            <MaskIcon src={ refreshIcon } />
           </button>
           <button
             class="button small"
@@ -374,12 +389,6 @@ export function Favorites() {
         { refreshing && <span class="text-secondary">Проверяем новые сообщения…</span> }
         { info && <span class="text-success">{ info }</span> }
         { error && <span class="text-error">{ error }</span> }
-        { !refreshing && !info && !error && lastRefreshAt && (
-          <span class="text-secondary">
-            Проверено: { new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
-            { ` · каждые ${ intervalMinutes } мин.` }
-          </span>
-        ) }
       </div>
 
       { loaded && !favorites.length && (

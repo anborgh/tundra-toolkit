@@ -1,0 +1,14 @@
+.ttIcon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex: 0 0 auto;
+}
+
+.popupTabs .button.primary .ttIcon {
+  filter: brightness(0) invert(1);
+}
+
+.popupTabs .button.forumPowerToggle.active .ttIcon {
+  filter: brightness(0) saturate(100%) invert(69%) sepia(35%) saturate(618%) hue-rotate(107deg) brightness(93%) contrast(87%);
+}

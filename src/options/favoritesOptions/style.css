@@ -28,6 +28,16 @@
   flex-wrap: wrap;
 }
 
+.favoritesOptionsHeaderActions .button.icon-only {
+  min-width: 34px;
+  width: 34px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #22272b;
+}
+
 .favoritesOptionsViewToggle {
   display: inline-flex;
   gap: 0;

@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost } from '../../utils';
+import { MaskIcon } from '../../components/MaskIcon';
+import refreshIcon from '../../assets/icons/refresh-cw.svg';
 
+import '../../components/icon.css';
 import './style.css';
 
 const STORAGE_KEY = 'favoriteTopics';
@@ -180,6 +183,7 @@ export function FavoritesOptions() {
               href={ `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }` }
               target="_blank"
               rel="noopener noreferrer"
+              onClick={ () => { if (isNew) handleMarkSeen(item); } }
             >
               { decodeEntities(item.topicName) }
             </a>
@@ -258,11 +262,13 @@ export function FavoritesOptions() {
             </button>
           </div>
           <button
-            className="button small"
+            className="button small icon-only"
             disabled={ refreshing }
+            title="Обновить"
+            aria-label="Обновить"
             onClick={ () => requestRefresh(true) }
           >
-            Обновить
+            <MaskIcon src={ refreshIcon } />
           </button>
         </div>
       </div>

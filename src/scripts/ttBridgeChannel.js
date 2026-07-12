@@ -33,6 +33,7 @@
     'tundra_toolkit_controls_visibility',
     'tundra_toolkit_insert_sticker',
     'tundra_toolkit_enable_unsafe',
+    'tundra_toolkit_disable_unsafe',
     'tundra_toolkit_open_post_counter',
     'tundra_toolkit_request_init',
     'tundra_toolkit_forum_markers_request',

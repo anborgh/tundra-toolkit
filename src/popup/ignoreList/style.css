@@ -113,7 +113,7 @@
 .blackListRemoveItem {
   border: 1px solid var(--popup-border);
   border-radius: 8px;
-  background: var(--tt-input-bg, #2a3139);
+  background: #2a3139;
   color: var(--popup-text);
   font-weight: 700;
   cursor: pointer;
@@ -122,41 +122,4 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.ignoreTopicsTitle {
-  margin: 12px 0 6px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.blackListTopics {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.blackListTopicItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 0;
-  border-top: 1px solid var(--popup-border);
-}
-
-.blackListTopicItem a {
-  color: var(--popup-text);
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.blackListTopicItem a:hover {
-  text-decoration: underline;
 }

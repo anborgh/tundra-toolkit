@@ -12,7 +12,7 @@
     "http://*/*",
     "https://*/*"
   ],
-  "version": "3.1",
+  "version": "3.2",
   "action": {
     "default_popup": "index.html",
     "default_icon": "icon512.png"
@@ -28,6 +28,7 @@
       ],
       "js": [
         "scripts/ttBridgeChannel.js",
+        "scripts/mainPostStats.js",
         "scripts/main.js"
       ],
       "run_at": "document_end",
@@ -39,6 +40,7 @@
       ],
       "js": [
         "scripts/ttBridgeChannel.js",
+        "scripts/boardUtils.js",
         "scripts/isolated.js"
       ],
       "run_at": "document_end",

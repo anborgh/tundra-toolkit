@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 
 import { StickerList } from './stickerList';
@@ -6,14 +6,7 @@ import { EditDialog } from './editDialog';
 
 import './style.css';
 
-type StickersProps = {
-  unreadCount?: number;
-  onOpenFavorites?: () => void;
-};
-
-const formatUnreadCount = (count: number) => (count > 99 ? '99+' : `${ count }`);
-
-export function Stickers({ unreadCount = 0, onOpenFavorites }: StickersProps) {
+export function Stickers() {
 
   const [ data, setData ] = useState<IStickerPack[]>([]);
 
@@ -155,22 +148,6 @@ export function Stickers({ unreadCount = 0, onOpenFavorites }: StickersProps) {
 
   return (
     <div class="stickerTab">
-      <div class="stickerHeader">
-        <div class="text-secondary">
-          Наборы картинок для быстрых ответов
-        </div>
-        { unreadCount > 0 && (
-          <button
-            type="button"
-            class="stickerUnreadBadge"
-            title={ `Обновлений в избранном: ${ unreadCount }. Открыть эпизоды` }
-            onClick={ onOpenFavorites }
-          >
-            { formatUnreadCount(unreadCount) }
-          </button>
-        ) }
-      </div>
-
       <div class="stickerStatus">
         { loading && <span class="text-secondary">Загружаем…</span> }
         { error && <span class="text-error">Ошибка загрузки</span> }

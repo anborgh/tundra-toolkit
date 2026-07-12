@@ -1,6 +1,15 @@
 const __ttFactory = globalThis.__TT_BRIDGE_FACTORY__;
 delete globalThis.__TT_BRIDGE_FACTORY__;
 
+const {
+  TRUSTED_HOSTS_KEY,
+  CONTROLS_VISIBILITY_OPT_IN_KEY: TT_CONTROLS_VISIBILITY_OPT_IN_KEY,
+  normalizeBoardHost,
+  isTrustedBoardHost,
+  isControlsVisibleForBoard,
+} = globalThis.__TT_BOARD_UTILS__ || {};
+delete globalThis.__TT_BOARD_UTILS__;
+
 const createTTBridge = () => {
   const NUMERIC_ID = /^\d+$/;
 
@@ -78,6 +87,101 @@ const createTTBridge = () => {
   };
 };
 
+const sameId = (a, b) => `${a ?? ''}` === `${b ?? ''}`;
+const hasValidBoardId = (value) => {
+  const num = Number(value);
+  return Number.isInteger(num) && num > 0;
+};
+const controlsScopeKey = (boardID, boardUrl) => {
+  if (hasValidBoardId(boardID)) return `${boardID}`;
+  const host = normalizeBoardHost(boardUrl || window.location.host);
+  if (host) return `host:${host}`;
+  return null;
+};
+
+/** @param {HTMLElement} post */
+const resolvePostUserId = (post) => {
+  const dataId = `${post.dataset.userId || ''}`.trim();
+  if (/^\d+$/.test(dataId)) return dataId;
+
+  const profileLink = post.querySelector('a[href*="profile.php?id="]');
+  if (profileLink instanceof HTMLAnchorElement) {
+    const href = profileLink.getAttribute('href') || '';
+    const match = href.match(/[?&]id=(\d+)/i);
+    if (match?.[1]) return match[1];
+  }
+
+  const nested = post.querySelector('[data-user-id]');
+  if (nested instanceof HTMLElement) {
+    const nestedId = `${nested.dataset.userId || ''}`.trim();
+    if (/^\d+$/.test(nestedId)) return nestedId;
+  }
+
+  return '';
+};
+
+const ttFallback = (() => {
+  const debugState = {
+    host: normalizeBoardHost(window.location.host),
+    controlsVisible: true,
+    ignoredUsersCount: 0,
+    ignoredTopicsCount: 0,
+  };
+
+  return {
+    setControlsVisible(visible) {
+      // do nothing
+    },
+    setIgnoredUsers(users) {
+      // do nothing
+    },
+    setIgnoredTopics(topics) {
+      // do nothing
+    },
+    getDebugState() {
+      return { ...debugState };
+    },
+  };
+})();
+
+const bootstrapFallbackByHost = async () => {
+  const host = normalizeBoardHost(window.location.host);
+  if (!host) return;
+
+  try {
+    const [storage, localStore] = await Promise.all([
+      isoSafeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]),
+      chrome.storage.local.get([ 'controlsVisibilityByBoard' ]),
+    ]);
+
+    const map = localStore?.controlsVisibilityByBoard || {};
+    const hostKey = `host:${host}`;
+    if (Object.prototype.hasOwnProperty.call(map, hostKey)) {
+      ttFallback.setControlsVisible(map[hostKey] !== false);
+    }
+
+    const ignoreBoards = (storage?.ignoreList || []).filter(item =>
+      normalizeBoardHost(item?.boardUrl) === host,
+    );
+    const users = ignoreBoards
+      .flatMap(board => (board?.forums || []).flatMap(forum => forum?.users || []))
+      .filter(item => item && item.userID != null);
+    const uniqueUsers = Array.from(new Map(users.map(item => [ `${item.userID}`, item ])).values());
+    ttFallback.setIgnoredUsers(uniqueUsers);
+
+    const topicBoards = (storage?.ignoredTopicsList || []).filter(item =>
+      normalizeBoardHost(item?.boardUrl) === host,
+    );
+    const topics = topicBoards
+      .flatMap(board => board?.topics || [])
+      .filter(item => item && item.topicID != null);
+    const uniqueTopics = Array.from(new Map(topics.map(item => [ `${item.topicID}`, item ])).values());
+    ttFallback.setIgnoredTopics(uniqueTopics);
+  } catch (e) {
+    // ignore
+  }
+};
+
 const getReplyField = () => document.querySelector('#main-reply') || document.querySelector('textarea[name="req_message"]');
 
 const FORUM_MARKER_ATTR = 'data-tt-forum-api';
@@ -110,7 +214,6 @@ const hasForumMarkers = () => {
   }
   return false;
 };
-const isForumAvailable = () => hasForumMarkers();
 const isReplyCapable = () => !!getReplyField();
 
 const insertTextAtCursor = (field, text) => {
@@ -173,44 +276,31 @@ const refreshForumMarkersFromMain = () => new Promise((resolve) => {
 let lastAvailability = null;
 const reportAvailabilityIfChanged = () => {
   if (readForumMarkerAttr()) hasForumAPITicket = true;
-  const available = isForumAvailable();
+  const available = hasForumMarkers();
   if (available === lastAvailability) return;
   lastAvailability = available;
   ttNotifyAvailability(available);
 };
 
-const readControlsVisibility = async (boardID) => {
-  if (!boardID) return false;
+const readControlsVisibility = async (boardID, boardUrl) => {
+  const key = controlsScopeKey(boardID, boardUrl);
+  if (!key) return true;
   try {
-    const stored = await chrome.storage.local.get([ 'controlsVisibilityByBoard' ]);
+    const stored = await chrome.storage.local.get([
+      'controlsVisibilityByBoard',
+      TT_CONTROLS_VISIBILITY_OPT_IN_KEY,
+    ]);
     const map = stored?.controlsVisibilityByBoard || {};
-    return map[boardID] === true;
+    // Флаг ещё не выставлен (апдейт до onInstalled) — безопасный legacy default
+    const optIn = stored?.[TT_CONTROLS_VISIBILITY_OPT_IN_KEY] === true;
+    if (key.startsWith('host:')) {
+      if (Object.prototype.hasOwnProperty.call(map, key)) return map[key] !== false;
+      return true;
+    }
+    return isControlsVisibleForBoard(map, key, optIn);
   } catch (e) {
-    return false;
+    return true;
   }
-};
-
-const TRUSTED_HOSTS_KEY = 'trustedBoardHosts';
-
-const normalizeBoardHost = (host) => {
-  if (!host || typeof host !== 'string') return null;
-
-  const raw = host.trim().toLowerCase();
-  if (!raw) return null;
-
-  let hostname = raw;
-  const colonIdx = raw.lastIndexOf(':');
-  if (colonIdx > -1 && /^\d+$/.test(raw.slice(colonIdx + 1))) {
-    hostname = raw.slice(0, colonIdx);
-  }
-
-  return hostname || null;
-};
-
-const isTrustedBoardHost = (host, trustedHosts = []) => {
-  const normalized = normalizeBoardHost(host);
-  if (!normalized) return false;
-  return trustedHosts.some(item => normalizeBoardHost(item) === normalized);
 };
 
 const readTrustedHosts = async () => {
@@ -218,19 +308,13 @@ const readTrustedHosts = async () => {
   return Array.isArray(trustedBoardHosts) ? trustedBoardHosts : [];
 };
 
-const isUnsafeAvailable = async (boardUrl = window.location.host) => {
-  if (!hasForumMarkers()) return false;
-  if (!bridge.isAllowedBoardHost(boardUrl)) return false;
-  const trustedHosts = await readTrustedHosts();
-  return isTrustedBoardHost(boardUrl, trustedHosts);
-};
-
-const writeControlsVisibility = async (boardID, visible) => {
-  if (!boardID) return;
+const writeControlsVisibility = async (boardID, boardUrl, visible) => {
+  const key = controlsScopeKey(boardID, boardUrl);
+  if (!key) return;
   try {
     const stored = await chrome.storage.local.get([ 'controlsVisibilityByBoard' ]);
     const map = stored?.controlsVisibilityByBoard || {};
-    map[boardID] = visible;
+    map[key] = visible;
     await chrome.storage.local.set({ controlsVisibilityByBoard: map });
   } catch (e) {
     // ignore write errors to avoid breaking page flow
@@ -307,6 +391,15 @@ const availabilityObserver = new MutationObserver(() => {
   if (lastAvailability) availabilityObserver.disconnect();
 });
 availabilityObserver.observe(document.documentElement, { childList: true, subtree: true });
+bootstrapFallbackByHost();
+
+try {
+  globalThis.__ttDebug = {
+    get: () => ttFallback.getDebugState(),
+  };
+} catch (e) {
+  // ignore
+}
 
 const bridge = createTTBridge();
 const ttChannel = __ttFactory?.bridge
@@ -335,6 +428,7 @@ const processForumInit = async (data) => {
   } = data;
 
   const boardUrl = window.location.host;
+  const normalizedHost = normalizeBoardHost(boardUrl);
   const hasForum = hasForumMarkers();
   const trustedHosts = await readTrustedHosts();
   const isTrusted = isTrustedBoardHost(boardUrl, trustedHosts);
@@ -344,7 +438,8 @@ const processForumInit = async (data) => {
   lastAvailability = available;
   ttNotifyAvailability(available);
 
-  readControlsVisibility(`${ boardID }`).then(visible => {
+  readControlsVisibility(`${ boardID }`, boardUrl).then(visible => {
+    ttFallback.setControlsVisible(visible);
     ttPost({
       type: 'tundra_toolkit_controls_visibility',
       visible,
@@ -406,7 +501,7 @@ const processForumInit = async (data) => {
         forumID,
         userID,
       },
-      data: bridge.sanitizeIgnoreUsers(forumList),
+      data: forumList,
     });
   });
 
@@ -418,7 +513,7 @@ const processForumInit = async (data) => {
       ttPost({
         type: 'tundra_toolkit_init_topic_ignore',
         boardData: { boardID },
-        data: bridge.sanitizeIgnoreTopics(topics),
+        data: topics,
       });
     });
   }
@@ -560,8 +655,9 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     refreshForumMarkersFromMain().then((hasForum) => {
       Promise.all([
         readTrustedHosts(),
-        readControlsVisibility(boardID),
+        readControlsVisibility(boardID, boardUrl),
       ]).then(([ trustedHosts, visible ]) => {
+        ttFallback.setControlsVisible(visible);
         const isTrusted = isTrustedBoardHost(boardUrl, trustedHosts);
         const available = hasForum && bridge.isAllowedBoardHost(boardUrl) && isTrusted;
         sendResponse({ available, hasForum, isTrusted, boardUrl, visible });
@@ -586,20 +682,16 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
+  // trustedBoardHosts пишет только popup; здесь только применяем к вкладке
   if (request.type === 'tundra_toolkit_trust_board') {
     const host = normalizeBoardHost(request.boardUrl || window.location.host);
-    if (!host) {
+    const currentHost = normalizeBoardHost(window.location.host);
+    if (!host || host !== currentHost || !bridge.isAllowedBoardHost(host)) {
       sendResponse({ success: false });
       return;
     }
 
-    readTrustedHosts().then(async (trustedHosts) => {
-      if (!isTrustedBoardHost(host, trustedHosts)) {
-        await isoSafeStorageSet({
-          [TRUSTED_HOSTS_KEY]: [ ...trustedHosts, host ],
-        });
-      }
-
+    Promise.resolve().then(async () => {
       if (lastInitData) {
         await processForumInit(lastInitData);
       } else if (hasForumMarkers()) {
@@ -608,7 +700,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
           ...(currentForumData || {}),
           boardUrl: host,
         };
-        const available = bridge.isAllowedBoardHost(host) && isTrustedBoardHost(host, trustedHosts);
+        const available = isTrustedBoardHost(host, trustedHosts);
         lastAvailability = available;
         ttNotifyAvailability(available);
         ttPost({ type: 'tundra_toolkit_request_init' });
@@ -623,39 +715,28 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
   if (request.type === 'tundra_toolkit_untrust_board') {
     const host = normalizeBoardHost(request.boardUrl || window.location.host);
-    if (!host) {
+    const currentHost = normalizeBoardHost(window.location.host);
+    if (!host || host !== currentHost) {
       sendResponse({ success: false });
       return;
     }
 
-    readTrustedHosts().then(async (trustedHosts) => {
-      await isoSafeStorageSet({
-        [TRUSTED_HOSTS_KEY]: trustedHosts.filter(item => normalizeBoardHost(item) !== host),
-      });
+    lastAvailability = false;
+    ttNotifyAvailability(false);
+    ttPost({ type: 'tundra_toolkit_controls_visibility', visible: false });
+    ttPost({ type: 'tundra_toolkit_disable_unsafe' });
 
-      lastAvailability = false;
-      ttNotifyAvailability(false);
+    sendResponse({ success: true, isTrusted: false, reload: true });
 
-      sendResponse({ success: true, isTrusted: false });
-    }).catch(() => {
-      sendResponse({ success: false });
-    });
-    return true;
-  }
-
-  if (request.type === 'tundra_toolkit_post_counter_status') {
-    const hasForum = hasForumMarkers();
-    const boardUrl = currentForumData?.boardUrl || window.location.host;
-    const onProfile = !!document.querySelector('#viewprofile-next');
-
-    readTrustedHosts().then((trustedHosts) => {
-      const isTrusted = isTrustedBoardHost(boardUrl, trustedHosts);
-      const available = hasForum && bridge.isAllowedBoardHost(boardUrl) && isTrusted;
-      sendResponse({ hasForum, available, onProfile });
-    }).catch(() => {
-      sendResponse({ hasForum, available: false, onProfile });
-    });
-    return true;
+    // Честный off: снимаем ignore/counter/listeners перезагрузкой вкладки
+    setTimeout(() => {
+      try {
+        window.location.reload();
+      } catch (e) {
+        // ignore
+      }
+    }, 50);
+    return;
   }
 
   if (request.type === 'tundra_toolkit_open_post_counter') {
@@ -675,7 +756,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         return;
       }
 
-      // 1) DOM-сигнал для MAIN content script
+      // DOM-сигнал надёжнее MessageChannel (не зависит от готовности моста)
       try {
         document.documentElement.setAttribute(
           'data-tt-open-post-counter',
@@ -685,38 +766,8 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         // ignore
       }
 
-      // 2) Inject в page JS world — вызывает window.__ttOpenPostCounter из MAIN
-      try {
-        const script = document.createElement('script');
-        script.textContent = 'try{window.__ttOpenPostCounter&&window.__ttOpenPostCounter()}catch(e){}';
-        (document.documentElement || document.head).appendChild(script);
-        script.remove();
-      } catch (e) {
-        // ignore
-      }
-
-      // 3) Дубль через мост
+      ttPost({ type: 'tundra_toolkit_enable_unsafe' });
       ttPost({ type: 'tundra_toolkit_open_post_counter' });
-
-      // 4) Isolated шарит DOM — сам открывает dialog, если MAIN уже создал
-      const tryShowExisting = () => {
-        const modal = document.querySelector('#hvPostStatsModal');
-        if (!modal) return false;
-        try {
-          if (typeof modal.showModal === 'function') {
-            if (!modal.open) modal.showModal();
-          } else {
-            modal.setAttribute('open', '');
-          }
-          return true;
-        } catch (e) {
-          return false;
-        }
-      };
-      tryShowExisting();
-      setTimeout(tryShowExisting, 50);
-      setTimeout(tryShowExisting, 200);
-
       sendResponse({ success: true });
     }).catch(() => {
       sendResponse({ success: false, error: 'unknown' });
@@ -725,33 +776,37 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.type === 'tundra_toolkit_forum_info') {
+    // Дополняем topic-полями с URL, не затирая boardID/userID/forumID из init
+    if (hasForumMarkers() && /viewtopic\.php/i.test(location.pathname)) {
+      const topicID = (location.search.match(/[?&]id=(\d+)/) || [])[1] || null;
+      if (topicID) {
+        const heading = document.querySelector('#pun-main h1 span, #pun-main h1');
+        const topicName = heading?.textContent?.trim() || null;
+        currentForumData = {
+          ...(currentForumData || {}),
+          boardUrl: window.location.host,
+          topicID: `${ topicID }`,
+          topicName: topicName || currentForumData?.topicName || `Тема ${ topicID }`,
+        };
+      }
+    }
+
     if (currentForumData) {
       sendResponse({ success: true, forumData: currentForumData });
       return;
     }
 
-    if (hasForumMarkers() && /viewtopic\.php/i.test(location.pathname)) {
-      const topicID = (location.search.match(/[?&]id=(\d+)/) || [])[1] || null;
-      const heading = document.querySelector('#pun-main h1 span, #pun-main h1');
-      const topicName = heading?.textContent?.trim() || null;
-      if (topicID) {
-        const forumData = {
-          boardUrl: window.location.host,
-          topicID: `${ topicID }`,
-          topicName: topicName || `Тема ${ topicID }`,
-        };
-        currentForumData = forumData;
-        sendResponse({ success: true, forumData });
-        return;
-      }
-    }
-
     isoSafeStorageGet(['forumData'])
       .then(({ forumData }) => {
-        currentForumData = forumData || null;
+        if (forumData) {
+          currentForumData = {
+            ...forumData,
+            boardUrl: forumData.boardUrl || window.location.host,
+          };
+        }
         sendResponse({
-          success: !!forumData,
-          forumData: forumData || null,
+          success: !!currentForumData,
+          forumData: currentForumData,
         });
       })
       .catch(() => {
@@ -789,7 +844,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.type === 'tundra_toolkit_insert_sticker') {
-    const canInsert = isForumAvailable() || isReplyCapable();
+    const canInsert = hasForumMarkers() || isReplyCapable();
 
     if (!canInsert) {
       sendResponse?.({ success: false, reason: 'not_available' });
@@ -812,11 +867,11 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
   if (request.type === 'tundra_toolkit_controls_toggle') {
     const boardID = request.boardID ? `${ request.boardID }` : null;
+    const boardUrl = request.boardUrl || currentForumData?.boardUrl || window.location.host;
     const visible = request.visible === true;
 
-    if (boardID) {
-      writeControlsVisibility(boardID, visible);
-    }
+    writeControlsVisibility(boardID, boardUrl, visible);
+    ttFallback.setControlsVisible(visible);
 
     ttPost({
       type: 'tundra_toolkit_controls_visibility',
@@ -832,6 +887,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       // ignore
     }
 
+    sendResponse({ success: true, visible });
     return;
+  }
+});
+
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local' && area !== 'sync') return;
+  if (changes?.ignoreList || changes?.ignoredTopicsList || changes?.controlsVisibilityByBoard) {
+    bootstrapFallbackByHost();
   }
 });

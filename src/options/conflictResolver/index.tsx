@@ -159,7 +159,7 @@ export function ConflictResolver() {
       setLoading(true);
       const data = await safeStorageGet([ MIGRATION_PENDING_KEY, MIGRATION_CONFLICTS_KEY ]);
       const pendingFlag = !!data[MIGRATION_PENDING_KEY];
-      const conflictsData = data[MIGRATION_CONFLICTS_KEY] || {};
+      const conflictsData = (data[MIGRATION_CONFLICTS_KEY] || {}) as ConflictMap;
       setPending(pendingFlag);
       setConflicts(conflictsData);
       const initialChoices: Record<string, 'local' | 'sync'> = {};

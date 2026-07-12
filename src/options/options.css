@@ -170,6 +170,19 @@ main {
     margin-top: 6px;
 }
 
+.optionsGuideWarning {
+    border-color: #d69a2d;
+    background: rgba(214, 154, 45, 0.12);
+}
+
+.optionsGuideWarning h5 {
+    color: #f0c36a;
+}
+
+.optionsGuideWarning p {
+    margin: 0;
+}
+
 .emptyList {
     display: flex;
     justify-content: center;

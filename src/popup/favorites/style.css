@@ -16,11 +16,14 @@
   margin: 2px 0 0;
 }
 
-.favoritesActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.favoritesActions .button.icon-only {
+  min-width: 34px;
+  width: 34px;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #22272b;
 }
 
 .favoritesStatus {
