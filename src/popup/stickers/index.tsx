@@ -6,7 +6,14 @@ import { EditDialog } from './editDialog';
 
 import './style.css';
 
-export function Stickers() {
+type StickersProps = {
+  unreadCount?: number;
+  onOpenFavorites?: () => void;
+};
+
+const formatUnreadCount = (count: number) => (count > 99 ? '99+' : `${ count }`);
+
+export function Stickers({ unreadCount = 0, onOpenFavorites }: StickersProps) {
 
   const [ data, setData ] = useState<IStickerPack[]>([]);
 
@@ -152,6 +159,16 @@ export function Stickers() {
         <div class="text-secondary">
           Наборы картинок для быстрых ответов
         </div>
+        { unreadCount > 0 && (
+          <button
+            type="button"
+            class="stickerUnreadBadge"
+            title={ `Обновлений в избранном: ${ unreadCount }. Открыть эпизоды` }
+            onClick={ onOpenFavorites }
+          >
+            { formatUnreadCount(unreadCount) }
+          </button>
+        ) }
       </div>
 
       <div class="stickerStatus">

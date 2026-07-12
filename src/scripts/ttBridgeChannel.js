@@ -20,6 +20,7 @@
   /** MAIN → ISOLATED */
   const TO_ISOLATED = new Set([
     'tundra_toolkit_init_data',
+    'tundra_toolkit_forum_markers',
     'tundra_toolkit_update_ignore_list',
     'tundra_toolkit_update_topic_ignore_list',
   ]);
@@ -31,6 +32,10 @@
     'tundra_toolkit_ignore_toggle',
     'tundra_toolkit_controls_visibility',
     'tundra_toolkit_insert_sticker',
+    'tundra_toolkit_enable_unsafe',
+    'tundra_toolkit_open_post_counter',
+    'tundra_toolkit_request_init',
+    'tundra_toolkit_forum_markers_request',
   ]);
 
   const isIsolatedWorld = () =>

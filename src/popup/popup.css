@@ -39,19 +39,64 @@ h5 {
 
 .popupTabs {
   display: flex;
+  align-items: center;
   gap: 8px;
   padding: 6px;
   background: var(--popup-accent);
 }
 
-.popupTabs .button {
+.popupTabsMain,
+.popupTabsActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.popupTabsMain {
   flex: 1;
+  min-width: 0;
+}
+
+.popupTabsActions {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+.popupTabs .button {
+  flex: 0 0 auto;
+  min-width: 38px;
+  width: 38px;
+  padding: 8px;
   font-weight: 600;
   border: none;
   border-radius: 8px;
   color: #22272b;
   background: #e0e6e9;
   transition: background 0.15s ease, color 0.15s ease;
+}
+
+.popupTabs .button.tabButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.tabBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #e05252;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
 }
 
 .popupTabs .button:hover {
@@ -73,6 +118,20 @@ h5 {
 .popupTabs .button.controlsToggle.muted {
   background: #c8d0d4;
   color: #3c4651;
+}
+
+.popupTabs .button.forumPowerToggle.muted {
+  background: #c8d0d4;
+  color: #3c4651;
+}
+
+.popupTabs .button.forumPowerToggle.active {
+  background: #22272b;
+  color: #5ac193;
+}
+
+.popupTabs .button.forumPowerToggle.active:hover {
+  background: #2d343d;
 }
 
 .controlsToggleContent {
@@ -109,6 +168,7 @@ h5 {
 }
 
 .popupTabContent {
+  position: relative;
   background: var(--popup-card);
   padding: 12px;
   max-height: 560px;

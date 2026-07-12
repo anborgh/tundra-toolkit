@@ -1,6 +1,31 @@
 (function() {
 'use strict';
 
+// ForumAPITicket кладётся SSR-скриптом на страницу — к document_end уже есть.
+// Пишем маркер в DOM до любых early-return, чтобы isolated увидел форум без моста.
+const FORUM_MARKER_ATTR = 'data-tt-forum-api';
+
+const hasForumAPITicketInDom = () => {
+  const scripts = document.scripts;
+  for (let i = 0; i < scripts.length; i++) {
+    const script = scripts[i];
+    if (script.src) continue;
+    if (/var\s+ForumAPITicket\s*=/.test(script.textContent || '')) return true;
+  }
+  return false;
+};
+
+const hasForumAPITicketNow = !!window['ForumAPITicket'] || hasForumAPITicketInDom();
+try {
+  if (hasForumAPITicketNow) {
+    document.documentElement.setAttribute(FORUM_MARKER_ATTR, '1');
+  } else {
+    document.documentElement.removeAttribute(FORUM_MARKER_ATTR);
+  }
+} catch (e) {
+  // ignore
+}
+
 const __ttFactory = globalThis.__TT_BRIDGE_FACTORY__;
 delete globalThis.__TT_BRIDGE_FACTORY__;
 if (!__ttFactory?.bridge && !__ttFactory?.createBridge) {
@@ -145,12 +170,12 @@ const hvTopicIgnore = {
   boardID: null,
   boardName: null,
   boardUrl: null,
-  buttonsVisible: true,
+  buttonsVisible: false,
   init: async function (boardData, topics) {
     this.boardID = boardData.boardID;
     this.boardUrl = window.location.host;
     this.ignoredTopics = bridge.sanitizeIgnoreTopics(topics);
-    this.buttonsVisible = localStorage.getItem('tundraTopicIgnoreButtonsVisible') !== 'false';
+    this.buttonsVisible = localStorage.getItem('tundraTopicIgnoreButtonsVisible') === 'true';
     await this.getBoardName();
 
     ensureIgnoreStaticStyles();
@@ -269,7 +294,7 @@ const hvTopicIgnore = {
 
 const ttControlsVisibility = {
   style: null,
-  visible: true,
+  visible: false,
   ensureStyle: function () {
     if (this.style) return;
     this.style = document.createElement('style');
@@ -283,7 +308,7 @@ const ttControlsVisibility = {
     document.body?.classList.toggle('tundra-controls-hidden', !this.visible);
   },
   setVisible: function (visible) {
-    this.visible = visible !== false;
+    this.visible = visible === true;
     this.ensureStyle();
     this.apply();
   },
@@ -377,12 +402,51 @@ const hvIgnoreList = {
   },
 }
 
+let setupUnsafeFeatures = () => {};
+let postStatsApi = null;
+let syncForumMarkers = () => {};
+let ensureForumStarted = () => {};
+
 main();
 
 function main() {
-  // Проверка, на форуме mybb мы или нет
-  const ForumAPITicket = window['ForumAPITicket'];
-  if (!ForumAPITicket) return;
+  let started = false;
+
+  const FORUM_MARKER_ATTR = 'data-tt-forum-api';
+
+  const writeForumMarkerAttr = (present) => {
+    try {
+      if (present) {
+        document.documentElement.setAttribute(FORUM_MARKER_ATTR, '1');
+      } else {
+        document.documentElement.removeAttribute(FORUM_MARKER_ATTR);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  const notifyForumMarkers = (present) => {
+    writeForumMarkerAttr(present);
+    ttPost({
+      type: 'tundra_toolkit_forum_markers',
+      hasForumAPITicket: !!present,
+    });
+  };
+
+  syncForumMarkers = () => {
+    notifyForumMarkers(!!window['ForumAPITicket'] || hasForumAPITicketInDom());
+  };
+
+  // Маркер уже выставлен на старте файла; здесь только догоняем мост + init
+  const tryStart = () => {
+    const ForumAPITicket = window['ForumAPITicket'] || (hasForumAPITicketInDom() ? true : null);
+    if (!ForumAPITicket) return false;
+    if (started) {
+      notifyForumMarkers(true);
+      return true;
+    }
+    started = true;
 
   // Данные форума и пользователя для хранения
   // @ts-ignore
@@ -415,7 +479,14 @@ function main() {
   };
 
   trySendInitData();
+  notifyForumMarkers(true);
+  ttChannel.whenReady(syncForumMarkers);
   // Мост сам шлёт hello / ловит offer — отдельный bridge_request больше не нужен
+
+  let unsafeReady = false;
+  setupUnsafeFeatures = () => {
+    if (unsafeReady) return;
+    unsafeReady = true;
 
   //   render ignore link
 
@@ -591,6 +662,9 @@ function main() {
       }));
     },
     init: function () {
+      if (this._inited) return;
+      this._inited = true;
+
       this.ensureModalStyles();
       this.renderModal();
 
@@ -604,47 +678,73 @@ function main() {
       this.outputs.result = document.querySelector('#countPostsStats');
       this.outputs.resultChars = document.querySelector('#countPostsCharsStats');
       this.outputs.resultTopics = document.querySelector('#countPostsTopicsStats');
-      this.outputs.modal = document.querySelector('#hvPostStatsModal');
+      this.outputs.modal = document.querySelector('#hvPostStatsModal') || this.inputs.modal;
       this.outputs.progressWrap = document.querySelector('#countPostsProgress');
       this.outputs.progressFill = document.querySelector('#countPostsProgressFill');
       this.outputs.progressText = document.querySelector('#countPostsProgressText');
 
       const hvCountPostsStorage = localStorage.getItem('hvCountPosts');
       if (hvCountPostsStorage) {
-        const { userIds, users, forums, from, to } = JSON.parse(hvCountPostsStorage);
-        const storageUserIds = userIds || users || [];
-        this.userIds = storageUserIds.map(item => Number(item)).filter(item => Number.isFinite(item) && item > 0);
-        this.inputs.users.value = this.userIds.join(', ') || '';
-        this.forums = forums || [];
-        this.inputs.forums.value = forums.join(', ') || '';
-        this.inputs.from.value = from || '';
-        this.inputs.to.value = to || '';
+        try {
+          const { userIds, users, forums, from, to } = JSON.parse(hvCountPostsStorage);
+          const storageUserIds = userIds || users || [];
+          this.userIds = storageUserIds.map(item => Number(item)).filter(item => Number.isFinite(item) && item > 0);
+          if (this.inputs.users) this.inputs.users.value = this.userIds.join(', ') || '';
+          this.forums = forums || [];
+          if (this.inputs.forums) this.inputs.forums.value = (forums || []).join(', ') || '';
+          if (this.inputs.from) this.inputs.from.value = from || '';
+          if (this.inputs.to) this.inputs.to.value = to || '';
+        } catch (e) {
+          // ignore bad storage
+        }
       }
 
       if (userID && !this.userIds.includes(userID)) {
         this.userIds.push(userID);
-        this.inputs.users.value = this.userIds.join(', ');
+        if (this.inputs.users) this.inputs.users.value = this.userIds.join(', ');
       }
 
       const li = document.querySelector('#pa-posts strong');
-      li.innerHTML += ` | <a href="#" id="hvCountPosts">TT: Счётчик постов</a>`;
-      document.querySelector('#hvCountPosts').addEventListener('click', async (e) => {
-        e.preventDefault();
-        this.inputs.modal.open = true;
-      });
-      this.inputs.close.addEventListener('click', () => {
-        this.inputs.modal.open = false;
+      if (li && !document.querySelector('#hvCountPosts')) {
+        li.innerHTML += ` | <a href="#" id="hvCountPosts">TT: Счётчик постов</a>`;
+        document.querySelector('#hvCountPosts')?.addEventListener('click', (e) => {
+          e.preventDefault();
+          this.openModal();
+        });
+      }
+      this.inputs.close?.addEventListener('click', () => {
+        const modal = this.outputs.modal || this.inputs.modal;
+        if (modal?.open && typeof modal.close === 'function') modal.close();
+        else if (modal) modal.open = false;
       });
 
       const prevMonday = new Date();
       prevMonday.setDate(prevMonday.getDate() - 7);
       const prevSunday = new Date();
-      this.inputs.from.value = this.inputs.from.value || prevMonday.toISOString().split("T")[0];
-      this.inputs.to.value = prevSunday.toISOString().split("T")[0];
-      this.inputs.from.max = new Date().toISOString().split("T")[0];
-      this.inputs.to.max = new Date().toISOString().split("T")[0];
+      if (this.inputs.from) {
+        this.inputs.from.value = this.inputs.from.value || prevMonday.toISOString().split('T')[0];
+        this.inputs.from.max = new Date().toISOString().split('T')[0];
+      }
+      if (this.inputs.to) {
+        this.inputs.to.value = prevSunday.toISOString().split('T')[0];
+        this.inputs.to.max = new Date().toISOString().split('T')[0];
+      }
 
-      this.inputs.submit.addEventListener('click', this.getStats.bind(this));
+      this.inputs.submit?.addEventListener('click', this.getStats.bind(this));
+    },
+    openModal: function () {
+      this.init();
+      const modal = this.outputs.modal || this.inputs.modal;
+      if (!modal) return;
+      try {
+        if (typeof modal.showModal === 'function') {
+          if (!modal.open) modal.showModal();
+        } else {
+          modal.open = true;
+        }
+      } catch (e) {
+        modal.setAttribute('open', '');
+      }
     },
     ensureModalStyles: function () {
       if (document.querySelector('[data-tundra-post-stats-modal-style]')) return;
@@ -1182,12 +1282,84 @@ function main() {
     }
   };
 
-  const isProfile = document.querySelector('#viewprofile-next');
-  if (isProfile) hvPostStats.init();
+  postStatsApi = hvPostStats;
+  try {
+    hvPostStats.init();
+  } catch (e) {
+    // init не должен ронять setup — openModal повторит init
+  }
+  };
 
+    return true;
+  };
+
+  // ForumAPITicket из SSR уже в window/DOM к document_end — без ожидания загрузки
+  ensureForumStarted = () => {
+    tryStart();
+  };
+
+  if (!tryStart()) {
+    notifyForumMarkers(false);
+  }
+
+  ttChannel.whenReady(syncForumMarkers);
 }
 
+const OPEN_POST_COUNTER_ATTR = 'data-tt-open-post-counter';
+
+const openPostCounterUi = () => {
+  try { ensureForumStarted(); } catch (e) { /* ignore */ }
+  try { setupUnsafeFeatures(); } catch (e) { /* ignore */ }
+  try { postStatsApi?.openModal?.(); } catch (e) { /* ignore */ }
+};
+
+// Доступно page-injected script из isolated (обход MessageChannel)
+try {
+  window.__ttOpenPostCounter = openPostCounterUi;
+} catch (e) {
+  // ignore
+}
+
+const watchOpenPostCounterAttr = () => {
+  const run = () => {
+    if (!document.documentElement.hasAttribute(OPEN_POST_COUNTER_ATTR)) return;
+    document.documentElement.removeAttribute(OPEN_POST_COUNTER_ATTR);
+    openPostCounterUi();
+  };
+
+  run();
+  const observer = new MutationObserver(run);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: [ OPEN_POST_COUNTER_ATTR ],
+  });
+};
+
+watchOpenPostCounterAttr();
+
 ttChannel.subscribe((data) => {
+  if (data.type === 'tundra_toolkit_forum_markers_request') {
+    syncForumMarkers();
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_request_init') {
+    initDataSent = false;
+    trySendInitData();
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_enable_unsafe') {
+    try { ensureForumStarted(); } catch (e) { /* ignore */ }
+    try { setupUnsafeFeatures(); } catch (e) { /* ignore */ }
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_open_post_counter') {
+    openPostCounterUi();
+    return;
+  }
+
   if (data.type === 'tundra_toolkit_insert_sticker') {
     const src = typeof data.src === 'string' ? data.src.trim() : '';
     if (!bridge.checkImageURL(src)) return;

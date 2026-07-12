@@ -12,7 +12,7 @@ type ForumContext = {
   boardUrl?: string;
 };
 
-type IgnoreState = 'loading' | 'unavailable' | 'noForum' | 'empty' | 'ready' | 'error';
+type IgnoreState = 'loading' | 'unavailable' | 'blocked' | 'noForum' | 'empty' | 'ready' | 'error';
 
 const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reject) => {
   chrome.tabs.query({ currentWindow: true, active: true }, (tabs) => {
@@ -32,18 +32,14 @@ const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reje
   });
 });
 
-const checkForumAvailability = async (): Promise<boolean> => {
+const checkForumAvailability = async (): Promise<'available' | 'blocked' | 'unavailable'> => {
   try {
-    const [ pingResp, forumResp ] = await Promise.all([
-      sendMessageToActiveTab({ type: 'tundra_toolkit_availability_ping' }).catch(() => null),
-      sendMessageToActiveTab({ type: 'tundra_toolkit_forum_info' }).catch(() => null),
-    ]);
-    if (pingResp?.available) return true;
-    const forumData = forumResp?.forumData;
-    if (forumData?.boardID) return true;
-    return false;
+    const pingResp = await sendMessageToActiveTab({ type: 'tundra_toolkit_availability_ping' }).catch(() => null);
+    if (pingResp?.available) return 'available';
+    if (pingResp?.hasForum) return 'blocked';
+    return 'unavailable';
   } catch (e) {
-    return false;
+    return 'unavailable';
   }
 };
 
@@ -107,10 +103,16 @@ export function IgnoreList() {
 
     try {
       const available = await checkForumAvailability();
-      if (!available) {
+      if (available === 'unavailable') {
         setContext(null);
         setUsers([]);
         setState('unavailable');
+        return;
+      }
+      if (available === 'blocked') {
+        setContext(null);
+        setUsers([]);
+        setState('blocked');
         return;
       }
 
@@ -230,6 +232,7 @@ export function IgnoreList() {
   const renderStatus = () => {
     if (state === 'loading') return <span class="text-secondary">Загружаем…</span>;
     if (state === 'unavailable') return <span class="text-error">Текущая вкладка не поддерживает форум</span>;
+    if (state === 'blocked') return <span class="text-error">Добавьте форум в доверенные, чтобы использовать игнор-лист</span>;
     if (state === 'noForum') return <span class="text-error">Не нашли данные форума. Откройте вкладку с разделом.</span>;
     if (state === 'empty') {
       const scope = context?.forumID ? 'разделе' : 'форуме';

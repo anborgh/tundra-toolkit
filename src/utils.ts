@@ -56,3 +56,48 @@ export const assertHttpsResponse = <T extends Response>(response: T): T => {
 export const filterFavoritesByAllowedHost = <T extends { boardUrl: string }>(items: T[] = []): T[] => {
   return items.filter(item => isAllowedBoardHost(item.boardUrl));
 };
+
+export const TRUSTED_HOSTS_KEY = 'trustedBoardHosts';
+
+export const normalizeBoardHost = (host?: string): string | null => {
+  if (!host || typeof host !== 'string') return null;
+
+  const raw = host.trim().toLowerCase();
+  if (!raw) return null;
+
+  let hostname = raw;
+  const colonIdx = raw.lastIndexOf(':');
+  if (colonIdx > -1 && /^\d+$/.test(raw.slice(colonIdx + 1))) {
+    hostname = raw.slice(0, colonIdx);
+  }
+
+  return hostname || null;
+};
+
+export const isTrustedBoardHost = (host: string | undefined, trustedHosts: string[] = []): boolean => {
+  const normalized = normalizeBoardHost(host);
+  if (!normalized) return false;
+  return trustedHosts.some(item => normalizeBoardHost(item) === normalized);
+};
+
+/** Типичные пути движка mybb/f-rpg — на любом хосте */
+const FORUM_ENGINE_PATH = /\/(viewtopic|viewforum|profile|posting|search|index)\.php/i;
+
+export const isForumPageUrl = (url?: string): boolean => {
+  if (!url) return false;
+  try {
+    const { pathname } = new URL(url);
+    return FORUM_ENGINE_PATH.test(pathname);
+  } catch (e) {
+    return false;
+  }
+};
+
+export const hostFromUrl = (url?: string): string | null => {
+  if (!url) return null;
+  try {
+    return normalizeBoardHost(new URL(url).host);
+  } catch (e) {
+    return null;
+  }
+};

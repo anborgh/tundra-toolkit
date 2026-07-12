@@ -6,8 +6,10 @@ import './style.css';
 
 const STORAGE_KEY = 'favoriteTopics';
 const META_KEY = 'favoritesRefreshMeta';
+const VIEW_MODE_KEY = 'favoritesViewMode';
 
 type BoardStatus = 'ok' | 'guest' | 'error';
+type ViewMode = 'byForum' | 'byDate';
 
 const formatLastPost = (unixSeconds?: number) => {
   if (!unixSeconds) return 'нет данных';
@@ -26,6 +28,9 @@ const hasNewPosts = (item: IFavoriteTopic) => {
   return item.lastPostDate > item.lastSeenPostDate;
 };
 
+const byLastPostDesc = (a: IFavoriteTopic, b: IFavoriteTopic) =>
+  (b.lastPostDate || 0) - (a.lastPostDate || 0);
+
 export function FavoritesOptions() {
   const [ favorites, setFavorites ] = useState<IFavoriteTopic[]>([]);
   const [ boardStatuses, setBoardStatuses ] = useState<Record<string, BoardStatus>>({});
@@ -35,17 +40,28 @@ export function FavoritesOptions() {
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ error, setError ] = useState<string | null>(null);
   const [ info, setInfo ] = useState<string | null>(null);
+  const [ viewMode, setViewMode ] = useState<ViewMode>('byForum');
 
   const loadFromStorage = async () => {
-    const [ storage, metaStore ] = await Promise.all([
+    const [ storage, metaStore, viewStore ] = await Promise.all([
       safeStorageGet([ STORAGE_KEY ]),
       chrome.storage.local.get(META_KEY),
+      chrome.storage.local.get(VIEW_MODE_KEY),
     ]);
     setFavorites(storage?.[ STORAGE_KEY ] || []);
     const meta = (metaStore as any)?.[ META_KEY ] || {};
     setBoardStatuses(meta.boardStatuses || {});
     setLastRefreshAt(meta.lastRefreshAt || null);
     setIntervalMinutes(Number(meta.intervalMinutes) || 2);
+    const savedView = (viewStore as any)?.[ VIEW_MODE_KEY ];
+    if (savedView === 'byForum' || savedView === 'byDate') {
+      setViewMode(savedView);
+    }
+  };
+
+  const handleViewModeChange = async (mode: ViewMode) => {
+    setViewMode(mode);
+    await chrome.storage.local.set({ [ VIEW_MODE_KEY ]: mode });
   };
 
   const persist = async (items: IFavoriteTopic[]) => {
@@ -65,11 +81,12 @@ export function FavoritesOptions() {
       const resp = await chrome.runtime.sendMessage({
         type: 'tundra_toolkit_favorites_refresh',
         force: false,
+        manual,
       });
       await loadFromStorage();
       if (resp?.intervalMinutes) setIntervalMinutes(resp.intervalMinutes);
       if (manual && resp?.success && resp?.refreshed === false) {
-        const mins = resp.intervalMinutes || intervalMinutes;
+        const mins = resp.manualIntervalMinutes || 1;
         setInfo(`Данные обновлялись меньше ${ mins } мин. назад`);
       } else if (manual) {
         setInfo('Список обновлён');
@@ -100,9 +117,14 @@ export function FavoritesOptions() {
 
     return Array.from(map.values()).map(group => ({
       ...group,
-      items: [ ...group.items ].sort((a, b) => (b.lastPostDate || 0) - (a.lastPostDate || 0)),
+      items: [ ...group.items ].sort(byLastPostDesc),
     }));
   }, [ favorites ]);
+
+  const sortedByDate = useMemo(
+    () => [ ...favorites ].sort(byLastPostDesc),
+    [ favorites ],
+  );
 
   const myTurnCount = useMemo(() => favorites.filter(item => item.myTurn).length, [ favorites ]);
   const totalCount = favorites.length;
@@ -137,6 +159,78 @@ export function FavoritesOptions() {
     await persist(next);
   };
 
+  const renderItem = (item: IFavoriteTopic, showBoard: boolean) => {
+    const status = boardStatuses[item.boardUrl];
+    const stale = status === 'guest' || status === 'error';
+    const isNew = hasNewPosts(item);
+
+    return (
+      <li className={ `favoritesOptionsItem ${ stale ? 'stale' : '' }` } key={ item.id }>
+        <label className="favoritesOptionsTurn" title="Мой ход: следующим отвечаю я">
+          <input
+            type="checkbox"
+            checked={ item.myTurn }
+            onChange={ () => handleToggleMyTurn(item) }
+          />
+        </label>
+
+        <div className="favoritesOptionsBody">
+          <div className="favoritesOptionsTitleRow">
+            <a
+              href={ `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }` }
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              { decodeEntities(item.topicName) }
+            </a>
+            { isNew && !stale && (
+              <button
+                className="favoritesOptionsNewBadge"
+                title="Есть новые сообщения. Нажмите, чтобы отметить прочитанным"
+                onClick={ () => handleMarkSeen(item) }
+              >
+                new
+              </button>
+            ) }
+          </div>
+          <div className="favoritesOptionsMeta text-secondary">
+            { showBoard && (
+              <>
+                <span className="favoritesOptionsBoardTag" title={ item.boardUrl }>
+                  { decodeEntities(item.boardName) }
+                </span>
+                <span>·</span>
+              </>
+            ) }
+            <span>{ formatLastPost(item.lastPostDate) }</span>
+            { item.lastUsername && (
+              <>
+                <span>·</span>
+                <span>{ decodeEntities(item.lastUsername) }</span>
+              </>
+            ) }
+            { stale && (
+              <span className="favoritesOptionsStale" title={ status === 'guest'
+                ? 'Вы не авторизованы на этом форуме — данные не обновляются'
+                : 'Форум недоступен — данные не обновляются'
+              }>
+                ⚠ не обновляется
+              </span>
+            ) }
+          </div>
+        </div>
+
+        <button
+          className="button small icon-only favoritesOptionsRemove"
+          title="Убрать из избранного"
+          onClick={ () => handleRemove(item) }
+        >
+          X
+        </button>
+      </li>
+    );
+  };
+
   return (
     <section className="favoritesOptions">
       <div className="favoritesOptionsHeader">
@@ -144,13 +238,33 @@ export function FavoritesOptions() {
           <h3>Избранное</h3>
           <h6>Мой ход { myTurnCount }/{ totalCount } · отслеживание новых сообщений</h6>
         </div>
-        <button
-          className="button small"
-          disabled={ refreshing }
-          onClick={ () => requestRefresh(true) }
-        >
-          Обновить
-        </button>
+        <div className="favoritesOptionsHeaderActions">
+          <div className="favoritesOptionsViewToggle" role="group" aria-label="Вид списка">
+            <button
+              type="button"
+              className={ `button small ${ viewMode === 'byForum' ? 'primary' : '' }` }
+              aria-pressed={ viewMode === 'byForum' }
+              onClick={ () => handleViewModeChange('byForum') }
+            >
+              По форумам
+            </button>
+            <button
+              type="button"
+              className={ `button small ${ viewMode === 'byDate' ? 'primary' : '' }` }
+              aria-pressed={ viewMode === 'byDate' }
+              onClick={ () => handleViewModeChange('byDate') }
+            >
+              По дате
+            </button>
+          </div>
+          <button
+            className="button small"
+            disabled={ refreshing }
+            onClick={ () => requestRefresh(true) }
+          >
+            Обновить
+          </button>
+        </div>
       </div>
 
       { warning && <div className="text-secondary">{ warning }</div> }
@@ -170,7 +284,7 @@ export function FavoritesOptions() {
         </div>
       ) }
 
-      { grouped.map(group => (
+      { favorites.length > 0 && viewMode === 'byForum' && grouped.map(group => (
         <div className="favoritesOptionsBoard" key={ group.boardUrl }>
           <a
             href={ `https://${ group.boardUrl }` }
@@ -182,72 +296,18 @@ export function FavoritesOptions() {
           </a>
 
           <ul className="favoritesOptionsList">
-            { group.items.map(item => {
-              const status = boardStatuses[item.boardUrl];
-              const stale = status === 'guest' || status === 'error';
-              const isNew = hasNewPosts(item);
-
-              return (
-                <li className={ `favoritesOptionsItem ${ stale ? 'stale' : '' }` } key={ item.id }>
-                  <label className="favoritesOptionsTurn" title="Мой ход: следующим отвечаю я">
-                    <input
-                      type="checkbox"
-                      checked={ item.myTurn }
-                      onChange={ () => handleToggleMyTurn(item) }
-                    />
-                  </label>
-
-                  <div className="favoritesOptionsBody">
-                    <div className="favoritesOptionsTitleRow">
-                      <a
-                        href={ `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }` }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        { decodeEntities(item.topicName) }
-                      </a>
-                      { isNew && !stale && (
-                        <button
-                          className="favoritesOptionsNewBadge"
-                          title="Есть новые сообщения. Нажмите, чтобы отметить прочитанным"
-                          onClick={ () => handleMarkSeen(item) }
-                        >
-                          new
-                        </button>
-                      ) }
-                    </div>
-                    <div className="favoritesOptionsMeta text-secondary">
-                      <span>{ formatLastPost(item.lastPostDate) }</span>
-                      { item.lastUsername && (
-                        <>
-                          <span>·</span>
-                          <span>{ decodeEntities(item.lastUsername) }</span>
-                        </>
-                      ) }
-                      { stale && (
-                        <span className="favoritesOptionsStale" title={ status === 'guest'
-                          ? 'Вы не авторизованы на этом форуме — данные не обновляются'
-                          : 'Форум недоступен — данные не обновляются'
-                        }>
-                          ⚠ не обновляется
-                        </span>
-                      ) }
-                    </div>
-                  </div>
-
-                  <button
-                    className="button small icon-only favoritesOptionsRemove"
-                    title="Убрать из избранного"
-                    onClick={ () => handleRemove(item) }
-                  >
-                    X
-                  </button>
-                </li>
-              );
-            }) }
+            { group.items.map(item => renderItem(item, false)) }
           </ul>
         </div>
       )) }
+
+      { favorites.length > 0 && viewMode === 'byDate' && (
+        <div className="favoritesOptionsBoard">
+          <ul className="favoritesOptionsList favoritesOptionsListFlat">
+            { sortedByDate.map(item => renderItem(item, true)) }
+          </ul>
+        </div>
+      ) }
     </section>
   );
 }

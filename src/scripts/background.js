@@ -420,6 +420,7 @@ const FAVORITES_META_KEY = 'favoritesRefreshMeta';
 const FAVORITES_ALARM = 'tundra_toolkit_favorites_refresh';
 const FAVORITES_MIN_INTERVAL_MINUTES = 2;
 const FAVORITES_MAX_INTERVAL_MINUTES = 30;
+const FAVORITES_MANUAL_INTERVAL_MINUTES = 1;
 const FAVORITES_TARGET_REQUESTS_PER_HOUR = 120;
 const FAVORITES_GUEST_USER_ID = '1';
 
@@ -444,8 +445,10 @@ const favIntervalMinutesFor = (favorites = []) => {
 
   const requests = favEstimateRequests(favorites);
   const boardCount = new Set(favorites.map(item => item.boardUrl)).size;
-  let minutes = Math.ceil((requests * 60) / FAVORITES_TARGET_REQUESTS_PER_HOUR);
-  minutes = Math.max(minutes, FAVORITES_MIN_INTERVAL_MINUTES + Math.max(0, boardCount - 1) * 2);
+  const minutes = Math.max(
+    Math.ceil((requests * 60) / FAVORITES_TARGET_REQUESTS_PER_HOUR),
+    FAVORITES_MIN_INTERVAL_MINUTES + Math.max(0, boardCount - 1) * 2,
+  );
 
   return Math.min(
     FAVORITES_MAX_INTERVAL_MINUTES,
@@ -560,7 +563,7 @@ const updateFavoritesUnread = async (favorites) => {
   }
 };
 
-const doRefreshFavorites = async (force) => {
+const doRefreshFavorites = async (force, manual = false) => {
   const metaStore = await chrome.storage.local.get(FAVORITES_META_KEY);
   const meta = metaStore?.[FAVORITES_META_KEY] || {};
   const now = Date.now();
@@ -574,13 +577,15 @@ const doRefreshFavorites = async (force) => {
   }
 
   const intervalMinutes = favIntervalMinutesFor(favorites);
-  const intervalMs = intervalMinutes * 60 * 1000;
+  const cooldownMinutes = manual ? FAVORITES_MANUAL_INTERVAL_MINUTES : intervalMinutes;
+  const cooldownMs = cooldownMinutes * 60 * 1000;
 
-  if (!force && meta.lastRefreshAt && now - meta.lastRefreshAt < intervalMs) {
+  if (!force && meta.lastRefreshAt && now - meta.lastRefreshAt < cooldownMs) {
     return {
       refreshed: false,
       lastRefreshAt: meta.lastRefreshAt,
       intervalMinutes: meta.intervalMinutes || intervalMinutes,
+      manualIntervalMinutes: FAVORITES_MANUAL_INTERVAL_MINUTES,
     };
   }
 
@@ -596,7 +601,12 @@ const doRefreshFavorites = async (force) => {
         intervalMinutes,
       },
     });
-    return { refreshed: true, lastRefreshAt: now, intervalMinutes };
+    return {
+      refreshed: true,
+      lastRefreshAt: now,
+      intervalMinutes,
+      manualIntervalMinutes: FAVORITES_MANUAL_INTERVAL_MINUTES,
+    };
   }
 
   const byBoard = new Map();
@@ -656,13 +666,18 @@ const doRefreshFavorites = async (force) => {
       intervalMinutes,
     },
   });
-  return { refreshed: true, lastRefreshAt: now, intervalMinutes };
+  return {
+    refreshed: true,
+    lastRefreshAt: now,
+    intervalMinutes,
+    manualIntervalMinutes: FAVORITES_MANUAL_INTERVAL_MINUTES,
+  };
 };
 
 let favoritesRefreshPromise = null;
-const refreshFavorites = (force = false) => {
+const refreshFavorites = (force = false, manual = false) => {
   if (!favoritesRefreshPromise) {
-    favoritesRefreshPromise = doRefreshFavorites(force).finally(() => {
+    favoritesRefreshPromise = doRefreshFavorites(force, manual).finally(() => {
       favoritesRefreshPromise = null;
     });
   }
@@ -715,7 +730,7 @@ chrome.storage.onChanged.addListener(changes => {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === 'tundra_toolkit_favorites_refresh') {
-    refreshFavorites(Boolean(message.force))
+    refreshFavorites(Boolean(message.force), Boolean(message.manual))
       .then(result => sendResponse({ success: true, ...result }))
       .catch(() => sendResponse({ success: false }));
     return true; // async

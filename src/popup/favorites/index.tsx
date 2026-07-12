@@ -146,11 +146,12 @@ export function Favorites() {
       const resp = await chrome.runtime.sendMessage({
         type: 'tundra_toolkit_favorites_refresh',
         force,
+        manual,
       });
       await loadFromStorage();
       if (resp?.intervalMinutes) setIntervalMinutes(resp.intervalMinutes);
       if (manual && resp?.success && resp?.refreshed === false) {
-        const mins = resp.intervalMinutes || intervalMinutes;
+        const mins = resp.manualIntervalMinutes || 1;
         setInfo(`Данные обновлялись меньше ${ mins } мин. назад`);
       }
     } catch (e) {
@@ -275,7 +276,7 @@ export function Favorites() {
     const status = boardStatuses[item.boardUrl];
     const stale = status === 'guest' || status === 'error';
     const isNew = hasNewPosts(item);
-    const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }`;
+    const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }&action=last`;
 
     return (
       <li class={ `favoriteItem ${ stale ? 'stale' : '' }` } key={ item.id }>
@@ -349,7 +350,7 @@ export function Favorites() {
           <button
             class="button small"
             disabled={ refreshing }
-            title={ `Проверить новые сообщения (не чаще раза в ${ intervalMinutes } мин.)` }
+            title="Проверить новые сообщения (не чаще раза в 1 мин.)"
             onClick={ () => requestRefresh(false, true) }
           >
             Обновить
