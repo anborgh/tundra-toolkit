@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import { openSettingsSection } from '../../utils/settingsSections';
 
 import './style.css';
 
@@ -183,13 +184,15 @@ export function IgnoreList() {
     }
   };
 
+  const handleOpenSettings = () => openSettingsSection('blackList');
+
   const renderStatus = () => {
     if (state === 'loading') return <span class="text-secondary">Загружаем…</span>;
     if (state === 'unavailable') return <span class="text-error">Текущая вкладка не поддерживает форум</span>;
     if (state === 'noForum') return <span class="text-error">Не нашли данные форума. Откройте вкладку с разделом.</span>;
     if (state === 'empty') {
-      const scope = context?.forumID ? 'разделе' : 'форуме';
-      return <span class="text-secondary">В этом { scope } никого не игнорируете</span>;
+      const scope = context?.forumID ? 'В этом разделе' : 'На этом форуме';
+      return <span class="text-secondary">{ scope } никого не игнорируете</span>;
     }
     if (state === 'error') return <span class="text-error">{ error || 'Ошибка' }</span>;
     return null;
@@ -213,7 +216,16 @@ export function IgnoreList() {
             </p>
           ) }
         </div>
+        <button
+          class="button small ignoreHeaderSettingsLink"
+          title="Открыть полный чёрный список в настройках расширения"
+          onClick={ handleOpenSettings }
+        >
+          »
+        </button>
       </div>
+
+      {JSON.stringify(context, null, 2)}
 
       <div class="ignoreStatus">{ renderStatus() }</div>
 

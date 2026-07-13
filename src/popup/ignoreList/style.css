@@ -22,6 +22,11 @@
   margin: 2px 0;
 }
 
+.ignoreHeaderSettingsLink {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
 .ignoreActions {
   display: flex;
   gap: 8px;

@@ -6,15 +6,19 @@ import StickerPackOptions from './stickerPackOptions';
 import { ConflictResolver } from './conflictResolver';
 import TemplateOptions from './templateOptions';
 import { FavoritesOptions } from './favoritesOptions';
+import { DEFAULT_SETTINGS_SECTION, isSettingsSection, SettingsSection } from '../utils/settingsSections';
 
 import '../chota.min.css';
 import '../common.css';
 import './options.css';
 
-type SettingsSection = 'stickers' | 'templates' | 'blackList' | 'favorites' | 'guide';
+const getSectionFromHash = (): SettingsSection => {
+	const hash = window.location.hash.replace('#', '');
+	return isSettingsSection(hash) ? hash : DEFAULT_SETTINGS_SECTION;
+};
 
 export function App() {
-	const [ activeSection, setActiveSection ] = useState<SettingsSection>('stickers');
+	const [ activeSection, setActiveSection ] = useState<SettingsSection>(getSectionFromHash);
 	const [ syncBytesInUse, setSyncBytesInUse ] = useState<number | null>(null);
 	const [ syncUsageError, setSyncUsageError ] = useState<string | null>(null);
 
@@ -47,6 +51,19 @@ export function App() {
 		chrome.storage.onChanged.addListener(handleStorageChange);
 		return () => chrome.storage.onChanged.removeListener(handleStorageChange);
 	}, []);
+
+	useEffect(() => {
+		const handleHashChange = () => setActiveSection(getSectionFromHash());
+		window.addEventListener('hashchange', handleHashChange);
+		return () => window.removeEventListener('hashchange', handleHashChange);
+	}, []);
+
+	const selectSection = (section: SettingsSection) => {
+		setActiveSection(section);
+		if (window.location.hash !== `#${ section }`) {
+			window.location.hash = section;
+		}
+	};
 
 	const sections: {
 		id: SettingsSection;
@@ -185,7 +202,7 @@ export function App() {
 								<button
 									key={ section.id }
 									className={ `button outline optionsNavItem ${ activeSection === section.id ? 'active' : '' }` }
-									onClick={ () => setActiveSection(section.id) }
+									onClick={ () => selectSection(section.id) }
 								>
 									{ section.label }
 								</button>
@@ -219,7 +236,7 @@ export function App() {
 						</div>
 						<button
 							className={ `optionsGuideLink ${ activeSection === 'guide' ? 'active' : '' }` }
-							onClick={ () => setActiveSection('guide') }
+							onClick={ () => selectSection('guide') }
 						>
 							Инструкция по расширению
 						</button>

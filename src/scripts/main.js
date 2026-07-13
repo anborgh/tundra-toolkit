@@ -478,6 +478,7 @@ function main() {
   const boardID = pageWindow.BoardID || 0;
   const userID = pageWindow.UserID || 0;
   const forumID = pageWindow.FORUM?.get('topic.forum_id') || null;
+  const forumName = pageWindow.FORUM?.get('topic.forum_name') || null;
 
   // Данные текущей темы для «Избранного» (только на страницах viewtopic.php)
   let topicID = null;
@@ -495,6 +496,7 @@ function main() {
     boardID,
     userID,
     forumID,
+    forumName,
     topicID,
     topicName,
     needsTopicIgnore,
