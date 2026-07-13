@@ -331,6 +331,19 @@ export function App() {
         </div>
 
         <div class="popupTabsActions">
+          { showControlsToggle && (
+            <button
+              class={ `button small outline controlsToggle ${ !controlsVisible ? 'muted' : '' }` }
+              onClick={ handleToggleControls }
+              disabled={ toggleDisabled }
+              aria-label={ controlsToggleLabel }
+              title={ controlsToggleLabel }
+            >
+              <span class="controlsToggleContent">
+                <img src={ toggleIcon } alt="" class="controlsToggleIcon" />
+              </span>
+            </button>
+          ) }
           { hasForum && (
             <button
               class={ `button small tabButton forumPowerToggle ${ isTrusted ? 'active' : 'muted' }` }
@@ -341,19 +354,6 @@ export function App() {
               aria-pressed={ isTrusted }
             >
               <MaskIcon src={ powerIcon } />
-            </button>
-          ) }
-          { showControlsToggle && (
-            <button
-              class={ `button small controlsToggle ${ !controlsVisible ? 'muted' : '' }` }
-              onClick={ handleToggleControls }
-              disabled={ toggleDisabled }
-              aria-label={ controlsToggleLabel }
-              title={ controlsToggleLabel }
-            >
-              <span class="controlsToggleContent">
-                <img src={ toggleIcon } alt="" class="controlsToggleIcon" />
-              </span>
             </button>
           ) }
           <button

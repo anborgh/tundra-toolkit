@@ -82,6 +82,10 @@ h5 {
   position: relative;
 }
 
+.popupTabs .button.outline {
+  background-color: transparent;
+}
+
 .tabBadge {
   position: absolute;
   top: -4px;
