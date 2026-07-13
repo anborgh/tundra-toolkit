@@ -15,7 +15,11 @@
   const HELLO_TYPE = 'tundra_toolkit_bridge_hello';
   const ACK_TYPE = 'tundra_toolkit_bridge_ack';
   const VERSION = 1;
-  const MAX_OFFERS = 3;
+
+  // Растянутые повторы на ~10с: страница/другой world могут инициализироваться
+  // с задержкой, и первых 1-2 попыток может не хватить, чтобы поймать друг друга.
+  const RETRY_DELAYS = [ 50, 120, 250, 500, 1000, 2000, 4000, 7000, 10000 ];
+  const MAX_OFFERS = RETRY_DELAYS.length + 1;
 
   /** MAIN → ISOLATED */
   const TO_ISOLATED = new Set([
@@ -171,8 +175,7 @@
         } catch (e) { /* ignore */ }
       };
       sendHello();
-      setTimeout(sendHello, 50);
-      setTimeout(sendHello, 200);
+      RETRY_DELAYS.forEach((delay) => setTimeout(sendHello, delay));
     }
 
     if (role === 'isolated') {
@@ -222,9 +225,8 @@
 
       window.addEventListener('message', onHello);
       offer();
-      // Если MAIN не успел поймать первый offer — мягкий retry
-      setTimeout(reofferIfNeeded, 120);
-      setTimeout(reofferIfNeeded, 350);
+      // Если MAIN не успел поймать первый offer — мягкий retry с нарастающей задержкой
+      RETRY_DELAYS.forEach((delay) => setTimeout(reofferIfNeeded, delay));
     }
 
     return {

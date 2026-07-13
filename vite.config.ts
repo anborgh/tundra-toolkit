@@ -16,10 +16,20 @@ export default defineConfig({
 	plugins: [
 		preact(),
 		viteStaticCopy({
-			targets: [{
-				src: 'src/scripts',
-				dest: '.',
-			}],
+			targets: [
+				{
+					src: 'src/scripts',
+					dest: '.',
+				},
+				{
+					// Диагностика: подозрение, что Chrome дедуплицирует инъекцию скрипта
+					// по имени файла в кадре независимо от "world". Даём ISOLATED-записи
+					// в манифесте отдельное имя файла с тем же содержимым.
+					src: 'src/scripts/ttBridgeChannel.js',
+					dest: 'scripts',
+					rename: 'ttBridgeChannelIsolated.js',
+				},
+			],
 		}),
 	],
 });

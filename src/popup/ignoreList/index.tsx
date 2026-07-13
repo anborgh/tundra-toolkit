@@ -110,19 +110,18 @@ export function IgnoreList() {
         return;
       }
 
-      const storage = await safeStorageGet([ 'ignoreList', 'forumData' ]);
       const activeCtx = await getActiveForumInfo();
-      const forumData = activeCtx || storage?.forumData;
 
-      if (!forumData?.boardID) {
+      if (!activeCtx?.boardID) {
         setContext(null);
         setUsers([]);
         setState('noForum');
         return;
       }
 
-      const boardID = `${ forumData.boardID }`;
-      const forumID = forumData.forumID ? `${ forumData.forumID }` : null;
+      const storage = await safeStorageGet([ 'ignoreList' ]);
+      const boardID = activeCtx.boardID;
+      const forumID = activeCtx.forumID;
       const ignoreList: IBoardStore[] = storage?.ignoreList || [];
 
       const currentBoard = ignoreList.find(item => `${ item.boardID }` === boardID) || null;
@@ -210,11 +209,6 @@ export function IgnoreList() {
               { warning }
             </p>
           ) }
-          { lastUpdatedAt && (
-            <p class="text-secondary">
-              Обновлено: { new Date(lastUpdatedAt).toLocaleDateString('ru-RU') }
-            </p>
-          ) }
         </div>
         <button
           class="button small ignoreHeaderSettingsLink"
@@ -224,8 +218,6 @@ export function IgnoreList() {
           »
         </button>
       </div>
-
-      {JSON.stringify(context, null, 2)}
 
       <div class="ignoreStatus">{ renderStatus() }</div>
 

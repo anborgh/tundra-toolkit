@@ -39,7 +39,7 @@
         "<all_urls>"
       ],
       "js": [
-        "scripts/ttBridgeChannel.js",
+        "scripts/ttBridgeChannelIsolated.js",
         "scripts/boardUtils.js",
         "scripts/isolated.js"
       ],
