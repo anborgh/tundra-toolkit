@@ -170,7 +170,11 @@ export function Templates() {
       }
 
       const content = resp.content || '';
-      const name = content.trim().split('\n').shift() || `Черновик ${ nextId + 1 }`;
+      if (content.trim() === '') {
+        setError('Текст пустой');
+        return;
+      }
+      const name = resp.name || content.trim().split('\n').shift() || `Черновик ${ nextId + 1 }`;
 
       setTemplates(prev => [
         ...prev,
@@ -198,9 +202,6 @@ export function Templates() {
   return (
     <div class="templatesTab">
       <div class="templatesHeader">
-        <div>
-          <p class="text-secondary">Хранение общих черновиков и вставка в #main-reply</p>
-        </div>
         <div class="templatesActions">
           <button class="button small" onClick={ addEmptyTemplate }>Добавить пустой</button>
           <button
@@ -252,17 +253,12 @@ export function Templates() {
               <div class="templateView">
                 <div class="templateHeader">
                   <h5>{ template.name }</h5>
-                  { template.updatedAt && (
-                    <span class="text-secondary">
-                      Обновлено: { new Date(template.updatedAt).toLocaleDateString('ru-RU') }
-                    </span>
-                  ) }
                 </div>
                 <div class="templatePreview">{ renderPreview(template.content) }</div>
                 <div class="templateCardActions">
                   <button
                     class="button small success"
-                    disabled={ busy }
+                    disabled={ busy || canUse === false || template.content.trim() === '' }
                     onClick={ () => handleInsert(template) }
                   >
                     Вставить

@@ -826,7 +826,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       return;
     }
 
-    sendResponse({ success: true, content: field.value || '' });
+    sendResponse({ success: true, content: field.value || '', name: document.title || '' });
     return;
   }
 

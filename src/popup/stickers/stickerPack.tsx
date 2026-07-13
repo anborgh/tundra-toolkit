@@ -1,6 +1,8 @@
 import {useEffect, useRef, useState} from "react";
 import { useBatchedItems } from '../../hooks/useBatchedItems';
 import { sendMessageToActiveTab } from '../../utils/tools';
+import { MaskIcon } from "../../components/MaskIcon";
+import EditIcon from "../../assets/icons/pencil.svg";
 
 type PackProps = {
   pack: IStickerPack;
@@ -91,7 +93,7 @@ export function StickerPack({
           <div class="stickerPackTitleText">{pack.name}</div>
         </div>
         <div className="stickerPackTitleActions">
-          <button className="button small clear" onClick={handleEditPack}>Править</button>
+          <button className="button small" onClick={handleEditPack}><MaskIcon src={EditIcon} /></button>
         </div>
       </div>
       {opened && (
