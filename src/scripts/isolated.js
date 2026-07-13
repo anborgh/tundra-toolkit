@@ -851,10 +851,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       return;
     }
 
-    ttPost({
-      type: 'tundra_toolkit_insert_sticker',
-      src: request.src,
-    });
+    const field = getReplyField();
+
+    if (!(field instanceof HTMLTextAreaElement) || !isReplyCapable()) {
+      sendResponse?.({ success: false, reason: 'not_supported' });
+      return;
+    }
+
+    insertTextAtCursor(field, `[img]${request.src}[/img]`);
     sendResponse?.({ success: true });
     return;
   }

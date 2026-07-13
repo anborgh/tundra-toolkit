@@ -1,5 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import { useBatchedItems } from '../../hooks/useBatchedItems';
+import { sendMessageToActiveTab } from '../../utils/tools';
 
 type PackProps = {
   pack: IStickerPack;
@@ -54,21 +55,11 @@ export function StickerPack({
       }
     };
 
-    chrome.tabs.query({currentWindow: true, active: true}, function (tabs){
-      const activeTabId = tabs?.[0]?.id;
-      if (!activeTabId) {
-        copyWithNotice();
-        return;
-      }
-
-      chrome.tabs.sendMessage(activeTabId, {
-        type: 'tundra_toolkit_insert_sticker',
-        src,
-      }, async (response) => {
-        if (chrome.runtime.lastError || !response?.success) {
-          await copyWithNotice();
-        }
-      });
+    sendMessageToActiveTab({
+      type: 'tundra_toolkit_insert_sticker',
+      src,
+    }).catch(async () => {
+      await copyWithNotice();
     });
   }
 
@@ -98,11 +89,6 @@ export function StickerPack({
         )}
         <div class="stickerPackTitle" onClick={handleTitleClick}>
           <div class="stickerPackTitleText">{pack.name}</div>
-          {pack.updatedAt && (
-            <div class="stickerPackMeta">
-              Обновлено: { new Date(pack.updatedAt).toLocaleDateString('ru-RU') }
-            </div>
-          )}
         </div>
         <div className="stickerPackTitleActions">
           <button className="button small clear" onClick={handleEditPack}>Править</button>
