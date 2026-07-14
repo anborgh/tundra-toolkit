@@ -157,8 +157,6 @@ export function App() {
         setControlsVisible(true);
       }
 
-      // Ключ — только host: styleOverride.js на document_start знает лишь
-      // host (без boardID/handshake), формат ключа должен совпадать везде.
       const storedStyleMap: Record<string, boolean> = ((storage as any)?.[STYLE_OVERRIDE_KEY] as Record<string, boolean> | undefined) || {};
       setStyleOverrideMap(storedStyleMap);
       if (host && Object.prototype.hasOwnProperty.call(storedStyleMap, host)) {
@@ -245,7 +243,6 @@ export function App() {
 
     setForumPowerBusy(true);
     try {
-      // Единственный writer trustedBoardHosts — popup; isolated только apply
       const storage = await safeStorageGet([ TRUSTED_HOSTS_KEY ]);
       const trustedHosts: string[] = storage?.[TRUSTED_HOSTS_KEY] || [];
       const normalized = normalizeBoardHost(host);
@@ -253,11 +250,18 @@ export function App() {
       if (isTrusted) {
         const nextHosts = trustedHosts.filter(item => normalizeBoardHost(item) !== normalized);
         await safeStorageSet({ [TRUSTED_HOSTS_KEY]: nextHosts });
+
+        if (normalized && styleOverrideMap[normalized]) {
+          const nextStyleMap = { ...styleOverrideMap, [normalized]: false };
+          setStyleOverrideMap(nextStyleMap);
+          setStyleOverrideEnabled(false);
+          await chrome.storage.local.set({ [STYLE_OVERRIDE_KEY]: nextStyleMap });
+        }
+
         const resp = await sendMessageToActiveTab({
           type: 'tundra_toolkit_untrust_board',
           boardUrl: normalized || host,
         });
-        // Вкладка перезагрузится — попап закрываем
         if (resp?.reload) {
           window.close();
           return;
@@ -286,7 +290,6 @@ export function App() {
     try {
       const resp = await sendMessageToActiveTab({ type: 'tundra_toolkit_open_post_counter' });
       if (resp?.success) {
-        // Дождаться DOM-сигнала / showModal на вкладке
         window.setTimeout(() => window.close(), 150);
       }
     } catch (e) {
@@ -299,7 +302,7 @@ export function App() {
       openPostCounter();
       return;
     }
-    if (tabId === 'ignore' && !hasForum) return;
+    if (tabId === 'ignore' && (!hasForum || availability !== 'available')) return;
     setActiveTab(tabId);
   };
 
@@ -332,7 +335,10 @@ export function App() {
     const { label, icon } = TAB_META[tabId];
     const showBadge = tabId === 'favorites' && unreadCount > 0;
     const forumOnly = tabId === 'ignore';
-    const disabled = forumOnly && !hasForum;
+    const disabled = forumOnly && (!hasForum || availability !== 'available');
+    const disabledTitle = !hasForum
+      ? 'Доступно только на форуме'
+      : 'Сначала включите расширение на форуме';
 
     return (
       <button
@@ -340,7 +346,7 @@ export function App() {
         class={ `button small tabButton ${ activeTab === tabId ? 'primary' : '' }` }
         onClick={ () => handleTabClick(tabId) }
         disabled={ disabled }
-        title={ disabled ? 'Доступно только на форуме' : label }
+        title={ disabled ? disabledTitle : label }
         aria-label={ label }
       >
         <MaskIcon src={ icon } />

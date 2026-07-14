@@ -190,7 +190,6 @@ let hasForumAPITicket = false;
 
 const readForumMarkerAttr = () => document.documentElement.getAttribute(FORUM_MARKER_ATTR) === '1';
 
-/** ForumAPITicket в SSR inline-скрипте в <head> — видно isolated через textContent */
 const hasForumAPITicketInDom = () => {
   const scripts = document.scripts;
   for (let i = 0; i < scripts.length; i++) {
@@ -291,7 +290,6 @@ const readControlsVisibility = async (boardID, boardUrl) => {
       TT_CONTROLS_VISIBILITY_OPT_IN_KEY,
     ]);
     const map = stored?.controlsVisibilityByBoard || {};
-    // Флаг ещё не выставлен (апдейт до onInstalled) — безопасный legacy default
     const optIn = stored?.[TT_CONTROLS_VISIBILITY_OPT_IN_KEY] === true;
     if (key.startsWith('host:')) {
       if (Object.prototype.hasOwnProperty.call(map, key)) return map[key] !== false;
@@ -323,10 +321,6 @@ const writeControlsVisibility = async (boardID, boardUrl, visible) => {
 
 const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
 
-// Ключ — только host (без boardID): styleOverride.js на document_start знает
-// лишь host (никакого boardID/handshake на тот момент ещё нет), поэтому вся
-// цепочка попап → storage → раннее применение должна использовать один и тот
-// же формат ключа.
 const readStyleOverride = async (boardUrl) => {
   const host = normalizeBoardHost(boardUrl || window.location.host);
   if (!host) return false;
@@ -339,7 +333,6 @@ const readStyleOverride = async (boardUrl) => {
   }
 };
 
-// Подмена стиля хранится только локально (chrome.storage.local), не в sync
 const writeStyleOverride = async (boardUrl, enabled) => {
   const host = normalizeBoardHost(boardUrl || window.location.host);
   if (!host) return;
@@ -416,7 +409,6 @@ const isoSafeStorageGet = async (keys) => {
   return result;
 };
 
-// Initial badge state + watch for late markers/DOM
 reportAvailabilityIfChanged();
 const availabilityObserver = new MutationObserver(() => {
   reportAvailabilityIfChanged();
@@ -486,13 +478,12 @@ const processForumInit = async (data) => {
     }
   });
 
-  // Обычно уже применено styleOverride.js на document_start — этот вызов
-  // просто идемпотентная подстраховка на случай, если тот скрипт почему-то
-  // не подключился.
-  if (globalThis.__TT_STYLE_OVERRIDE__ && !globalThis.__TT_STYLE_OVERRIDE__.isEnabled()) {
+  if (isTrusted && globalThis.__TT_STYLE_OVERRIDE__ && !globalThis.__TT_STYLE_OVERRIDE__.isEnabled()) {
     readStyleOverride(boardUrl).then(enabled => {
       if (enabled) globalThis.__TT_STYLE_OVERRIDE__?.setEnabled(true);
     });
+  } else if (!isTrusted && globalThis.__TT_STYLE_OVERRIDE__?.isEnabled()) {
+    globalThis.__TT_STYLE_OVERRIDE__.setEnabled(false);
   }
 
   if (!bridge.isAllowedBoardHost(boardUrl)) return;
@@ -726,7 +717,6 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return true;
   }
 
-  // trustedBoardHosts пишет только popup; здесь только применяем к вкладке
   if (request.type === 'tundra_toolkit_trust_board') {
     const host = normalizeBoardHost(request.boardUrl || window.location.host);
     const currentHost = normalizeBoardHost(window.location.host);
@@ -772,7 +762,6 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
     sendResponse({ success: true, isTrusted: false, reload: true });
 
-    // Честный off: снимаем ignore/counter/listeners перезагрузкой вкладки
     setTimeout(() => {
       try {
         window.location.reload();
@@ -800,7 +789,6 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         return;
       }
 
-      // DOM-сигнал надёжнее MessageChannel (не зависит от готовности моста)
       try {
         document.documentElement.setAttribute(
           'data-tt-open-post-counter',
@@ -820,7 +808,6 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.type === 'tundra_toolkit_forum_info') {
-    // Дополняем topic-полями с URL, не затирая boardID/userID/forumID из init
     if (hasForumMarkers() && /viewtopic\.php/i.test(location.pathname)) {
       const topicID = (location.search.match(/[?&]id=(\d+)/) || [])[1] || null;
       if (topicID) {
@@ -945,8 +932,6 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
     writeStyleOverride(boardUrl, enabled);
 
-    // Прямой вызов вместо моста: DOM общий с MAIN world, ISOLATED может
-    // применить подмену стиля сама, мгновенно, без круга через MAIN.
     try {
       globalThis.__TT_STYLE_OVERRIDE__?.setEnabled(enabled);
     } catch (e) {

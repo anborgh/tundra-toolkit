@@ -1,26 +1,19 @@
 /**
- * Подмена основного CSS форума на Cornflower — максимально быстрый путь.
- *
- * Живёт отдельным content_script с run_at "document_start" в ISOLATED world:
- * DOM общий со страницей (в отличие от JS-переменных страницы), поэтому мы
- * можем перехватить/подменить <link rel="stylesheet"> ещё до того, как
- * браузер успеет загрузить и применить оригинальную тему — без ожидания
- * моста MAIN↔ISOLATED и без ожидания ForumAPITicket/boardID (нужен только
- * host, известный синхронно).
- *
- * Все content_scripts этого расширения в ISOLATED world одного фрейма
- * выполняются в общем JS-контексте (общий globalThis), поэтому API
- * публикуется через globalThis.__TT_STYLE_OVERRIDE__ и переиспользуется
- * isolated.js для мгновенного live-переключения из попапа без повторного
- * чтения storage.
+ * Подмена основного CSS форума на Cornflower
  */
 (function (global) {
   'use strict';
 
   const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
+  const TRUSTED_HOSTS_KEY = 'trustedBoardHosts';
   const CORNFLOWER_PATH = '/style/Cornflower/Cornflower.css';
   const MAIN_STYLE_HOST = 'forumstatic.ru';
   const OVERRIDE_CLASS = 'tundra-style-override';
+
+  const DECORATIVE_CONTAINER_SELECTORS = [ '#html-header', '#html-footer', '#pun-announcement' ];
+  const DISABLED_MARK = 'ttStyleOverrideDisabled';
+
+  const EXTRA_CSS_PATH = '/style/extra.css';
 
   const normalizeHost = (host) => {
     if (!host || typeof host !== 'string') return null;
@@ -33,6 +26,16 @@
       hostname = raw.slice(0, colonIdx);
     }
     return hostname || null;
+  };
+
+  /**
+   * @param {string | null} host
+   * @param {string[]} trustedHosts
+   */
+  const isTrustedBoardHost = (host, trustedHosts) => {
+    const normalized = normalizeHost(host);
+    if (!normalized) return false;
+    return (trustedHosts || []).some((item) => normalizeHost(item) === normalized);
   };
 
   const currentHost = normalizeHost(window.location.host);
@@ -54,7 +57,10 @@
         `html.${OVERRIDE_CLASS} #html-header, html.${OVERRIDE_CLASS} #html-footer, html.${OVERRIDE_CLASS} #pun-announcement { display: none !important; }\n` +
         `html.${OVERRIDE_CLASS} .pa-avatar img { max-width: 120px !important; }\n` +
         `html.${OVERRIDE_CLASS} .post-sig { display: none !important; }\n` +
-        `html.${OVERRIDE_CLASS} .post-author [class*="pa-fld"] { display: none !important; }`;
+        `html.${OVERRIDE_CLASS} .post-author [class*="pa-fld"] { display: none !important; }\n` +
+        `html.${OVERRIDE_CLASS} .category .tcl img { display: none !important; }\n` +
+        `html.${OVERRIDE_CLASS} #pun-navlinks #form-login { display: none !important; }\n` +
+        `html.${OVERRIDE_CLASS} #pun-title { background: transparent !important; background-image: none !important; height: auto !important; width: auto !important; }`;
       document.head.appendChild(styleEl);
     }
   };
@@ -115,17 +121,100 @@
     structObserver = null;
   };
 
+  let extraLinkEl = null;
+
+  const ensureExtraStylesheet = () => {
+    if (!document.head) return;
+    if (extraLinkEl && extraLinkEl.isConnected) return;
+
+    extraLinkEl = document.head.querySelector('link[data-tundra-style-override-extra]');
+    if (!extraLinkEl) {
+      const alreadyLinked = Array.from(document.querySelectorAll('link[rel~="stylesheet"][href]')).some((link) => {
+        try {
+          const href = /** @type {HTMLLinkElement} */ (link).href;
+          return new URL(href, window.location.href).pathname === EXTRA_CSS_PATH;
+        } catch (e) {
+          return false;
+        }
+      });
+      if (alreadyLinked) return;
+
+      extraLinkEl = document.createElement('link');
+      extraLinkEl.setAttribute('rel', 'stylesheet');
+      extraLinkEl.setAttribute('data-tundra-style-override-extra', 'true');
+      extraLinkEl.setAttribute('href', `${window.location.origin}${EXTRA_CSS_PATH}`);
+      document.head.appendChild(extraLinkEl);
+    }
+  };
+
+  const removeExtraStylesheet = () => {
+    if (extraLinkEl) {
+      extraLinkEl.remove();
+      extraLinkEl = null;
+    }
+  };
+
+  const disableEmbeddedStylesIn = (root) => {
+    const nodes = root.querySelectorAll('style:not([data-tundra-style-override]), link[rel~="stylesheet"]');
+    nodes.forEach((el) => {
+      const node = /** @type {HTMLStyleElement} */ (el);
+      if (node.dataset[DISABLED_MARK] === 'true') return;
+      try {
+        if (node.sheet) node.sheet.disabled = true;
+        node.disabled = true;
+      } catch (e) {
+        // ignore
+      }
+      node.dataset[DISABLED_MARK] = 'true';
+    });
+  };
+
+  const disableEmbeddedStyles = () => {
+    DECORATIVE_CONTAINER_SELECTORS.forEach((sel) => {
+      const container = document.querySelector(sel);
+      if (container) disableEmbeddedStylesIn(container);
+    });
+  };
+
+  const restoreEmbeddedStyles = () => {
+    const nodes = document.querySelectorAll(`[data-tt-style-override-disabled="true"]`);
+    nodes.forEach((el) => {
+      const node = /** @type {HTMLStyleElement} */ (el);
+      try {
+        if (node.sheet) node.sheet.disabled = false;
+        node.disabled = false;
+      } catch (e) {
+        // ignore
+      }
+      delete node.dataset[DISABLED_MARK];
+    });
+  };
+
+  let decorativeObserver = null;
+
+  const stopDecorativeObserver = () => {
+    if (!decorativeObserver) return;
+    decorativeObserver.disconnect();
+    decorativeObserver = null;
+  };
+
+  const startDecorativeObserver = () => {
+    if (decorativeObserver) return;
+    decorativeObserver = new MutationObserver(() => disableEmbeddedStyles());
+    decorativeObserver.observe(document.documentElement || document, { childList: true, subtree: true });
+  };
+
   const startStructObserver = () => {
     if (structObserver || linkEl) return;
     structObserver = new MutationObserver(() => {
       applyClass();
       ensureStyleTag();
+      if (enabled) ensureExtraStylesheet();
       if (captureLink()) {
         applyLinkState();
         stopStructObserver();
       }
     });
-    // На document_start <html>/<head>/<link> ещё не распарсены — ловим их появление.
     structObserver.observe(document, { childList: true, subtree: true });
   };
 
@@ -138,21 +227,29 @@
       applyLinkState();
       stopStructObserver();
     }
+    if (enabled) {
+      disableEmbeddedStyles();
+      ensureExtraStylesheet();
+      startDecorativeObserver();
+    } else {
+      stopDecorativeObserver();
+      restoreEmbeddedStyles();
+      removeExtraStylesheet();
+    }
   };
 
-  // Наблюдение стартует немедленно и независимо от ответа storage —
-  // чтобы не упустить момент появления <link>, даже если storage ответит
-  // на пару миллисекунд позже парсера.
   startStructObserver();
   applyClass();
   ensureStyleTag();
 
   if (currentHost) {
     try {
-      chrome.storage.local.get([ STYLE_OVERRIDE_KEY ], (stored) => {
+      chrome.storage.local.get([ STYLE_OVERRIDE_KEY, TRUSTED_HOSTS_KEY ], (stored) => {
         if (chrome.runtime.lastError) return;
         const map = stored?.[STYLE_OVERRIDE_KEY] || {};
-        setEnabled(map[currentHost] === true);
+        const trustedHosts = stored?.[TRUSTED_HOSTS_KEY] || [];
+        const wantsOverride = map[currentHost] === true;
+        setEnabled(wantsOverride && isTrustedBoardHost(currentHost, trustedHosts));
       });
     } catch (e) {
       // ignore

@@ -1,13 +1,3 @@
-/**
- * Общая фабрика MAIN↔ISOLATED моста на MessageChannel.
- *
- * Важно: в MAIN world этот файл не должен оставлять API на window —
- * следующий скрипт в том же js[] забирает фабрику в локальную область
- * и сразу удаляет globalThis.__TT_BRIDGE_FACTORY__.
- *
- * Скрипты одного content_scripts.js[] выполняются синхронно подряд,
- * страница между ними не получает управление.
- */
 (function (global) {
   'use strict';
 
@@ -16,8 +6,6 @@
   const ACK_TYPE = 'tundra_toolkit_bridge_ack';
   const VERSION = 1;
 
-  // Растянутые повторы на ~10с: страница/другой world могут инициализироваться
-  // с задержкой, и первых 1-2 попыток может не хватить, чтобы поймать друг друга.
   const RETRY_DELAYS = [ 50, 120, 250, 500, 1000, 2000, 4000, 7000, 10000 ];
   const MAX_OFFERS = RETRY_DELAYS.length + 1;
 
@@ -225,7 +213,6 @@
 
       window.addEventListener('message', onHello);
       offer();
-      // Если MAIN не успел поймать первый offer — мягкий retry с нарастающей задержкой
       RETRY_DELAYS.forEach((delay) => setTimeout(reofferIfNeeded, delay));
     }
 
@@ -247,7 +234,6 @@
     OFFER_TYPE,
     HELLO_TYPE,
     VERSION,
-    // Сразу поднимаем мост — capture-listener / offer до следующих скриптов
     bridge: createBridge(role),
   };
 })(typeof globalThis !== 'undefined' ? globalThis : window);

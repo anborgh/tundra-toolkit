@@ -10,8 +10,6 @@
 const pageWindow = /** @type {Window & Record<string, any>} */ (window);
 const pageGlobal = /** @type {typeof globalThis & Record<string, any>} */ (globalThis);
 
-// ForumAPITicket кладётся SSR-скриптом на страницу — к document_end уже есть.
-// Пишем маркер в DOM до любых early-return, чтобы isolated увидел форум без моста.
 const FORUM_MARKER_ATTR = 'data-tt-forum-api';
 
 const hasForumAPITicketInDom = () => {
@@ -430,7 +428,6 @@ let setupUnsafeFeatures = () => {};
 let postStatsApi = null;
 let syncForumMarkers = () => {};
 let ensureForumStarted = () => {};
-/** true только после tundra_toolkit_enable_unsafe (форум включён через Power) */
 let unsafeEnabled = false;
 
 function main() {
@@ -464,7 +461,6 @@ function main() {
     notifyForumMarkers(!!pageWindow.ForumAPITicket || hasForumAPITicketInDom());
   };
 
-  // Маркер уже выставлен на старте файла; здесь только догоняем мост + init
   const tryStart = () => {
     const ForumAPITicket = pageWindow.ForumAPITicket || (hasForumAPITicketInDom() ? true : null);
     if (!ForumAPITicket) return false;
@@ -474,13 +470,11 @@ function main() {
     }
     started = true;
 
-  // Данные форума и пользователя для хранения
   const boardID = pageWindow.BoardID || 0;
   const userID = pageWindow.UserID || 0;
   const forumID = pageWindow.FORUM?.get('topic.forum_id') || null;
   const forumName = pageWindow.FORUM?.get('topic.forum_name') || null;
 
-  // Данные текущей темы для «Избранного» (только на страницах viewtopic.php)
   let topicID = null;
   let topicName = null;
   if (/viewtopic\.php/.test(location.pathname)) {
@@ -505,17 +499,13 @@ function main() {
   trySendInitData();
   notifyForumMarkers(true);
   ttChannel.whenReady(syncForumMarkers);
-  // Мост сам шлёт hello / ловит offer — отдельный bridge_request больше не нужен
 
   let unsafeReady = false;
   setupUnsafeFeatures = () => {
-    // Не залипаем в состоянии «ready без API» после ошибки init
     if (unsafeReady && postStatsApi) return;
 
     if (!unsafeReady) {
       unsafeReady = true;
-
-  //   render ignore link
 
   const ensureIgnoreUserStyle = (() => {
     let injected = false;
@@ -596,7 +586,6 @@ function main() {
     return true;
   };
 
-  // ForumAPITicket из SSR уже в window/DOM к document_end — без ожидания загрузки
   ensureForumStarted = () => {
     tryStart();
   };
@@ -706,7 +695,6 @@ ttChannel.subscribe((data) => {
   }
 });
 
-// После subscribe: иначе enable_unsafe/init с моста теряются до регистрации слушателя
 main();
 
 })();
