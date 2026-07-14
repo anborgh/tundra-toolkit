@@ -12,3 +12,7 @@
 .popupTabs .button.forumPowerToggle.active .ttIcon {
   filter: brightness(0) saturate(100%) invert(69%) sepia(35%) saturate(618%) hue-rotate(107deg) brightness(93%) contrast(87%);
 }
+
+.popupTabs .button.styleOverrideToggle.active .ttIcon {
+  filter: brightness(0) saturate(100%) invert(56%) sepia(53%) saturate(1041%) hue-rotate(190deg) brightness(101%) contrast(101%);
+}

@@ -14,6 +14,7 @@ import banIcon from '../assets/icons/ban.svg';
 import bookmarkIcon from '../assets/icons/bookmark.svg';
 import calculatorIcon from '../assets/icons/calculator.svg';
 import powerIcon from '../assets/icons/power.svg';
+import paintBucketIcon from '../assets/icons/paint-bucket.svg';
 import { MaskIcon } from '../components/MaskIcon';
 import {
   isTrustedBoardHost,
@@ -35,6 +36,7 @@ import './popup.css';
 type TabId = 'stickers' | 'templates' | 'ignore' | 'favorites' | 'postCounter';
 
 const FAVORITES_META_KEY = 'favoritesRefreshMeta';
+const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
 
 const TAB_META: Record<Exclude<TabId, 'postCounter'>, { label: string; icon: string }> = {
   stickers: { label: 'Стикеры', icon: stickerIcon },
@@ -87,6 +89,9 @@ export function App() {
   const [ isTrusted, setIsTrusted ] = useState(false);
   const [ forumPowerBusy, setForumPowerBusy ] = useState(false);
   const [ unreadCount, setUnreadCount ] = useState(0);
+  const [ styleOverrideEnabled, setStyleOverrideEnabled ] = useState(false);
+  const [ styleOverrideMap, setStyleOverrideMap ] = useState<Record<string, boolean>>({});
+  const [ styleToggling, setStyleToggling ] = useState(false);
 
   const loadUnreadCount = async () => {
     try {
@@ -109,6 +114,7 @@ export function App() {
         chrome.storage.local.get([
           'controlsVisibilityByBoard',
           CONTROLS_VISIBILITY_OPT_IN_KEY,
+          STYLE_OVERRIDE_KEY,
         ]).catch(() => ({})),
       ]);
 
@@ -149,6 +155,18 @@ export function App() {
         setControlsVisible(availabilityResp.visible);
       } else {
         setControlsVisible(true);
+      }
+
+      // Ключ — только host: styleOverride.js на document_start знает лишь
+      // host (без boardID/handshake), формат ключа должен совпадать везде.
+      const storedStyleMap: Record<string, boolean> = ((storage as any)?.[STYLE_OVERRIDE_KEY] as Record<string, boolean> | undefined) || {};
+      setStyleOverrideMap(storedStyleMap);
+      if (host && Object.prototype.hasOwnProperty.call(storedStyleMap, host)) {
+        setStyleOverrideEnabled(storedStyleMap[host] === true);
+      } else if (typeof availabilityResp?.styleOverrideEnabled === 'boolean') {
+        setStyleOverrideEnabled(availabilityResp.styleOverrideEnabled);
+      } else {
+        setStyleOverrideEnabled(false);
       }
 
       await loadUnreadCount();
@@ -197,6 +215,27 @@ export function App() {
       // ignore popup errors; user can retry
     } finally {
       setToggling(false);
+    }
+  };
+
+  const handleToggleStyleOverride = async () => {
+    if (availability !== 'available' || !boardHost) return;
+    const nextEnabled = !styleOverrideEnabled;
+    setStyleOverrideEnabled(nextEnabled);
+    setStyleToggling(true);
+    try {
+      const nextMap = { ...styleOverrideMap, [boardHost]: nextEnabled };
+      setStyleOverrideMap(nextMap);
+      await chrome.storage.local.set({ [STYLE_OVERRIDE_KEY]: nextMap });
+      await sendMessageToActiveTab({
+        type: 'tundra_toolkit_style_override_toggle',
+        boardUrl: boardHost,
+        enabled: nextEnabled,
+      });
+    } catch (e) {
+      // ignore popup errors; user can retry
+    } finally {
+      setStyleToggling(false);
     }
   };
 
@@ -269,6 +308,9 @@ export function App() {
   const toggleDisabled = toggling;
   const toggleIcon = controlsVisible ? hideIcon : showIcon;
 
+  const styleToggleLabel = styleOverrideEnabled ? 'Вернуть стиль форума' : 'Включить SFW стиль форума';
+  const showStyleToggle = availability === 'available' && hasForum;
+
   const handleOpenOptions = () => {
     if (chrome.runtime.openOptionsPage) {
       chrome.runtime.openOptionsPage();
@@ -328,6 +370,18 @@ export function App() {
           >
             <MaskIcon src={ postCounterIcon } />
           </button>
+          { showStyleToggle && (
+            <button
+              class={ `button small tabButton styleOverrideToggle ${ styleOverrideEnabled ? 'active' : 'muted' }` }
+              onClick={ handleToggleStyleOverride }
+              disabled={ styleToggling }
+              title={ styleToggleLabel }
+              aria-label={ styleToggleLabel }
+              aria-pressed={ styleOverrideEnabled }
+            >
+              <MaskIcon src={ paintBucketIcon } />
+            </button>
+          ) }
         </div>
 
         <div class="popupTabsActions">

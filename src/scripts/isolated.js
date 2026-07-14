@@ -321,6 +321,38 @@ const writeControlsVisibility = async (boardID, boardUrl, visible) => {
   }
 };
 
+const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
+
+// Ключ — только host (без boardID): styleOverride.js на document_start знает
+// лишь host (никакого boardID/handshake на тот момент ещё нет), поэтому вся
+// цепочка попап → storage → раннее применение должна использовать один и тот
+// же формат ключа.
+const readStyleOverride = async (boardUrl) => {
+  const host = normalizeBoardHost(boardUrl || window.location.host);
+  if (!host) return false;
+  try {
+    const stored = await chrome.storage.local.get([ STYLE_OVERRIDE_KEY ]);
+    const map = stored?.[STYLE_OVERRIDE_KEY] || {};
+    return map[host] === true;
+  } catch (e) {
+    return false;
+  }
+};
+
+// Подмена стиля хранится только локально (chrome.storage.local), не в sync
+const writeStyleOverride = async (boardUrl, enabled) => {
+  const host = normalizeBoardHost(boardUrl || window.location.host);
+  if (!host) return;
+  try {
+    const stored = await chrome.storage.local.get([ STYLE_OVERRIDE_KEY ]);
+    const map = stored?.[STYLE_OVERRIDE_KEY] || {};
+    map[host] = enabled;
+    await chrome.storage.local.set({ [STYLE_OVERRIDE_KEY]: map });
+  } catch (e) {
+    // ignore write errors to avoid breaking page flow
+  }
+};
+
 const ISO_FALLBACKS_KEY = '__tt_storage_fallbacks__';
 const isoIsQuotaError = (error) => {
   if (!error) return false;
@@ -453,6 +485,15 @@ const processForumInit = async (data) => {
       // ignore
     }
   });
+
+  // Обычно уже применено styleOverride.js на document_start — этот вызов
+  // просто идемпотентная подстраховка на случай, если тот скрипт почему-то
+  // не подключился.
+  if (globalThis.__TT_STYLE_OVERRIDE__ && !globalThis.__TT_STYLE_OVERRIDE__.isEnabled()) {
+    readStyleOverride(boardUrl).then(enabled => {
+      if (enabled) globalThis.__TT_STYLE_OVERRIDE__?.setEnabled(true);
+    });
+  }
 
   if (!bridge.isAllowedBoardHost(boardUrl)) return;
 
@@ -656,11 +697,12 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
       Promise.all([
         readTrustedHosts(),
         readControlsVisibility(boardID, boardUrl),
-      ]).then(([ trustedHosts, visible ]) => {
+        readStyleOverride(boardUrl),
+      ]).then(([ trustedHosts, visible, styleOverrideEnabled ]) => {
         ttFallback.setControlsVisible(visible);
         const isTrusted = isTrustedBoardHost(boardUrl, trustedHosts);
         const available = hasForum && bridge.isAllowedBoardHost(boardUrl) && isTrusted;
-        sendResponse({ available, hasForum, isTrusted, boardUrl, visible });
+        sendResponse({ available, hasForum, isTrusted, boardUrl, visible, styleOverrideEnabled });
       }).catch(() => {
         sendResponse({
           available: false,
@@ -668,6 +710,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
           isTrusted: false,
           boardUrl,
           visible: false,
+          styleOverrideEnabled: false,
         });
       });
     }).catch(() => {
@@ -677,6 +720,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         isTrusted: false,
         boardUrl,
         visible: false,
+        styleOverrideEnabled: false,
       });
     });
     return true;
@@ -892,6 +936,24 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     }
 
     sendResponse({ success: true, visible });
+    return;
+  }
+
+  if (request.type === 'tundra_toolkit_style_override_toggle') {
+    const boardUrl = request.boardUrl || currentForumData?.boardUrl || window.location.host;
+    const enabled = request.enabled === true;
+
+    writeStyleOverride(boardUrl, enabled);
+
+    // Прямой вызов вместо моста: DOM общий с MAIN world, ISOLATED может
+    // применить подмену стиля сама, мгновенно, без круга через MAIN.
+    try {
+      globalThis.__TT_STYLE_OVERRIDE__?.setEnabled(enabled);
+    } catch (e) {
+      // ignore
+    }
+
+    sendResponse({ success: true, enabled });
     return;
   }
 });

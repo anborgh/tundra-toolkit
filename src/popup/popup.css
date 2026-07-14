@@ -138,6 +138,20 @@ h5 {
   background: #2d343d;
 }
 
+.popupTabs .button.styleOverrideToggle.muted {
+  background: #c8d0d4;
+  color: #3c4651;
+}
+
+.popupTabs .button.styleOverrideToggle.active {
+  background: #22272b;
+  color: #6495ed;
+}
+
+.popupTabs .button.styleOverrideToggle.active:hover {
+  background: #2d343d;
+}
+
 .controlsToggleContent {
   display: inline-flex;
   align-items: center;
