@@ -557,13 +557,9 @@ const favHasNew = (item) => {
   return item.lastPostDate > item.lastSeenPostDate;
 };
 
-const favCountUnread = (favorites) => favorites.reduce((total, item) => {
-  if (!favHasNew(item)) return total;
-  const seen = Number(item.seenNumReplies);
-  const current = Number(item.numReplies);
-  const diff = Number.isFinite(seen) && Number.isFinite(current) ? current - seen : 0;
-  return total + Math.max(1, diff);
-}, 0);
+const favCountUnread = (favorites) => favorites.reduce((total, item) => (
+  favHasNew(item) ? total + 1 : total
+), 0);
 
 const updateFavoritesUnread = async (favorites) => {
   favoritesUnreadCount = favCountUnread(favorites);
