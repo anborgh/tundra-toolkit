@@ -14,6 +14,12 @@ type ForumContext = {
 
 type IgnoreState = 'loading' | 'unavailable' | 'noForum' | 'empty' | 'ready' | 'error';
 
+type IgnoreListProps = {
+  controlsVisible: boolean;
+  controlsToggling: boolean;
+  onToggleControls: () => void;
+};
+
 const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reject) => {
   chrome.tabs.query({ currentWindow: true, active: true }, (tabs) => {
     const tabId = tabs?.[0]?.id;
@@ -83,7 +89,7 @@ const cleanupBoard = (ignoreList: IBoardStore[], ctx: ForumContext, removeUserId
   return cleaned;
 };
 
-export function IgnoreList() {
+export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls }: IgnoreListProps) {
   const [ state, setState ] = useState<IgnoreState>('loading');
   const [ context, setContext ] = useState<ForumContext | null>(null);
   const [ board, setBoard ] = useState<IBoardStore | null>(null);
@@ -210,13 +216,22 @@ export function IgnoreList() {
             </p>
           ) }
         </div>
-        <button
-          class="button small ignoreHeaderSettingsLink"
-          title="Открыть полный чёрный список в настройках расширения"
-          onClick={ handleOpenSettings }
-        >
-          »
-        </button>
+        <div class="ignoreHeaderActions">
+          <button
+            class="button small ignoreControlsToggle"
+            disabled={ controlsToggling }
+            onClick={ onToggleControls }
+          >
+            { controlsVisible ? 'Скрыть элементы игнора' : 'Показать элементы игнора' }
+          </button>
+          <button
+            class="button small ignoreHeaderSettingsLink"
+            title="Открыть полный чёрный список в настройках расширения"
+            onClick={ handleOpenSettings }
+          >
+            »
+          </button>
+        </div>
       </div>
 
       <div class="ignoreStatus">{ renderStatus() }</div>

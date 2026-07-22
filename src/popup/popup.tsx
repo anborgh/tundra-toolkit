@@ -5,8 +5,7 @@ import { Stickers } from './stickers';
 import { Templates } from './templates';
 import { IgnoreList } from './ignoreList';
 import { Favorites } from './favorites';
-import showIcon from './assets/show.svg';
-import hideIcon from './assets/hide.svg';
+import { StyleTab } from './style';
 import settingsIcon from './assets/settings.svg';
 import stickerIcon from '../assets/icons/sticker.svg';
 import filePenIcon from '../assets/icons/file-pen.svg';
@@ -33,16 +32,33 @@ import '../common.css';
 import '../components/icon.css';
 import './popup.css';
 
-type TabId = 'stickers' | 'templates' | 'ignore' | 'favorites' | 'postCounter';
+type TabId = 'stickers' | 'templates' | 'ignore' | 'favorites' | 'style' | 'postCounter';
+type ContentTabId = Exclude<TabId, 'postCounter'>;
+type PostAppearanceSettings = {
+  fontScale: number;
+  firstLineIndent: boolean;
+  paragraphSpacing: number | null;
+};
+type StoredPostAppearanceSettings = Omit<PostAppearanceSettings, 'firstLineIndent'> & {
+  firstLineIndentByForum?: Record<string, boolean>;
+};
 
 const FAVORITES_META_KEY = 'favoritesRefreshMeta';
 const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
+const POST_APPEARANCE_KEY = 'postAppearanceByHost';
+const ACTIVE_TAB_KEY = 'popupActiveTab';
+const DEFAULT_POST_APPEARANCE: PostAppearanceSettings = {
+  fontScale: 100,
+  firstLineIndent: false,
+  paragraphSpacing: null,
+};
 
-const TAB_META: Record<Exclude<TabId, 'postCounter'>, { label: string; icon: string }> = {
+const TAB_META: Record<ContentTabId, { label: string; icon: string }> = {
   stickers: { label: 'Стикеры', icon: stickerIcon },
   templates: { label: 'Черновики', icon: filePenIcon },
   ignore: { label: 'Игнор-лист', icon: banIcon },
   favorites: { label: 'Эпизоды', icon: bookmarkIcon },
+  style: { label: 'Стиль', icon: paintBucketIcon },
 };
 
 const POST_COUNTER_TAB = { label: 'Счётчик постов', icon: calculatorIcon };
@@ -78,10 +94,11 @@ const controlsScopeKey = (boardId?: string | null, boardHost?: string | null) =>
 };
 
 export function App() {
-  const [ activeTab, setActiveTab ] = useState<TabId>('stickers');
+  const [ activeTab, setActiveTab ] = useState<ContentTabId>('stickers');
   const [ availability, setAvailability ] = useState<'unknown' | 'available' | 'blocked' | 'unavailable'>('unknown');
   const [ hasForum, setHasForum ] = useState(false);
   const [ boardId, setBoardId ] = useState<string | null>(null);
+  const [ forumId, setForumId ] = useState<string | null>(null);
   const [ boardHost, setBoardHost ] = useState<string | null>(null);
   const [ controlsVisible, setControlsVisible ] = useState(false);
   const [ visibilityMap, setVisibilityMap ] = useState<Record<string, boolean>>({});
@@ -92,6 +109,9 @@ export function App() {
   const [ styleOverrideEnabled, setStyleOverrideEnabled ] = useState(false);
   const [ styleOverrideMap, setStyleOverrideMap ] = useState<Record<string, boolean>>({});
   const [ styleToggling, setStyleToggling ] = useState(false);
+  const [ postAppearance, setPostAppearance ] = useState<PostAppearanceSettings>(DEFAULT_POST_APPEARANCE);
+  const [ postAppearanceMap, setPostAppearanceMap ] = useState<Record<string, StoredPostAppearanceSettings>>({});
+  const [ postAppearanceToggling, setPostAppearanceToggling ] = useState(false);
 
   const loadUnreadCount = async () => {
     try {
@@ -115,17 +135,20 @@ export function App() {
           'controlsVisibilityByBoard',
           CONTROLS_VISIBILITY_OPT_IN_KEY,
           STYLE_OVERRIDE_KEY,
+          POST_APPEARANCE_KEY,
         ]).catch(() => ({})),
       ]);
 
       const forumData = forumResp?.forumData;
       const board = forumData?.boardID ? `${ forumData.boardID }` : null;
+      const forum = forumData?.forumID ? `${ forumData.forumID }` : null;
       const host = normalizeBoardHost(
         forumData?.boardUrl
         || availabilityResp?.boardUrl
         || hostFromUrl(tabUrl),
       );
       setBoardId(board);
+      setForumId(forum);
       setBoardHost(host);
 
       const forumDetected = Boolean(availabilityResp?.hasForum);
@@ -167,6 +190,19 @@ export function App() {
         setStyleOverrideEnabled(false);
       }
 
+      const storedAppearanceMap = ((storage as any)?.[POST_APPEARANCE_KEY] as Record<string, StoredPostAppearanceSettings> | undefined) || {};
+      const storedAppearance = host ? storedAppearanceMap[host] : null;
+      setPostAppearanceMap(storedAppearanceMap);
+      setPostAppearance({
+        fontScale: typeof storedAppearance?.fontScale === 'number'
+          ? Math.min(140, Math.max(80, storedAppearance.fontScale))
+          : DEFAULT_POST_APPEARANCE.fontScale,
+        firstLineIndent: Boolean(forum && storedAppearance?.firstLineIndentByForum?.[forum] === true),
+        paragraphSpacing: typeof storedAppearance?.paragraphSpacing === 'number'
+          ? Math.min(2, Math.max(0, storedAppearance.paragraphSpacing))
+          : DEFAULT_POST_APPEARANCE.paragraphSpacing,
+      });
+
       await loadUnreadCount();
     } catch (e) {
       setAvailability('unavailable');
@@ -179,6 +215,29 @@ export function App() {
     const retryTimer = window.setTimeout(() => loadContext(), 300);
     return () => window.clearTimeout(retryTimer);
   }, []);
+
+  useEffect(() => {
+    chrome.storage.local.get(ACTIVE_TAB_KEY)
+      .then((storage) => {
+        const storedTab = storage?.[ACTIVE_TAB_KEY];
+        if (storedTab && Object.prototype.hasOwnProperty.call(TAB_META, storedTab)) {
+          setActiveTab(storedTab as ContentTabId);
+        }
+      })
+      .catch(() => {
+        // Keep the default tab if storage is unavailable.
+      });
+  }, []);
+
+  useEffect(() => {
+    if (
+      (activeTab === 'ignore' || activeTab === 'style')
+      && availability !== 'unknown'
+      && (!hasForum || availability !== 'available')
+    ) {
+      setActiveTab('stickers');
+    }
+  }, [ activeTab, availability, hasForum ]);
 
   useEffect(() => {
     const onStorageChange = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
@@ -234,6 +293,48 @@ export function App() {
       // ignore popup errors; user can retry
     } finally {
       setStyleToggling(false);
+    }
+  };
+
+  const handlePostAppearanceChange = async (settings: PostAppearanceSettings) => {
+    if (availability !== 'available' || !boardHost) return;
+    const nextSettings = {
+      fontScale: Math.min(140, Math.max(80, settings.fontScale)),
+      firstLineIndent: settings.firstLineIndent === true,
+      paragraphSpacing: typeof settings.paragraphSpacing === 'number'
+        ? Math.min(2, Math.max(0, Math.round(settings.paragraphSpacing * 4) / 4))
+        : null,
+    };
+    const storedSettings: StoredPostAppearanceSettings = postAppearanceMap[boardHost] || {
+      fontScale: DEFAULT_POST_APPEARANCE.fontScale,
+      paragraphSpacing: DEFAULT_POST_APPEARANCE.paragraphSpacing,
+    };
+    const nextStoredSettings: StoredPostAppearanceSettings = {
+      fontScale: nextSettings.fontScale,
+      paragraphSpacing: nextSettings.paragraphSpacing,
+      firstLineIndentByForum: forumId
+        ? {
+          ...storedSettings.firstLineIndentByForum,
+          [forumId]: nextSettings.firstLineIndent,
+        }
+        : storedSettings.firstLineIndentByForum,
+    };
+    const nextMap = { ...postAppearanceMap, [boardHost]: nextStoredSettings };
+    setPostAppearance(nextSettings);
+    setPostAppearanceMap(nextMap);
+    setPostAppearanceToggling(true);
+    try {
+      await chrome.storage.local.set({ [POST_APPEARANCE_KEY]: nextMap });
+      await sendMessageToActiveTab({
+        type: 'tundra_toolkit_post_appearance_update',
+        boardUrl: boardHost,
+        forumID: forumId,
+        settings: nextSettings,
+      });
+    } catch (e) {
+      // Keep the optimistic state; the user can retry.
+    } finally {
+      setPostAppearanceToggling(false);
     }
   };
 
@@ -304,15 +405,10 @@ export function App() {
     }
     if (tabId === 'ignore' && (!hasForum || availability !== 'available')) return;
     setActiveTab(tabId);
+    chrome.storage.local.set({ [ACTIVE_TAB_KEY]: tabId }).catch(() => {
+      // The selected tab still works for the current popup instance.
+    });
   };
-
-  const controlsToggleLabel = controlsVisible ? 'Скрыть элементы' : 'Показать элементы';
-  const showControlsToggle = availability === 'available' && hasForum;
-  const toggleDisabled = toggling;
-  const toggleIcon = controlsVisible ? hideIcon : showIcon;
-
-  const styleToggleLabel = styleOverrideEnabled ? 'Вернуть стиль форума' : 'Включить SFW стиль форума';
-  const showStyleToggle = availability === 'available' && hasForum;
 
   const handleOpenOptions = () => {
     if (chrome.runtime.openOptionsPage) {
@@ -331,10 +427,10 @@ export function App() {
     );
   };
 
-  const renderTabButton = (tabId: Exclude<TabId, 'postCounter'>) => {
+  const renderTabButton = (tabId: ContentTabId) => {
     const { label, icon } = TAB_META[tabId];
     const showBadge = tabId === 'favorites' && unreadCount > 0;
-    const forumOnly = tabId === 'ignore';
+    const forumOnly = tabId === 'ignore' || tabId === 'style';
     const disabled = forumOnly && (!hasForum || availability !== 'available');
     const disabledTitle = !hasForum
       ? 'Доступно только на форуме'
@@ -361,7 +457,7 @@ export function App() {
     <div class="popupWrapper">
       <div class="popupTabs">
         <div class="popupTabsMain">
-          { (Object.keys(TAB_META) as Exclude<TabId, 'postCounter'>[]).map(renderTabButton) }
+          { (Object.keys(TAB_META) as ContentTabId[]).map(renderTabButton) }
           <button
             class="button small tabButton"
             onClick={ () => handleTabClick('postCounter') }
@@ -376,34 +472,9 @@ export function App() {
           >
             <MaskIcon src={ postCounterIcon } />
           </button>
-          { showStyleToggle && (
-            <button
-              class={ `button small tabButton styleOverrideToggle ${ styleOverrideEnabled ? 'active' : 'muted' }` }
-              onClick={ handleToggleStyleOverride }
-              disabled={ styleToggling }
-              title={ styleToggleLabel }
-              aria-label={ styleToggleLabel }
-              aria-pressed={ styleOverrideEnabled }
-            >
-              <MaskIcon src={ paintBucketIcon } />
-            </button>
-          ) }
         </div>
 
         <div class="popupTabsActions">
-          { showControlsToggle && (
-            <button
-              class={ `button small outline controlsToggle ${ !controlsVisible ? 'muted' : '' }` }
-              onClick={ handleToggleControls }
-              disabled={ toggleDisabled }
-              aria-label={ controlsToggleLabel }
-              title={ controlsToggleLabel }
-            >
-              <span class="controlsToggleContent">
-                <img src={ toggleIcon } alt="" class="controlsToggleIcon" />
-              </span>
-            </button>
-          ) }
           { hasForum && (
             <button
               class={ `button small tabButton forumPowerToggle ${ isTrusted ? 'active' : 'muted' }` }
@@ -432,8 +503,36 @@ export function App() {
       <div class="popupTabContent">
         { activeTab === 'templates' && <Templates /> }
         { activeTab === 'stickers' && <Stickers /> }
-        { activeTab === 'ignore' && <IgnoreList /> }
+        { activeTab === 'ignore' && (
+          <IgnoreList
+            controlsVisible={ controlsVisible }
+            controlsToggling={ toggling }
+            onToggleControls={ handleToggleControls }
+          />
+        ) }
         { activeTab === 'favorites' && <Favorites /> }
+        { activeTab === 'style' && (
+          <StyleTab
+            available={ availability === 'available' && hasForum }
+            sfwEnabled={ styleOverrideEnabled }
+            sfwBusy={ styleToggling }
+            fontScale={ postAppearance.fontScale }
+            firstLineIndent={ postAppearance.firstLineIndent }
+            paragraphSpacing={ postAppearance.paragraphSpacing }
+            sectionAvailable={ Boolean(forumId) }
+            appearanceBusy={ postAppearanceToggling }
+            onToggleSfw={ handleToggleStyleOverride }
+            onFontScaleChange={ fontScale => handlePostAppearanceChange({ ...postAppearance, fontScale }) }
+            onToggleFirstLineIndent={ () => handlePostAppearanceChange({
+              ...postAppearance,
+              firstLineIndent: !postAppearance.firstLineIndent,
+            }) }
+            onParagraphSpacingChange={ paragraphSpacing => handlePostAppearanceChange({
+              ...postAppearance,
+              paragraphSpacing,
+            }) }
+          />
+        ) }
       </div>
     </div>
   );

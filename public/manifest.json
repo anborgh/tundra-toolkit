@@ -27,7 +27,8 @@
         "<all_urls>"
       ],
       "js": [
-        "scripts/styleOverride.js"
+        "scripts/styleOverride.js",
+        "scripts/postAppearance.js"
       ],
       "run_at": "document_start",
       "world": "ISOLATED"

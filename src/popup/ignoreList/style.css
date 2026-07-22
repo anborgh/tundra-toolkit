@@ -27,6 +27,17 @@
   white-space: nowrap;
 }
 
+.ignoreHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.ignoreControlsToggle {
+  white-space: nowrap;
+}
+
 .ignoreActions {
   display: flex;
   gap: 8px;

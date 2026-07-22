@@ -320,6 +320,29 @@ const writeControlsVisibility = async (boardID, boardUrl, visible) => {
 };
 
 const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
+const POST_APPEARANCE_KEY = 'postAppearanceByHost';
+const DEFAULT_POST_APPEARANCE = {
+  fontScale: 100,
+  firstLineIndent: false,
+  paragraphSpacing: null,
+};
+
+/** @param {any} settings */
+const normalizePostAppearance = (settings) => {
+  const rawScale = Number(settings?.fontScale);
+  const fontScale = Number.isFinite(rawScale)
+    ? Math.min(140, Math.max(80, Math.round(rawScale / 10) * 10))
+    : DEFAULT_POST_APPEARANCE.fontScale;
+  return {
+    fontScale,
+    firstLineIndent: settings?.firstLineIndent === true,
+    paragraphSpacing: typeof settings?.paragraphSpacing === 'number'
+      ? Math.min(2, Math.max(0, Math.round(settings.paragraphSpacing * 4) / 4))
+      : null,
+  };
+};
+
+const getPostAppearanceApi = () => /** @type {any} */ (globalThis).__TT_POST_APPEARANCE__;
 
 const readStyleOverride = async (boardUrl) => {
   const host = normalizeBoardHost(boardUrl || window.location.host);
@@ -341,6 +364,57 @@ const writeStyleOverride = async (boardUrl, enabled) => {
     const map = stored?.[STYLE_OVERRIDE_KEY] || {};
     map[host] = enabled;
     await chrome.storage.local.set({ [STYLE_OVERRIDE_KEY]: map });
+  } catch (e) {
+    // ignore write errors to avoid breaking page flow
+  }
+};
+
+/**
+ * @param {any} boardUrl
+ * @param {any} forumID
+ */
+const readPostAppearance = async (boardUrl, forumID) => {
+  const host = normalizeBoardHost(boardUrl || window.location.host);
+  if (!host) return { ...DEFAULT_POST_APPEARANCE };
+  try {
+    const stored = await chrome.storage.local.get([ POST_APPEARANCE_KEY ]);
+    const map = stored?.[POST_APPEARANCE_KEY] || {};
+    const hostSettings = map[host] || {};
+    const sectionKey = forumID ? `${ forumID }` : null;
+    return normalizePostAppearance({
+      ...hostSettings,
+      firstLineIndent: Boolean(sectionKey && hostSettings.firstLineIndentByForum?.[sectionKey] === true),
+    });
+  } catch (e) {
+    return { ...DEFAULT_POST_APPEARANCE };
+  }
+};
+
+/**
+ * @param {any} boardUrl
+ * @param {any} forumID
+ * @param {any} settings
+ */
+const writePostAppearance = async (boardUrl, forumID, settings) => {
+  const host = normalizeBoardHost(boardUrl || window.location.host);
+  if (!host) return;
+  try {
+    const stored = await chrome.storage.local.get([ POST_APPEARANCE_KEY ]);
+    const map = stored?.[POST_APPEARANCE_KEY] || {};
+    const currentSettings = map[host] || {};
+    const normalizedSettings = normalizePostAppearance(settings);
+    const sectionKey = forumID ? `${ forumID }` : null;
+    map[host] = {
+      fontScale: normalizedSettings.fontScale,
+      paragraphSpacing: normalizedSettings.paragraphSpacing,
+      firstLineIndentByForum: sectionKey
+        ? {
+          ...currentSettings.firstLineIndentByForum,
+          [sectionKey]: normalizedSettings.firstLineIndent,
+        }
+        : currentSettings.firstLineIndentByForum,
+    };
+    await chrome.storage.local.set({ [POST_APPEARANCE_KEY]: map });
   } catch (e) {
     // ignore write errors to avoid breaking page flow
   }
@@ -484,6 +558,14 @@ const processForumInit = async (data) => {
     });
   } else if (!isTrusted && globalThis.__TT_STYLE_OVERRIDE__?.isEnabled()) {
     globalThis.__TT_STYLE_OVERRIDE__.setEnabled(false);
+  }
+
+  if (available && getPostAppearanceApi()) {
+    readPostAppearance(boardUrl, forumID).then(settings => {
+      getPostAppearanceApi()?.apply(settings);
+    });
+  } else if (getPostAppearanceApi()) {
+    getPostAppearanceApi().apply(DEFAULT_POST_APPEARANCE);
   }
 
   if (!bridge.isAllowedBoardHost(boardUrl)) return;
@@ -759,6 +841,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     ttNotifyAvailability(false);
     ttPost({ type: 'tundra_toolkit_controls_visibility', visible: false });
     ttPost({ type: 'tundra_toolkit_disable_unsafe' });
+    getPostAppearanceApi()?.apply(DEFAULT_POST_APPEARANCE);
 
     sendResponse({ success: true, isTrusted: false, reload: true });
 
@@ -939,6 +1022,23 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     }
 
     sendResponse({ success: true, enabled });
+    return;
+  }
+
+  if (request.type === 'tundra_toolkit_post_appearance_update') {
+    const boardUrl = request.boardUrl || currentForumData?.boardUrl || window.location.host;
+    const host = normalizeBoardHost(boardUrl);
+    const currentHost = normalizeBoardHost(window.location.host);
+    if (!host || host !== currentHost || lastAvailability !== true) {
+      sendResponse({ success: false });
+      return;
+    }
+
+    const settings = normalizePostAppearance(request.settings);
+    const forumID = request.forumID || currentForumData?.forumID || null;
+    writePostAppearance(host, forumID, settings);
+    getPostAppearanceApi()?.apply(settings);
+    sendResponse({ success: true, settings });
     return;
   }
 });
