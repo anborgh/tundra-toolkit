@@ -31,7 +31,6 @@ export default function TemplateOptions() {
   useEffect(() => {
     if (!loaded) return;
     safeStorageSet({ [ STORAGE_KEY ]: templates }).catch(() => {
-      // Swallow the error: option UI state is still source of truth.
     });
   }, [ templates, loaded ]);
 

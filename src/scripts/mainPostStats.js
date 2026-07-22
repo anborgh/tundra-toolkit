@@ -1,7 +1,3 @@
-/**
- * Счётчик постов (MAIN world). Подключается до main.js.
- * Фабрика забирается в main и сразу удаляется с globalThis.
- */
 (function (global) {
   'use strict';
 

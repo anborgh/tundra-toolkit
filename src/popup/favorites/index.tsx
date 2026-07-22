@@ -147,7 +147,6 @@ export function Favorites() {
     setIntervalMinutes(Number(meta.intervalMinutes) || 2);
   };
 
-  // Обновление выполняет фоновый скрипт: интервал зависит от числа форумов/тем
   const requestRefresh = async (force = false, manual = false) => {
     setRefreshing(true);
     try {
@@ -205,7 +204,6 @@ export function Favorites() {
         const boardResp = await fetchApi(activeTopic.boardUrl, 'method=board.get&fields=title');
         boardName = boardResp?.title || boardName;
       } catch (e) {
-        // не критично: оставим адрес форума вместо названия
       }
 
       const newItem: IFavoriteTopic = {
@@ -271,11 +269,9 @@ export function Favorites() {
 
     const myTurn = favorites
       .filter(item => item.myTurn && !updatedIds.has(item.id))
-      // мои долги: сверху самый старый
       .sort((a, b) => (a.lastPostDate || 0) - (b.lastPostDate || 0));
     const rest = favorites
       .filter(item => !item.myTurn && !updatedIds.has(item.id))
-      // остальные: сверху недавно обновлённые
       .sort((a, b) => (b.lastPostDate || 0) - (a.lastPostDate || 0));
     return { updatedItems: updated, myTurnItems: myTurn, restItems: rest };
   }, [ favorites, boardStatuses ]);

@@ -71,11 +71,8 @@ const setBadgeAvailability = (tabId, isAvailable, isVisible) => {
   if (!tabId) return;
 
   badgeState.set(tabId, { available: isAvailable, visible: isVisible });
-  // Вкладка могла закрыться — забываем её вместо «No tab with id»
   const forgetTab = () => badgeState.delete(tabId);
 
-  // Счётчик непрочитанного приоритетен: не выставляем пер-вкладочный текст,
-  // чтобы он не перекрывал глобальный бейдж со счётчиком
   if (favoritesUnreadCount > 0) {
     chrome.action.setBadgeText({ tabId, text: null })?.catch?.(forgetTab);
     return;
@@ -107,7 +104,6 @@ const applyFavoritesBadge = () => {
       });
     });
   } else {
-    // Непрочитанного нет — возвращаем вкладкам индикатор доступности
     badgeState.forEach((state, tabId) => {
       setBadgeAvailability(tabId, state.available, state.visible);
     });
@@ -158,6 +154,10 @@ chrome.tabs.onActivated.addListener(({ tabId }) => {
 });
 
 const BG_FALLBACKS_KEY = '__tt_storage_fallbacks__';
+const BG_FAVORITES_KEY = 'favoriteTopics';
+const BG_FAVORITES_CHUNKS_KEY = 'favoriteTopics__chunks';
+const BG_FAVORITES_CHUNK_PREFIX = 'favoriteTopics__chunk_';
+const BG_FAVORITES_CHUNK_TARGET_BYTES = 7500;
 const bgIsQuotaError = (error) => {
   if (!error) return false;
   const message = typeof error.message === 'string' ? error.message : `${error}`;
@@ -181,41 +181,144 @@ const bgWriteFallbacks = async (fallbacks) => {
   }
 };
 
-const bgSafeStorageSet = async (data) => {
-  const keys = Object.keys(data);
-  const fallbacks = await bgReadFallbacks();
+const bgSerializedBytes = (value) => new TextEncoder().encode(JSON.stringify(value)).length;
+const bgSplitFavorites = (items) => {
+  const chunks = [];
+  let current = [];
+
+  items.forEach(item => {
+    const candidate = [ ...current, item ];
+    if (current.length && bgSerializedBytes(candidate) > BG_FAVORITES_CHUNK_TARGET_BYTES) {
+      chunks.push(current);
+      current = [ item ];
+    } else {
+      current = candidate;
+    }
+  });
+
+  if (current.length) chunks.push(current);
+  return chunks;
+};
+const bgFavoriteChunkKeys = (count) =>
+  Array.from({ length: count }, (_, index) => `${ BG_FAVORITES_CHUNK_PREFIX }${ index }`);
+const bgWriteChunkedFavorites = async (items, fallbacks) => {
+  const previous = await chrome.storage.sync.get(BG_FAVORITES_CHUNKS_KEY);
+  const previousCount = Number(previous?.[BG_FAVORITES_CHUNKS_KEY]?.count) || 0;
+  const chunks = bgSplitFavorites(items);
+  const chunkData = Object.fromEntries(
+    chunks.map((chunk, index) => [ `${ BG_FAVORITES_CHUNK_PREFIX }${ index }`, chunk ]),
+  );
+
   try {
-    await chrome.storage.sync.set(data);
-    keys.forEach(key => delete fallbacks[key]);
+    await chrome.storage.sync.set({
+      ...chunkData,
+      [BG_FAVORITES_CHUNKS_KEY]: { version: 1, count: chunks.length },
+    });
+    const staleChunkKeys = bgFavoriteChunkKeys(previousCount).slice(chunks.length);
+    await chrome.storage.sync.remove([ BG_FAVORITES_KEY, ...staleChunkKeys ]);
+    delete fallbacks[BG_FAVORITES_KEY];
     await bgWriteFallbacks(fallbacks);
-    await chrome.storage.local.remove(keys);
+    await chrome.storage.local.remove([
+      BG_FAVORITES_KEY,
+      BG_FAVORITES_CHUNKS_KEY,
+      ...bgFavoriteChunkKeys(previousCount),
+    ]);
     return 'sync';
   } catch (error) {
-    if (bgIsQuotaError(error)) {
-      keys.forEach(key => { fallbacks[key] = 'local'; });
-      await chrome.storage.local.set(data);
-      await bgWriteFallbacks(fallbacks);
-      return 'local';
-    }
-    throw error;
+    if (!bgIsQuotaError(error)) throw error;
+    fallbacks[BG_FAVORITES_KEY] = 'local';
+    await chrome.storage.local.set({ [BG_FAVORITES_KEY]: items });
+    await bgWriteFallbacks(fallbacks);
+    return 'local';
   }
+};
+
+const bgSafeStorageSet = async (data) => {
+  const hasFavorites = Object.prototype.hasOwnProperty.call(data, BG_FAVORITES_KEY);
+  const favoriteItems = hasFavorites && Array.isArray(data[BG_FAVORITES_KEY]) ? data[BG_FAVORITES_KEY] : [];
+  const regularData = { ...data };
+  delete regularData[BG_FAVORITES_KEY];
+  const keys = Object.keys(regularData);
+  const fallbacks = await bgReadFallbacks();
+  let usedFallback = false;
+
+  if (keys.length) {
+    try {
+      await chrome.storage.sync.set(regularData);
+      keys.forEach(key => delete fallbacks[key]);
+      await bgWriteFallbacks(fallbacks);
+      await chrome.storage.local.remove(keys);
+    } catch (error) {
+      if (!bgIsQuotaError(error)) throw error;
+      keys.forEach(key => { fallbacks[key] = 'local'; });
+      await chrome.storage.local.set(regularData);
+      await bgWriteFallbacks(fallbacks);
+      usedFallback = true;
+    }
+  }
+
+  if (hasFavorites) {
+    const location = await bgWriteChunkedFavorites(favoriteItems, fallbacks);
+    usedFallback ||= location === 'local';
+  }
+
+  return usedFallback ? 'local' : 'sync';
 };
 
 const bgSafeStorageGet = async (keys) => {
   const fallbacks = await bgReadFallbacks();
+  const wantsFavorites = keys.includes(BG_FAVORITES_KEY);
+  const regularKeys = keys.filter(key => key !== BG_FAVORITES_KEY);
+  const syncKeys = wantsFavorites
+    ? [ ...regularKeys, BG_FAVORITES_KEY, BG_FAVORITES_CHUNKS_KEY ]
+    : regularKeys;
+  const localKeys = wantsFavorites ? [ ...regularKeys, BG_FAVORITES_KEY ] : regularKeys;
   const [syncData, localData] = await Promise.all([
-    keys.length ? chrome.storage.sync.get(keys) : Promise.resolve({}),
-    keys.length ? chrome.storage.local.get(keys) : Promise.resolve({}),
+    syncKeys.length ? chrome.storage.sync.get(syncKeys) : Promise.resolve({}),
+    localKeys.length ? chrome.storage.local.get(localKeys) : Promise.resolve({}),
   ]);
 
   const result = {};
-  keys.forEach(key => {
+  regularKeys.forEach(key => {
     if (fallbacks[key] === 'local') {
       result[key] = localData?.[key];
     } else {
       result[key] = syncData?.[key] ?? localData?.[key];
     }
   });
+
+  if (wantsFavorites) {
+    if (fallbacks[BG_FAVORITES_KEY] === 'local') {
+      const localFavorites = localData?.[BG_FAVORITES_KEY];
+      result[BG_FAVORITES_KEY] = localFavorites;
+      if (Array.isArray(localFavorites)) {
+        try {
+          await bgWriteChunkedFavorites(localFavorites, fallbacks);
+        } catch (e) {
+          // Keep local data readable if migration is temporarily unavailable.
+        }
+      }
+    } else {
+      const count = Number(syncData?.[BG_FAVORITES_CHUNKS_KEY]?.count) || 0;
+      if (syncData?.[BG_FAVORITES_CHUNKS_KEY] && count >= 0) {
+        const chunkData = count
+          ? await chrome.storage.sync.get(bgFavoriteChunkKeys(count))
+          : {};
+        result[BG_FAVORITES_KEY] = bgFavoriteChunkKeys(count)
+          .flatMap(key => Array.isArray(chunkData[key]) ? chunkData[key] : []);
+      } else {
+        const legacyFavorites = syncData?.[BG_FAVORITES_KEY] ?? localData?.[BG_FAVORITES_KEY];
+        result[BG_FAVORITES_KEY] = legacyFavorites;
+        if (Array.isArray(syncData?.[BG_FAVORITES_KEY])) {
+          try {
+            await bgWriteChunkedFavorites(syncData[BG_FAVORITES_KEY], fallbacks);
+          } catch (e) {
+            // Keep legacy data readable if migration is temporarily unavailable.
+          }
+        }
+      }
+    }
+  }
 
   return result;
 };
@@ -685,8 +788,6 @@ const doRefreshFavorites = async (force, manual = false) => {
   };
 };
 
-// Сериализуем refresh: in-flight auto с длинным cooldown не должен
-// «проглатывать» ручной клик с FAVORITES_MANUAL_INTERVAL_MINUTES.
 let favoritesRefreshChain = Promise.resolve();
 
 const refreshFavorites = (force = false, manual = false) => {
@@ -725,7 +826,6 @@ chrome.storage.onChanged.addListener(changes => {
   }, 300);
 });
 
-// Восстановление бейджа и будильника после перезапуска service worker
 (async () => {
   try {
     const [metaStore, data] = await Promise.all([

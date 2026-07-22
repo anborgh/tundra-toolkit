@@ -1,7 +1,3 @@
-/**
- * Shared host/trust/controls helpers for ISOLATED content script.
- * Loaded before isolated.js; bindings taken off globalThis immediately.
- */
 (function (global) {
   'use strict';
 
