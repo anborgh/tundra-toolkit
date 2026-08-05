@@ -23,8 +23,6 @@ header .logo {
     width: 72px;
     height: 72px;
     flex: 0 0 72px;
-    border: var(--tt-border-width) solid var(--tt-night);
-    background: var(--tt-night);
 }
 
 header .logo img {

@@ -6,8 +6,8 @@
 
 .stickerHeader {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  justify-content: flex-end;
+  align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
@@ -17,14 +17,30 @@
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
   margin-left: auto;
 }
 
 .stickerStatus {
-  min-height: 22px;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--popup-muted);
+  cursor: help;
+}
+
+.stickerStatus--success {
+  color: var(--tt-success);
+}
+
+.stickerStatus--error {
+  color: var(--tt-danger);
+}
+
+.stickerStatus--muted {
   color: var(--popup-muted);
 }
 
@@ -32,6 +48,18 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.recentStickers {}
+
+.recentStickersList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.recentStickersList .stickerItem {
+  width: 64px;
 }
 
 .stickerList {
@@ -139,7 +167,7 @@
 }
 
 .stickerItem {
-  width: 64px;
+  width: 74px;
   height: 64px;
   border: 1px solid var(--popup-border);
   border-radius: 0;

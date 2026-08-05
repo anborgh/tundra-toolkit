@@ -1,14 +1,15 @@
 import {useEffect, useRef, useState} from "react";
 import { useBatchedItems } from '../../hooks/useBatchedItems';
-import { sendMessageToActiveTab } from '../../utils/tools';
 import { MaskIcon } from "../../components/MaskIcon";
 import EditIcon from "../../assets/icons/pencil.svg";
+import { insertSticker } from './insertSticker';
 
 type PackProps = {
   pack: IStickerPack;
   opened: boolean;
   onChange: (newActiveTab: number) => void;
   editStickerPack: (packId: number) => void;
+  onStickerUsed?: (src: string) => void;
   localOnly?: boolean;
 }
 
@@ -17,6 +18,7 @@ export function StickerPack({
   onChange,
   opened,
   editStickerPack,
+  onStickerUsed,
   localOnly = false,
 }: PackProps) {
 
@@ -49,22 +51,8 @@ export function StickerPack({
       }, 4000);
     };
 
-    const copyWithNotice = async () => {
-      try {
-        await navigator.clipboard?.writeText(src);
-      } catch (e) {
-        // ignore clipboard errors; notify anyway
-      } finally {
-        showNotice('Вставка недоступна. Ссылка на картинку скопирована в буфер обмена.');
-      }
-    };
-
-    sendMessageToActiveTab({
-      type: 'tundra_toolkit_insert_sticker',
-      src,
-    }).catch(async () => {
-      await copyWithNotice();
-    });
+    onStickerUsed?.(src);
+    await insertSticker(src, { onUnavailable: showNotice });
   }
 
   useEffect(() => {

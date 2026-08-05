@@ -458,11 +458,25 @@ h5 {
 }
 
 .stickerStatus {
-  display: flex;
-  gap: 10px;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  min-height: 22px;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--popup-muted);
+  cursor: help;
+}
+
+.stickerStatus--success {
+  color: var(--tt-success);
+}
+
+.stickerStatus--error {
+  color: var(--tt-danger);
+}
+
+.stickerStatus--muted {
   color: var(--popup-muted);
 }
 
