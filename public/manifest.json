@@ -5,7 +5,6 @@
   "permissions": [
     "activeTab",
     "storage",
-    "contextMenus",
     "alarms"
   ],
   "host_permissions": [
@@ -39,6 +38,10 @@
       ],
       "js": [
         "scripts/ttBridgeChannel.js",
+        "scripts/postStatsModalStyles.js",
+        "scripts/postStatsPicker.js",
+        "scripts/postStatsResultFormat.js",
+        "scripts/postStatsScrape.js",
         "scripts/mainPostStats.js",
         "scripts/main.js"
       ],

@@ -25,6 +25,7 @@
 .ignoreHeaderSettingsLink {
   flex-shrink: 0;
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .ignoreHeaderActions {
@@ -36,6 +37,12 @@
 
 .ignoreControlsToggle {
   white-space: nowrap;
+  touch-action: manipulation;
+}
+
+.ignoreHeaderActions .button:focus-visible {
+  outline: 2px solid var(--popup-text, currentColor);
+  outline-offset: 2px;
 }
 
 .ignoreActions {
@@ -50,6 +57,50 @@
   align-items: center;
   min-height: 22px;
   color: var(--popup-muted);
+}
+
+.ignoreTopicsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ignoreSectionTitle {
+  margin: 0;
+  color: var(--popup-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.blackListTopics {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blackListTopicItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.blackListTopicItem a,
+.blackListTopicItem span {
+  min-width: 0;
+  color: var(--popup-text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blackListTopicItem a:hover {
+  text-decoration: underline;
 }
 
 .ignoreList {
@@ -117,9 +168,14 @@
   padding: 6px 0;
 }
 
-.blackListUserItem a {
+.blackListUserItem a,
+.blackListUserItem span {
+  min-width: 0;
   color: var(--popup-text);
   text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .blackListUserItem a:hover {
@@ -127,6 +183,7 @@
 }
 
 .blackListRemoveItem {
+  flex-shrink: 0;
   border: 1px solid var(--popup-border);
   border-radius: 8px;
   background: #2a3139;
@@ -138,4 +195,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
+}
+
+.blackListRemoveItem:hover {
+  background: #343c46;
+}
+
+.blackListRemoveItem:focus-visible {
+  outline: 2px solid var(--popup-text, currentColor);
+  outline-offset: 2px;
 }

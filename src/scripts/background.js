@@ -1,19 +1,3 @@
-function setupContextMenus() {
-  chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({
-      id: 'tundra_toolkit_ignore_menu',
-      title: 'Настройки',
-      contexts: ['page'],
-    });
-
-    chrome.contextMenus.create({
-      id: 'tundra_toolkit_ignore_check',
-      title: 'Открыть скрытые сообщения',
-      contexts: ['page'],
-    });
-  });
-}
-
 const CONTROLS_VISIBILITY_OPT_IN_KEY = 'controlsVisibilityOptIn';
 
 const ensureControlsVisibilityMode = async (reason) => {
@@ -27,30 +11,8 @@ const ensureControlsVisibilityMode = async (reason) => {
 };
 
 chrome.runtime.onInstalled.addListener((details) => {
-  setupContextMenus();
   ensureControlsVisibilityMode(details?.reason);
 });
-
-chrome.contextMenus.onClicked.addListener((onClickData) => {
-
-  if (onClickData.menuItemId === 'tundra_toolkit_ignore_menu') {
-    if (chrome.runtime.openOptionsPage) {
-      chrome.runtime.openOptionsPage();
-    } else {
-      window.open(chrome.runtime.getURL('options.html'));
-    }
-  }
-
-  if (onClickData.menuItemId === 'tundra_toolkit_ignore_check') {
-    chrome.tabs.query({currentWindow: true, active: true}, function (tabs){
-      const activeTab = tabs[0];
-      chrome.tabs.sendMessage(activeTab.id, {
-        type: 'tundra_toolkit_ignore_toggle',
-      });
-    });
-  }
-
-})
 
 const BADGE_COLOR = '#10b981';
 const BADGE_TEXT_COLOR = '#ffffff';
