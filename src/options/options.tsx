@@ -7,7 +7,12 @@ import { ConflictResolver } from './conflictResolver';
 import TemplateOptions from './templateOptions';
 import { FavoritesOptions } from './favoritesOptions';
 import { DEFAULT_SETTINGS_SECTION, isSettingsSection, SettingsSection } from '../utils/settingsSections';
-import { getStorageFallbacks, STORAGE_FALLBACKS_KEY } from '../utils/storage';
+import {
+	getStorageFallbacks,
+	isStorageKeyLocal,
+	STORAGE_FALLBACKS_KEY,
+	StorageFallbackMap,
+} from '../utils/storage';
 
 import '../chota.min.css';
 import '../common.css';
@@ -27,18 +32,18 @@ const SECTION_STORAGE_KEYS: Partial<Record<SettingsSection, string[]>> = {
 
 const isSectionLocal = (
 	section: SettingsSection,
-	fallbacks: Record<string, 'local'>,
+	fallbacks: StorageFallbackMap,
 ) => {
 	const keys = SECTION_STORAGE_KEYS[section];
 	if (!keys?.length) return false;
-	return keys.some(key => fallbacks[key] === 'local');
+	return keys.some(key => isStorageKeyLocal(fallbacks, key));
 };
 
 export function App() {
 	const [ activeSection, setActiveSection ] = useState<SettingsSection>(getSectionFromHash);
 	const [ syncBytesInUse, setSyncBytesInUse ] = useState<number | null>(null);
 	const [ syncUsageError, setSyncUsageError ] = useState<string | null>(null);
-	const [ storageFallbacks, setStorageFallbacks ] = useState<Record<string, 'local'>>({});
+	const [ storageFallbacks, setStorageFallbacks ] = useState<StorageFallbackMap>({});
 
 	const syncQuotaBytes = chrome.storage?.sync?.QUOTA_BYTES || 102400;
 	const syncUsagePercent = useMemo(() => {
@@ -194,7 +199,9 @@ export function App() {
 							<ul>
 								<li>По возможности данные сохраняются в Chrome Sync, чтобы быть доступными в вашем браузере на разных устройствах.</li>
 								<li>Если места в Chrome Sync не хватает, расширение сохранит часть данных локально только на этом устройстве.</li>
-								<li>У таких разделов в меню появляется метка «локально»; индикатор слева показывает, сколько места уже занято в синхронизируемом хранилище.</li>
+								<li>У таких разделов в меню появляется метка «локально»; у отдельных черновиков и стикерпаков — своя метка.</li>
+								<li>Место в Chrome Sync заполняется по приоритету: избранное, затем шаблоны, стикерпаки и чёрный список.</li>
+								<li>Индикатор слева показывает, сколько места уже занято в синхронизируемом хранилище.</li>
 							</ul>
 						</div>
 					</section>
@@ -284,7 +291,7 @@ export function App() {
 						</button>
 					</aside>
 					<div className="optionsContent">
-						{ activeSectionIsLocal && (
+						{ activeSectionIsLocal && activeSection !== 'stickers' && activeSection !== 'templates' && (
 							<div className="storageLocalNotice" role="status">
 								<span className="storageLocalBadge">локально</span>
 								<span>Эти данные сохранены только на этом устройстве и не синхронизируются через Chrome.</span>

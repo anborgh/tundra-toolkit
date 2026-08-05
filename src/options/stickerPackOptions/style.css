@@ -10,6 +10,49 @@
     margin: 0;
 }
 
+.stickerPackOptionsActions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.stickerPackReorderItem {
+    position: relative;
+    cursor: grab;
+    margin-bottom: 8px;
+}
+
+.stickerPackReorderItem:active {
+    cursor: grabbing;
+}
+
+.stickerPackReorderItem.moving {
+    opacity: .5;
+}
+
+.stickerPackReorderItem.hoveredTop:before,
+.stickerPackReorderItem.hoveredBottom:after {
+    content: '';
+    display: block;
+    background: var(--tt-frost, #5b9bd5);
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.stickerPackReorderItem.hoveredTop:before {
+    top: -4px;
+}
+
+.stickerPackReorderItem.hoveredBottom:after {
+    bottom: -4px;
+}
+
+.stickerList.reorderMode .stickerListHeader {
+    cursor: grab;
+}
+
 .stickerListContent {
     display: flex;
     flex-wrap: wrap;
@@ -36,6 +79,13 @@
 
 .stickerListHeader h4 {
     margin: 0;
+}
+
+.stickerListTitle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
 .stickerItem {

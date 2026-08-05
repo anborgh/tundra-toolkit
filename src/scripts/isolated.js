@@ -10,6 +10,16 @@ const {
 } = globalThis.__TT_BOARD_UTILS__ || {};
 delete globalThis.__TT_BOARD_UTILS__;
 
+const {
+  safeStorageGet: isoSafeStorageGet,
+  safeStorageSet: isoSafeStorageSetRaw,
+} = globalThis.__TT_SAFE_STORAGE__ || {};
+
+const isoSafeStorageSet = async (data) => {
+  const result = await isoSafeStorageSetRaw(data);
+  return result?.fallback ? 'local' : 'sync';
+};
+
 const createTTBridge = () => {
   const NUMERIC_ID = /^\d+$/;
 
@@ -418,176 +428,6 @@ const writePostAppearance = async (boardUrl, forumID, settings) => {
   } catch (e) {
     // ignore write errors to avoid breaking page flow
   }
-};
-
-const ISO_FALLBACKS_KEY = '__tt_storage_fallbacks__';
-const ISO_FAVORITES_KEY = 'favoriteTopics';
-const ISO_FAVORITES_CHUNKS_KEY = 'favoriteTopics__chunks';
-const ISO_FAVORITES_CHUNK_PREFIX = 'favoriteTopics__chunk_';
-const ISO_FAVORITES_CHUNK_TARGET_BYTES = 7500;
-const isoIsQuotaError = (error) => {
-  if (!error) return false;
-  const message = typeof error.message === 'string' ? error.message : `${error}`;
-  return /QUOTA_BYTES_PER_ITEM|quota.*bytes/i.test(message);
-};
-
-const isoReadFallbacks = async () => {
-  try {
-    const data = await chrome.storage.sync.get(ISO_FALLBACKS_KEY);
-    return data?.[ISO_FALLBACKS_KEY] || {};
-  } catch (e) {
-    return {};
-  }
-};
-
-const isoWriteFallbacks = async (fallbacks) => {
-  try {
-    await chrome.storage.sync.set({ [ISO_FALLBACKS_KEY]: fallbacks });
-  } catch (e) {
-    // ignore
-  }
-};
-
-const isoSerializedBytes = (value) => new TextEncoder().encode(JSON.stringify(value)).length;
-const isoSplitFavorites = (items) => {
-  const chunks = [];
-  let current = [];
-
-  items.forEach(item => {
-    const candidate = [ ...current, item ];
-    if (current.length && isoSerializedBytes(candidate) > ISO_FAVORITES_CHUNK_TARGET_BYTES) {
-      chunks.push(current);
-      current = [ item ];
-    } else {
-      current = candidate;
-    }
-  });
-
-  if (current.length) chunks.push(current);
-  return chunks;
-};
-const isoFavoriteChunkKeys = (count) =>
-  Array.from({ length: count }, (_, index) => `${ ISO_FAVORITES_CHUNK_PREFIX }${ index }`);
-const isoWriteChunkedFavorites = async (items, fallbacks) => {
-  const previous = await chrome.storage.sync.get(ISO_FAVORITES_CHUNKS_KEY);
-  const previousCount = Number(previous?.[ISO_FAVORITES_CHUNKS_KEY]?.count) || 0;
-  const chunks = isoSplitFavorites(items);
-  const chunkData = Object.fromEntries(
-    chunks.map((chunk, index) => [ `${ ISO_FAVORITES_CHUNK_PREFIX }${ index }`, chunk ]),
-  );
-
-  try {
-    await chrome.storage.sync.set({
-      ...chunkData,
-      [ISO_FAVORITES_CHUNKS_KEY]: { version: 1, count: chunks.length },
-    });
-    const staleChunkKeys = isoFavoriteChunkKeys(previousCount).slice(chunks.length);
-    await chrome.storage.sync.remove([ ISO_FAVORITES_KEY, ...staleChunkKeys ]);
-    delete fallbacks[ISO_FAVORITES_KEY];
-    await isoWriteFallbacks(fallbacks);
-    await chrome.storage.local.remove([
-      ISO_FAVORITES_KEY,
-      ISO_FAVORITES_CHUNKS_KEY,
-      ...isoFavoriteChunkKeys(previousCount),
-    ]);
-    return 'sync';
-  } catch (error) {
-    if (!isoIsQuotaError(error)) throw error;
-    fallbacks[ISO_FAVORITES_KEY] = 'local';
-    await chrome.storage.local.set({ [ISO_FAVORITES_KEY]: items });
-    await isoWriteFallbacks(fallbacks);
-    return 'local';
-  }
-};
-
-const isoSafeStorageSet = async (data) => {
-  const hasFavorites = Object.prototype.hasOwnProperty.call(data, ISO_FAVORITES_KEY);
-  const favoriteItems = hasFavorites && Array.isArray(data[ISO_FAVORITES_KEY]) ? data[ISO_FAVORITES_KEY] : [];
-  const regularData = { ...data };
-  delete regularData[ISO_FAVORITES_KEY];
-  const keys = Object.keys(regularData);
-  const fallbacks = await isoReadFallbacks();
-  let usedFallback = false;
-
-  if (keys.length) {
-    try {
-      await chrome.storage.sync.set(regularData);
-      keys.forEach(key => delete fallbacks[key]);
-      await isoWriteFallbacks(fallbacks);
-      await chrome.storage.local.remove(keys);
-    } catch (error) {
-      if (!isoIsQuotaError(error)) throw error;
-      keys.forEach(key => { fallbacks[key] = 'local'; });
-      await chrome.storage.local.set(regularData);
-      await isoWriteFallbacks(fallbacks);
-      usedFallback = true;
-    }
-  }
-
-  if (hasFavorites) {
-    const location = await isoWriteChunkedFavorites(favoriteItems, fallbacks);
-    usedFallback ||= location === 'local';
-  }
-
-  return usedFallback ? 'local' : 'sync';
-};
-
-const isoSafeStorageGet = async (keys) => {
-  const fallbacks = await isoReadFallbacks();
-  const wantsFavorites = keys.includes(ISO_FAVORITES_KEY);
-  const regularKeys = keys.filter(key => key !== ISO_FAVORITES_KEY);
-  const syncKeys = wantsFavorites
-    ? [ ...regularKeys, ISO_FAVORITES_KEY, ISO_FAVORITES_CHUNKS_KEY ]
-    : regularKeys;
-  const localKeys = wantsFavorites ? [ ...regularKeys, ISO_FAVORITES_KEY ] : regularKeys;
-  const [syncData, localData] = await Promise.all([
-    syncKeys.length ? chrome.storage.sync.get(syncKeys) : Promise.resolve({}),
-    localKeys.length ? chrome.storage.local.get(localKeys) : Promise.resolve({}),
-  ]);
-
-  const result = {};
-  regularKeys.forEach(key => {
-    if (fallbacks[key] === 'local') {
-      result[key] = localData?.[key];
-    } else {
-      result[key] = syncData?.[key] ?? localData?.[key];
-    }
-  });
-
-  if (wantsFavorites) {
-    if (fallbacks[ISO_FAVORITES_KEY] === 'local') {
-      const localFavorites = localData?.[ISO_FAVORITES_KEY];
-      result[ISO_FAVORITES_KEY] = localFavorites;
-      if (Array.isArray(localFavorites)) {
-        try {
-          await isoWriteChunkedFavorites(localFavorites, fallbacks);
-        } catch (e) {
-          // Keep local data readable if migration is temporarily unavailable.
-        }
-      }
-    } else {
-      const count = Number(syncData?.[ISO_FAVORITES_CHUNKS_KEY]?.count) || 0;
-      if (syncData?.[ISO_FAVORITES_CHUNKS_KEY] && count >= 0) {
-        const chunkData = count
-          ? await chrome.storage.sync.get(isoFavoriteChunkKeys(count))
-          : {};
-        result[ISO_FAVORITES_KEY] = isoFavoriteChunkKeys(count)
-          .flatMap(key => Array.isArray(chunkData[key]) ? chunkData[key] : []);
-      } else {
-        const legacyFavorites = syncData?.[ISO_FAVORITES_KEY] ?? localData?.[ISO_FAVORITES_KEY];
-        result[ISO_FAVORITES_KEY] = legacyFavorites;
-        if (Array.isArray(syncData?.[ISO_FAVORITES_KEY])) {
-          try {
-            await isoWriteChunkedFavorites(syncData[ISO_FAVORITES_KEY], fallbacks);
-          } catch (e) {
-            // Keep legacy data readable if migration is temporarily unavailable.
-          }
-        }
-      }
-    }
-  }
-
-  return result;
 };
 
 reportAvailabilityIfChanged();
@@ -1084,10 +924,17 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     return;
   }
 
+  if (request.type === 'tundra_toolkit_ignore_reveal_state') {
+    const revealed = !!document.querySelector('#pun')?.classList.contains('ignoreDisabled');
+    sendResponse({ success: true, revealed });
+    return;
+  }
+
   if (request.type === 'tundra_toolkit_ignore_toggle') {
-    ttPost({
-      type: 'tundra_toolkit_ignore_toggle',
-    })
+    const pun = document.querySelector('#pun');
+    const revealed = pun ? pun.classList.toggle('ignoreDisabled') : false;
+    sendResponse({ success: true, revealed });
+    return;
   }
 
   if (request.type === 'tundra_toolkit_controls_toggle') {

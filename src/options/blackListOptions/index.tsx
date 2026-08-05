@@ -1,15 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { decodeEntities } from '../../utils';
+import { MaskIcon } from '../../components/MaskIcon';
+import xIcon from '../../assets/icons/x.svg';
+import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
+import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import circleAlertIcon from '../../assets/icons/circle-alert.svg';
 
+import '../../components/icon.css';
 import './style.css';
 
 export function BlackListOptions() {
-
   const [ data, setData ] = useState<IBoardStore[]>([]);
   const [ topicsData, setTopicsData ] = useState<IBoardTopicsStore[]>([]);
+  const [ loaded, setLoaded ] = useState(false);
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ error, setError ] = useState<string | null>(null);
+
+  const usersCount = useMemo(
+    () => data.reduce(
+      (total, board) => total + (board.forums || []).reduce(
+        (forumTotal, forum) => forumTotal + (forum.users || []).length,
+        0,
+      ),
+      0,
+    ),
+    [ data ],
+  );
+
+  const topicsCount = useMemo(
+    () => topicsData.reduce((total, board) => total + (board.topics || []).length, 0),
+    [ topicsData ],
+  );
+
+  const statusView = useMemo(() => {
+    if (!loaded) {
+      return { icon: loaderCircleIcon, text: 'Загружаем…', tone: 'muted' as const, spin: true };
+    }
+    if (error) {
+      return { icon: circleAlertIcon, text: error, tone: 'error' as const, spin: false };
+    }
+    if (warning) {
+      return { icon: circleCheckIcon, text: warning, tone: 'success' as const, spin: false };
+    }
+    return null;
+  }, [ loaded, error, warning ]);
 
   const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
     if (result.fallback) {
@@ -25,7 +60,6 @@ export function BlackListOptions() {
 
   const handleRemoveClick = (boardID: string, forumID: string, user: { userName: string, userID: string }) => {
     const isConfirmed = confirm(`Разбанить ${ user.userName }?`);
-
     if (!isConfirmed) return;
 
     const newData = data.map(board => {
@@ -53,11 +87,10 @@ export function BlackListOptions() {
     safeStorageSet({
       ignoreList: newData,
     }).then(handleSaveResult).catch(() => handleSaveError());
-  }
+  };
 
   const handleRemoveTopicClick = (boardID: string, topic: { topicName: string, topicID: string }) => {
     const isConfirmed = confirm(`Перестать игнорировать тему «${ decodeEntities(topic.topicName) }»?`);
-
     if (!isConfirmed) return;
 
     const newData = topicsData.map(board => {
@@ -76,108 +109,154 @@ export function BlackListOptions() {
     safeStorageSet({
       ignoredTopicsList: newData,
     }).then(handleSaveResult).catch(() => handleSaveError());
-  }
+  };
 
   useEffect(() => {
-
     const fetchData = async () => {
-      const storage = await safeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]);
-      const storedData = storage[ 'ignoreList' ] || [];
-      const storedTopics = storage[ 'ignoredTopicsList' ] || [];
+      try {
+        const storage = await safeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]);
+        setData(storage[ 'ignoreList' ] || []);
+        setTopicsData(storage[ 'ignoredTopicsList' ] || []);
+      } catch (e) {
+        setError('Не удалось загрузить чёрный список');
+      } finally {
+        setLoaded(true);
+      }
+    };
 
-      setData(storedData);
-      setTopicsData(storedTopics);
-    }
-
-    fetchData()
+    fetchData();
   }, []);
 
   return (
-    <section>
-      { warning && (
-        <div className="text-secondary" style={{ marginBottom: 8 }}>
-          { warning }
+    <section className="blackListOptions">
+      <div className="blackListOptionsHeader">
+        <div>
+          <h3>Чёрный список</h3>
+          <h6>
+            Пользователи { usersCount } · темы { topicsCount }
+          </h6>
+        </div>
+        <div className="blackListOptionsHeaderActions">
+          { statusView && (
+            <span
+              className={ `blackListOptionsStatus blackListOptionsStatus--${ statusView.tone }` }
+              title={ statusView.text }
+              aria-label={ statusView.text }
+              role="status"
+            >
+              <MaskIcon
+                src={ statusView.icon }
+                class={ statusView.spin ? 'ttIconSpin' : '' }
+              />
+            </span>
+          ) }
+        </div>
+      </div>
+
+      { loaded && !data.length && !topicsData.length && (
+        <div className="emptyList">
+          Список пока пуст. Кнопка ⊘ появится в ссылках поста (рядом с E-mail) и в списке тем.
         </div>
       ) }
-      { error && (
-        <div className="text-error" style={{ marginBottom: 8 }}>
-          { error }
-        </div>
-      ) }
-      <h3>Чёрный список</h3>
-      <ul className="blackList">
-        { data.map(({ boardID, boardName, boardUrl, forums }) => (
-          <li className="blackListBoardItem" key={ boardID }>
-            <a href={ `https://${ boardUrl }` } target="_blank" rel="noopener noreferrer">{ boardName }</a>
-            <ul className="blackListForum">
+
+      { data.length > 0 && (
+        <div className="blackListOptionsSection">
+          <h5 className="blackListOptionsSectionTitle">Пользователи</h5>
+          { data.map(({ boardID, boardName, boardUrl, forums }) => (
+            <div className="blackListOptionsBoard" key={ boardID }>
+              <a
+                href={ `https://${ boardUrl }` }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="blackListOptionsBoardTitle"
+              >
+                { boardName }
+              </a>
+
               { forums.map(({ forumID, forumName, users }) => (
-                <li className="blackListForumItem" key={ forumID }>
-                  <a href={ `https://${ boardUrl }/viewforum.php?id=${ forumID }` } target="_blank" rel="noopener noreferrer">{ forumName }</a>
-                  <ul className="blackListUsers">
+                <div className="blackListOptionsForum" key={ forumID }>
+                  <a
+                    href={ `https://${ boardUrl }/viewforum.php?id=${ forumID }` }
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="blackListOptionsForumTitle"
+                  >
+                    { forumName }
+                  </a>
+                  <ul className="blackListOptionsList">
                     { users.map(user => (
-                      <li className="blackListUserItem" key={ user.userID }>
-                        <a
-                          href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          { user.userName }
-                        </a>
+                      <li className="blackListOptionsItem" key={ user.userID }>
+                        <div className="blackListOptionsBody">
+                          <div className="blackListOptionsTitleRow">
+                            <a
+                              href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              { user.userName }
+                            </a>
+                          </div>
+                        </div>
                         <button
-                          className="button small icon-only blackListRemoveItem"
+                          className="button small icon-only blackListOptionsRemove"
                           title="Амнистировать пользователя"
+                          aria-label={ `Амнистировать ${ user.userName }` }
                           onClick={ () => handleRemoveClick(boardID, forumID, user) }
                         >
-                          X
+                          <MaskIcon src={ xIcon } />
                         </button>
                       </li>
                     )) }
                   </ul>
-                </li>
+                </div>
               )) }
-            </ul>
-          </li>
-        )) }
-      </ul>
-
-      {topicsData.length > 0 && (
-        <>
-          <h3>Игнорируемые темы</h3>
-          <ul className="blackList">
-            { topicsData.map(({ boardID, boardName, boardUrl, topics }) => (
-              <li className="blackListBoardItem" key={ `topic-${ boardID }` }>
-                <a href={ `https://${ boardUrl }` } target="_blank" rel="noopener noreferrer">{ boardName }</a>
-                <ul className="blackListTopics">
-                  { topics.map(topic => (
-                    <li className="blackListTopicItem" key={ topic.topicID }>
-                      <a
-                        href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        { decodeEntities(topic.topicName) }
-                      </a>
-                      <button
-                        className="button small icon-only blackListRemoveItem"
-                        title="Перестать игнорировать тему"
-                        onClick={ () => handleRemoveTopicClick(boardID, topic) }
-                      >
-                        X
-                      </button>
-                    </li>
-                  )) }
-                </ul>
-              </li>
-            )) }
-          </ul>
-        </>
-      )}
-
-      {!data.length && !topicsData.length && (
-        <div className="emptyList">
-          Список пока пуст. Кнопка ⊘ появится в ссылках поста (рядом с E-mail) и в списке тем.
+            </div>
+          )) }
         </div>
-      )}
+      ) }
+
+      { topicsData.length > 0 && (
+        <div className="blackListOptionsSection">
+          <h5 className="blackListOptionsSectionTitle">Темы</h5>
+          { topicsData.map(({ boardID, boardName, boardUrl, topics }) => (
+            <div className="blackListOptionsBoard" key={ `topic-${ boardID }` }>
+              <a
+                href={ `https://${ boardUrl }` }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="blackListOptionsBoardTitle"
+              >
+                { boardName }
+              </a>
+              <ul className="blackListOptionsList">
+                { topics.map(topic => (
+                  <li className="blackListOptionsItem" key={ topic.topicID }>
+                    <div className="blackListOptionsBody">
+                      <div className="blackListOptionsTitleRow">
+                        <a
+                          href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          { decodeEntities(topic.topicName) }
+                        </a>
+                      </div>
+                    </div>
+                    <button
+                      className="button small icon-only blackListOptionsRemove"
+                      title="Перестать игнорировать тему"
+                      aria-label={ `Перестать игнорировать тему ${ decodeEntities(topic.topicName) }` }
+                      onClick={ () => handleRemoveTopicClick(boardID, topic) }
+                    >
+                      <MaskIcon src={ xIcon } />
+                    </button>
+                  </li>
+                )) }
+              </ul>
+            </div>
+          )) }
+        </div>
+      ) }
     </section>
-  )
+  );
 }

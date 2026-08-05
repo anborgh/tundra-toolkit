@@ -309,12 +309,13 @@ const hvTopicIgnore = /** @type {any} */ ({
   apply: function () {
     const ignoredIds = this.getIgnoredIds();
     const rowSelector = '.forum > .container > table > tbody > tr';
-    const hideSelectors = [...ignoredIds].map(id => `${rowSelector}[data-tundra-topic-id="${id}"]`);
-    const defaultStyles = '#pun.ignoreDisabled .forum > .container > table > tbody > tr.tundra-hidden-topic { display: table-row !important; }\n' +
-      '#pun.tundra-topic-ignore-buttons-hidden .tundra-ignore-topic { display: none; }';
+    const hideSelectors = [...ignoredIds].map(
+      id => `#pun:not(.ignoreDisabled) ${rowSelector}[data-tundra-topic-id="${id}"]`
+    );
+    const defaultStyles = '#pun.tundra-topic-ignore-buttons-hidden .tundra-ignore-topic { display: none !important; }';
 
     this.style.innerHTML = hideSelectors.length
-      ? hideSelectors.join(', ') + ' { display: none; }\n' + defaultStyles
+      ? hideSelectors.join(', ') + ' { display: none !important; }\n' + defaultStyles
       : defaultStyles;
 
     this.getTopicRows().forEach(/** @param {HTMLElement} row */ (row) => {
@@ -457,16 +458,15 @@ const hvIgnoreList = /** @type {any} */ ({
     this.boardName = title;
   },
   generateStyle: function () {
-    const defaultStyles = '#pun.ignoreDisabled .post { display: block !important; }\n' +
-      '#pun .post.topicpost { display: block !important; }\n' +
-      '.hidden { display: none; }';
+    const defaultStyles = '#pun .post.topicpost { display: block !important; }\n' +
+      '#pun:not(.ignoreDisabled) .hidden { display: none; }';
     /** @type {string[]} */
     const styleArray = [];
     (/** @type {any[]} */ (this.ignoreList)).forEach(user => {
-      styleArray.push(`.post[data-user-id="${user.userID}"]`)
+      styleArray.push(`#pun:not(.ignoreDisabled) .post[data-user-id="${user.userID}"]`)
     });
 
-    this.style.innerHTML = (styleArray.length ? styleArray.join(', ') + ' {display: none} \n' : '') + defaultStyles;
+    this.style.innerHTML = (styleArray.length ? styleArray.join(', ') + ' { display: none; }\n' : '') + defaultStyles;
   },
   hideQuotes: function () {
     document.querySelectorAll('.quote-box').forEach(el => {

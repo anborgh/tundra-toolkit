@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react';
-import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import {
+  getStorageFallbacks,
+  isStorageItemLocal,
+  safeStorageGet,
+  safeStorageSet,
+  STORAGE_FALLBACKS_KEY,
+  StorageFallbackMap,
+} from '../../utils/storage';
 
 import { StickerList } from './stickerList';
 import { EditDialog } from './editDialog';
@@ -17,8 +24,15 @@ export function Stickers() {
   const [ loading, setLoading ] = useState<boolean>(true);
   const [ error, setError ] = useState<boolean>(false);
   const [ warning, setWarning ] = useState<string | null>(null);
+  const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
 
   const [ editPack, setEditPack ] = useState<IStickerPack | null>(null);
+
+  const refreshFallbacks = () => {
+    getStorageFallbacks()
+      .then(setFallbacks)
+      .catch(() => setFallbacks({}));
+  };
 
   const updateData = (newData: IStickerPack[]) => {
     setData(newData);
@@ -71,6 +85,7 @@ export function Stickers() {
       const stickerPack = result.stickerPack || [];
 
       updateData(stickerPack);
+      refreshFallbacks();
     }
 
     fetchData()
@@ -92,8 +107,9 @@ export function Stickers() {
     const updateData = async () => {
       try {
         const result = await safeStorageSet({ stickerPack: data });
+        refreshFallbacks();
         if (result.fallback) {
-          setWarning('Память синхронизации переполнена. Стикеры сохранены только в этом браузере.');
+          setWarning('Память синхронизации переполнена. Часть стикеров или все они сохранены только в этом браузере.');
         } else {
           setWarning(null);
         }
@@ -106,6 +122,18 @@ export function Stickers() {
     updateData();
 
   }, [ data, loaded ]);
+
+  useEffect(() => {
+    const handleChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName !== 'sync' && areaName !== 'local') return;
+      if (changes[STORAGE_FALLBACKS_KEY]) refreshFallbacks();
+    };
+    chrome.storage.onChanged.addListener(handleChange);
+    return () => chrome.storage.onChanged.removeListener(handleChange);
+  }, []);
 
   const renderContent = () => {
     if (loading) {
@@ -139,6 +167,9 @@ export function Stickers() {
         <StickerList
           data={ data }
           editStickerPack={ onEditPack }
+          localIds={ data
+            .filter(pack => isStorageItemLocal(fallbacks, 'stickerPack', pack.id))
+            .map(pack => pack.id) }
         />
       </div>
     );

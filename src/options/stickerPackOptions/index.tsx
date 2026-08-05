@@ -1,18 +1,39 @@
+import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'react';
-import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import {
+  getStorageFallbacks,
+  isStorageItemLocal,
+  safeStorageGet,
+  safeStorageSet,
+  STORAGE_FALLBACKS_KEY,
+  StorageFallbackMap,
+} from '../../utils/storage';
 
 import StickerPack from './stickerPack';
 
+const STORAGE_KEY = 'stickerPack';
+
 export default function () {
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const dragItem = useRef<string | null>(null);
+  const dragOverItem = useRef<string | null>(null);
 
   const [ data, setData ] = useState<IStickerPack[]>([]);
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ error, setError ] = useState<string | null>(null);
+  const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
+  const [ reorderMode, setReorderMode ] = useState(false);
+
+  const refreshFallbacks = () => {
+    getStorageFallbacks()
+      .then(setFallbacks)
+      .catch(() => setFallbacks({}));
+  };
 
   const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
+    refreshFallbacks();
     if (result.fallback) {
-      setWarning('Память синхронизации переполнена. Стикеры сохранены только в этом браузере.');
+      setWarning('Память синхронизации переполнена. Часть стикеров или все они сохранены только в этом браузере.');
     } else {
       setWarning(null);
     }
@@ -52,7 +73,7 @@ export default function () {
       const result = await safeStorageSet({ stickerPack: newData })
       handleSaveResult(result);
       setData(newData);
-      ref.current.scrollIntoView();
+      ref.current?.scrollIntoView();
     } catch (e) {
       handleSaveError();
     }
@@ -75,16 +96,91 @@ export default function () {
     }
   }
 
+  const savePackOrder = async (newData: IStickerPack[]) => {
+    setError(null);
+    try {
+      const result = await safeStorageSet({ stickerPack: newData });
+      handleSaveResult(result);
+      setData(newData);
+    } catch (e) {
+      handleSaveError();
+    }
+  }
+
+  const handlePackDragStart = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    dragItem.current = event.currentTarget.dataset.index ?? null;
+    event.currentTarget.classList.add('moving');
+  }
+
+  const handlePackDragEnter = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    dragOverItem.current = event.currentTarget.dataset.index ?? null;
+
+    event.currentTarget.classList.toggle(
+      'hoveredTop',
+      Number(dragItem.current) > Number(dragOverItem.current));
+    event.currentTarget.classList.toggle(
+      'hoveredBottom',
+      Number(dragItem.current) < Number(dragOverItem.current));
+  }
+
+  const handlePackDragLeave = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    event.currentTarget.classList.remove('hoveredTop');
+    event.currentTarget.classList.remove('hoveredBottom');
+  }
+
+  const handlePackDrop = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    event.currentTarget.classList.remove('moving');
+    event.currentTarget.classList.remove('hoveredTop');
+    event.currentTarget.classList.remove('hoveredBottom');
+
+    if (
+      typeof dragItem.current !== 'string'
+      || typeof dragOverItem.current !== 'string'
+      || dragItem.current === dragOverItem.current
+    ) {
+      dragItem.current = null;
+      dragOverItem.current = null;
+      return;
+    }
+
+    const itemIndex = Number(dragItem.current);
+    const targetIndex = Number(dragOverItem.current);
+    const newData = [ ...data ];
+    const [ moved ] = newData.splice(itemIndex, 1);
+    newData.splice(targetIndex, 0, moved);
+
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    savePackOrder(newData);
+  }
+
   useEffect(() => {
     const fetchData = async () => {
-      const result = await safeStorageGet([ 'stickerPack' ]);
+      const result = await safeStorageGet([ STORAGE_KEY ]);
 
       const stickerPack = result.stickerPack || [];
 
       setData(stickerPack);
+      refreshFallbacks();
     }
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName !== 'sync' && areaName !== 'local') return;
+      if (changes[STORAGE_FALLBACKS_KEY]) {
+        refreshFallbacks();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleChange);
+    return () => chrome.storage.onChanged.removeListener(handleChange);
   }, []);
 
   return (
@@ -92,10 +188,25 @@ export default function () {
       <div className="stickerPackOptionsHeader">
         <div>
           <h3>Стикеры</h3>
-          <h6>Можно перетаскивать стикеры для сортировки</h6>
+          <h6>
+            { reorderMode
+              ? 'Перетаскивайте стикерпаки для изменения порядка'
+              : 'Можно перетаскивать стикеры для сортировки' }
+          </h6>
         </div>
-        <div>
-          <button className="button small primary" title="Добавить стикерпак" onClick={ addStickerPack }>Добавить</button>
+        <div className="stickerPackOptionsActions">
+          { data.length > 1 && (
+            <button
+              className={ `button small${ reorderMode ? ' success' : '' }` }
+              title={ reorderMode ? 'Завершить изменение порядка' : 'Изменить порядок стикерпаков' }
+              onClick={ () => setReorderMode(prev => !prev) }
+            >
+              { reorderMode ? 'Готово' : 'Изменить порядок' }
+            </button>
+          ) }
+          { !reorderMode && (
+            <button className="button small primary" title="Добавить стикерпак" onClick={ addStickerPack }>Добавить</button>
+          ) }
         </div>
       </div>
       <div>
@@ -109,14 +220,27 @@ export default function () {
             { error }
           </div>
         ) }
-        { data.map((pack => (
-          <StickerPack
+        { data.map((pack, index) => (
+          <div
             key={ pack.id }
-            onChange={ updateStickerPack }
-            onRemove={ removeStickerPack }
-            pack={ pack }
-          />
-        ))) }
+            className={ reorderMode ? 'stickerPackReorderItem' : undefined }
+            draggable={ reorderMode }
+            data-index={ index }
+            onDragStart={ reorderMode ? handlePackDragStart : undefined }
+            onDragEnter={ reorderMode ? handlePackDragEnter : undefined }
+            onDragLeave={ reorderMode ? handlePackDragLeave : undefined }
+            onDragEnd={ reorderMode ? handlePackDrop : undefined }
+            onDragOver={ reorderMode ? (e) => e.preventDefault() : undefined }
+          >
+            <StickerPack
+              onChange={ updateStickerPack }
+              onRemove={ removeStickerPack }
+              pack={ pack }
+              localOnly={ isStorageItemLocal(fallbacks, STORAGE_KEY, pack.id) }
+              reorderMode={ reorderMode }
+            />
+          </div>
+        )) }
         {!data.length && (
           <div className="emptyList">
             Список пока пуст. Создайте свой первый стикерпак по кнопке "Добавить".

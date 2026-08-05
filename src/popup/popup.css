@@ -451,8 +451,7 @@ h5 {
   color: var(--popup-muted);
 }
 
-.stickerStatus,
-.ignoreStatus {
+.stickerStatus {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -477,13 +476,14 @@ h5 {
 
 .templateHeader {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 8px;
-  align-items: center;
 }
 
 .templateHeader h5 {
   margin: 0;
+  min-width: 0;
 }
 
 .templatePreview {

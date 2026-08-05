@@ -1,61 +1,162 @@
-.blackList {
-    margin: 0;
-    list-style: none;
-    padding: 0;
+.blackListOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.blackList ul {
-    padding: 0;
+.blackListOptionsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
-.blackList li {
-    padding: 12px 16px;
-    list-style: none;
+.blackListOptionsHeader h3 {
+  margin: 0;
 }
 
-.blackListBoardItem {
-    border: solid 1px var(--tt-border);
-    border-width: 1px 0 0;
-    border-left: 3px solid var(--tt-earth);
-    background: var(--tt-accent-soft);
+.blackListOptionsHeader h6 {
+  margin: 4px 0 0;
+  color: var(--tt-muted, #666);
 }
 
-.blackList .blackListForum {
-    margin: 0 0 16px;
+.blackListOptionsHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.blackList .blackListForumItem {
-    padding: 4px 16px;
-    background: rgba(165, 193, 207, 0.12);
+.blackListOptionsStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--tt-muted, #666);
+  cursor: help;
 }
 
-.blackList .blackListUsers {
-    margin: 0 0 8px;
+.blackListOptionsStatus--success {
+  color: var(--tt-success, #1e7c56);
 }
 
-.blackList .blackListUserItem {
-    padding: 4px 0px 4px 18px;
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.blackList .blackListUserItem:hover {
-    background: rgba(165, 193, 207, 0.12);
+.blackListOptionsStatus--error {
+  color: var(--tt-danger, #a12830);
 }
 
-.blackList .blackListTopics {
-    margin: 0 0 16px;
+.blackListOptionsStatus--muted {
+  color: var(--tt-muted, #666);
 }
 
-.blackList .blackListTopicItem {
-    padding: 4px 16px 4px 32px;
-    position: relative;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.blackListOptionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.blackList .blackListTopicItem:hover {
-    background: rgba(165, 193, 207, 0.12);
+.blackListOptionsSectionTitle {
+  margin: 0;
+  color: var(--tt-muted, #666);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blackListOptionsSectionTitle::before {
+  content: '››';
+  color: var(--tt-earth, #7c5233);
+  letter-spacing: -0.12em;
+}
+
+.blackListOptionsBoard {
+  border: 1px solid var(--tt-border, #e0e0e0);
+  border-radius: 0;
+  border-left: 3px solid var(--tt-frost);
+  padding: 12px;
+  background: var(--tt-card, #fff);
+}
+
+.blackListOptionsBoardTitle {
+  font-weight: 600;
+  color: var(--font-color);
+  text-decoration: none;
+}
+
+.blackListOptionsBoardTitle:hover {
+  text-decoration: underline;
+}
+
+.blackListOptionsForum {
+  margin-top: 10px;
+}
+
+.blackListOptionsForumTitle {
+  display: inline-block;
+  margin-bottom: 4px;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: var(--tt-muted, #666);
+  text-decoration: none;
+}
+
+.blackListOptionsForumTitle:hover {
+  text-decoration: underline;
+}
+
+.blackListOptionsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.blackListOptionsItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--tt-border, #e0e0e0);
+}
+
+.blackListOptionsForum .blackListOptionsItem:first-child,
+.blackListOptionsBoard > .blackListOptionsList > .blackListOptionsItem:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.blackListOptionsBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.blackListOptionsTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.blackListOptionsTitleRow a {
+  color: var(--font-color);
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blackListOptionsTitleRow a:hover {
+  text-decoration: underline;
+}
+
+.blackListOptionsRemove {
+  flex: 0 0 auto;
 }

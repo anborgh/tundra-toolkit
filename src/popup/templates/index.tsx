@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import {
+  getStorageFallbacks,
+  isStorageItemLocal,
+  safeStorageGet,
+  safeStorageSet,
+  STORAGE_FALLBACKS_KEY,
+  StorageFallbackMap,
+} from '../../utils/storage';
 import { MaskIcon } from '../../components/MaskIcon';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
@@ -41,6 +48,13 @@ export function Templates() {
   const [canUse, setCanUse] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [fallbacks, setFallbacks] = useState<StorageFallbackMap>({});
+
+  const refreshFallbacks = () => {
+    getStorageFallbacks()
+      .then(setFallbacks)
+      .catch(() => setFallbacks({}));
+  };
 
   const nextId = useMemo(() => {
     const ids = templates.map(item => item.id);
@@ -66,6 +80,7 @@ export function Templates() {
         const storage = await safeStorageGet([ STORAGE_KEY ]);
         const stored = storage[ STORAGE_KEY ] || [];
         setTemplates(stored);
+        refreshFallbacks();
       } catch (e) {
         setError('Не удалось загрузить шаблоны');
       } finally {
@@ -80,14 +95,29 @@ export function Templates() {
     if (!loaded) return;
     safeStorageSet({ [ STORAGE_KEY ]: templates })
       .then(result => {
+        refreshFallbacks();
         if (result.fallback) {
-          setInfo('Память синхронизации переполнена. Шаблоны сохранены только в этом браузере.');
+          setInfo('Память синхронизации переполнена. Часть шаблонов или все они сохранены только в этом браузере.');
+        } else {
+          setInfo(null);
         }
       })
       .catch(() => {
         setError('Не удалось сохранить шаблоны: недостаточно памяти.');
       });
   }, [templates, loaded]);
+
+  useEffect(() => {
+    const handleChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName !== 'sync' && areaName !== 'local') return;
+      if (changes[STORAGE_FALLBACKS_KEY]) refreshFallbacks();
+    };
+    chrome.storage.onChanged.addListener(handleChange);
+    return () => chrome.storage.onChanged.removeListener(handleChange);
+  }, []);
 
   useEffect(() => {
     const checkCanUse = async () => {
@@ -281,6 +311,14 @@ export function Templates() {
               <div class="templateView">
                 <div class="templateHeader">
                   <h5>{ template.name }</h5>
+                  { isStorageItemLocal(fallbacks, STORAGE_KEY, template.id) && (
+                    <span
+                      className="storageLocalBadge"
+                      title="Сохранено только на этом устройстве"
+                    >
+                      локально
+                    </span>
+                  ) }
                 </div>
                 <div class="templatePreview">{ renderPreview(template.content) }</div>
                 <div class="templateCardActions">

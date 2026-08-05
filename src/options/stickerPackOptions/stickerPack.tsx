@@ -9,9 +9,11 @@ type Props = {
   pack: IStickerPack;
   onChange: (pack: IStickerPack) => void;
   onRemove: (packId: number) => void;
+  localOnly?: boolean;
+  reorderMode?: boolean;
 }
 
-export default function ({ pack, onChange, onRemove }: Props) {
+export default function ({ pack, onChange, onRemove, localOnly = false, reorderMode = false }: Props) {
   const dragItem = useRef();
   const dragOverItem = useRef();
 
@@ -107,23 +109,35 @@ export default function ({ pack, onChange, onRemove }: Props) {
   }, [ pack ]);
 
   return (
-    <div className="stickerList">
+    <div className={ `stickerList${ reorderMode ? ' reorderMode' : '' }` }>
       <div className="stickerListHeader">
-        { edit ? (
+        { edit && !reorderMode ? (
           <div>
             <input type="text" value={ name } onChange={ handleNameChange }/>
           </div>
         ) : (
-          <h4>{ name }</h4>
+          <div className="stickerListTitle">
+            <h4>{ name }</h4>
+            { localOnly && (
+              <span
+                className="storageLocalBadge"
+                title="Сохранено только на этом устройстве"
+              >
+                локально
+              </span>
+            ) }
+          </div>
         ) }
-        <div className="actions">
-          { !edit && <button className="button small" onClick={ showEditPack } title="Редактировать стикерпак">🖋️</button> }
-          { edit && <button className="button success small" onClick={ savePack } title="Сохранить изменения">Сохранить</button> }
-          { edit && <button className="button small" onClick={ hideEditPack } title="Отменить изменения">Отменить</button> }
-          { edit && <button className="button clear small" onClick={ hideRemovePack } title="Удалить стикерпак">Удалить</button> }
-        </div>
+        { !reorderMode && (
+          <div className="actions">
+            { !edit && <button className="button small" onClick={ showEditPack } title="Редактировать стикерпак">🖋️</button> }
+            { edit && <button className="button success small" onClick={ savePack } title="Сохранить изменения">Сохранить</button> }
+            { edit && <button className="button small" onClick={ hideEditPack } title="Отменить изменения">Отменить</button> }
+            { edit && <button className="button clear small" onClick={ hideRemovePack } title="Удалить стикерпак">Удалить</button> }
+          </div>
+        ) }
       </div>
-      { edit ? (
+      { !reorderMode && (edit ? (
         <div className="stickerListContent edited">
           <textarea rows={10} value={textItems} onChange={ handleItemsChange } />
         </div>
@@ -144,7 +158,7 @@ export default function ({ pack, onChange, onRemove }: Props) {
             </div>
           )) }
         </div>
-      ) }
+      )) }
     </div>
   )
 }

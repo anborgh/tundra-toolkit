@@ -55,6 +55,7 @@
       "js": [
         "scripts/ttBridgeChannelIsolated.js",
         "scripts/boardUtils.js",
+        "scripts/safeStorage.js",
         "scripts/isolated.js"
       ],
       "run_at": "document_end",

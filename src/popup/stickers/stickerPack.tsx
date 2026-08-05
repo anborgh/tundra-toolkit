@@ -9,6 +9,7 @@ type PackProps = {
   opened: boolean;
   onChange: (newActiveTab: number) => void;
   editStickerPack: (packId: number) => void;
+  localOnly?: boolean;
 }
 
 export function StickerPack({
@@ -16,6 +17,7 @@ export function StickerPack({
   onChange,
   opened,
   editStickerPack,
+  localOnly = false,
 }: PackProps) {
 
   const [titleImg, setTitleImg] = useState<string>('');
@@ -91,6 +93,14 @@ export function StickerPack({
         )}
         <div class="stickerPackTitle" onClick={handleTitleClick}>
           <div class="stickerPackTitleText">{pack.name}</div>
+          { localOnly && (
+            <span
+              className="storageLocalBadge"
+              title="Сохранено только на этом устройстве"
+            >
+              локально
+            </span>
+          ) }
         </div>
         <div className="stickerPackTitleActions">
           <button className="button small" onClick={handleEditPack}><MaskIcon src={EditIcon} /></button>

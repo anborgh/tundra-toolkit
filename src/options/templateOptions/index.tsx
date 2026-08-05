@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import {
+  getStorageFallbacks,
+  isChunkedStorageChange,
+  isStorageItemLocal,
+  safeStorageGet,
+  safeStorageSet,
+  STORAGE_FALLBACKS_KEY,
+  StorageFallbackMap,
+} from '../../utils/storage';
 
 import './style.css';
 
@@ -8,11 +16,18 @@ const STORAGE_KEY = 'templates';
 export default function TemplateOptions() {
   const [ templates, setTemplates ] = useState<ITemplate[]>([]);
   const [ loaded, setLoaded ] = useState(false);
+  const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
 
   const nextId = useMemo(() => {
     const ids = templates.map(item => item.id);
     return ids.length ? Math.max(...ids) + 1 : 0;
   }, [ templates ]);
+
+  const refreshFallbacks = () => {
+    getStorageFallbacks()
+      .then(setFallbacks)
+      .catch(() => setFallbacks({}));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -20,6 +35,7 @@ export default function TemplateOptions() {
         const storage = await safeStorageGet([ STORAGE_KEY ]);
         const stored = storage[ STORAGE_KEY ] || [];
         setTemplates(stored);
+        refreshFallbacks();
       } finally {
         setLoaded(true);
       }
@@ -30,15 +46,28 @@ export default function TemplateOptions() {
 
   useEffect(() => {
     if (!loaded) return;
-    safeStorageSet({ [ STORAGE_KEY ]: templates }).catch(() => {
-    });
+    safeStorageSet({ [ STORAGE_KEY ]: templates })
+      .then(() => refreshFallbacks())
+      .catch(() => {});
   }, [ templates, loaded ]);
 
   useEffect(() => {
-    const handleChange = (changes: Record<string, chrome.storage.StorageChange>) => {
-      if (!changes[ STORAGE_KEY ]) return;
-      const newValue = changes[ STORAGE_KEY ].newValue || [];
-      setTemplates(newValue);
+    const handleChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName !== 'sync' && areaName !== 'local') return;
+      if (changes[STORAGE_FALLBACKS_KEY]) {
+        refreshFallbacks();
+      }
+      if (!isChunkedStorageChange(changes, STORAGE_KEY)) return;
+
+      safeStorageGet([ STORAGE_KEY ])
+        .then(storage => {
+          setTemplates(storage[ STORAGE_KEY ] || []);
+          refreshFallbacks();
+        })
+        .catch(() => {});
     };
 
     chrome.storage.onChanged.addListener(handleChange);
@@ -112,37 +141,48 @@ export default function TemplateOptions() {
       ) }
 
       <div className="templateOptionsList">
-        { templates.map(template => (
-          <div className="templateOptionsItem" key={ template.id }>
-            <div className="templateOptionsRow">
-              <label>
-                Название
-                <input
-                  type="text"
-                  value={ template.name }
-                  onInput={ (event: any) => updateTemplate(template.id, { name: event.target.value }) }
+        { templates.map(template => {
+          const localOnly = isStorageItemLocal(fallbacks, STORAGE_KEY, template.id);
+          return (
+            <div className="templateOptionsItem" key={ template.id }>
+              <div className="templateOptionsRow">
+                <label>
+                  Название
+                  <input
+                    type="text"
+                    value={ template.name }
+                    onInput={ (event: any) => updateTemplate(template.id, { name: event.target.value }) }
+                  />
+                </label>
+                <div className="templateOptionsMeta">
+                  { localOnly && (
+                    <span
+                      className="storageLocalBadge"
+                      title="Сохранено только на этом устройстве"
+                    >
+                      локально
+                    </span>
+                  ) }
+                  { template.updatedAt && (
+                    <span className="text-secondary">Обновлено: { formatDate(template.updatedAt) }</span>
+                  ) }
+                </div>
+              </div>
+              <label className="templateOptionsLabel">
+                Текст
+                <textarea
+                  rows={ 6 }
+                  value={ template.content }
+                  onInput={ (event: any) => updateTemplate(template.id, { content: event.target.value }) }
+                  placeholder="BBCode или HTML, можно смешивать"
                 />
               </label>
-              <div className="templateOptionsMeta">
-                { template.updatedAt && (
-                  <span className="text-secondary">Обновлено: { formatDate(template.updatedAt) }</span>
-                ) }
+              <div className="templateOptionsFooter">
+                <button className="button small clear" onClick={ () => removeTemplate(template.id) }>Удалить</button>
               </div>
             </div>
-            <label className="templateOptionsLabel">
-              Текст
-              <textarea
-                rows={ 6 }
-                value={ template.content }
-                onInput={ (event: any) => updateTemplate(template.id, { content: event.target.value }) }
-                placeholder="BBCode или HTML, можно смешивать"
-              />
-            </label>
-            <div className="templateOptionsFooter">
-              <button className="button small clear" onClick={ () => removeTemplate(template.id) }>Удалить</button>
-            </div>
-          </div>
-        )) }
+          );
+        }) }
       </div>
     </section>
   );

@@ -208,3 +208,16 @@ select:focus-visible {
     color: var(--tt-earth);
     user-select: none;
 }
+
+.storageLocalBadge {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    padding: 2px 5px;
+    border: 1px solid var(--tt-earth);
+    color: var(--tt-earth);
+    background: rgba(124, 82, 51, 0.12);
+    white-space: nowrap;
+}

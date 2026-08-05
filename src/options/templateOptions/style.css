@@ -70,6 +70,10 @@
 
 .templateOptionsMeta {
   min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
   text-align: right;
   color: var(--tt-muted, #666);
   font-size: 0.9em;

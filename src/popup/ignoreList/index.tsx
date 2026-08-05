@@ -4,7 +4,12 @@ import { openSettingsSection } from '../../utils/settingsSections';
 import { decodeEntities } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
 import externalLinkIcon from '../../assets/icons/external-link.svg';
+import eyeIcon from '../../assets/icons/eye.svg';
+import eyeOffIcon from '../../assets/icons/eye-off.svg';
 import xIcon from '../../assets/icons/x.svg';
+import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
+import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import circleAlertIcon from '../../assets/icons/circle-alert.svg';
 
 import '../../components/icon.css';
 import './style.css';
@@ -117,22 +122,56 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
   const [ board, setBoard ] = useState<IBoardStore | null>(null);
   const [ users, setUsers ] = useState<IUserStore[]>([]);
   const [ topics, setTopics ] = useState<ITopicStore[]>([]);
-  const [ loading, setLoading ] = useState<boolean>(false);
   const [ error, setError ] = useState<string | null>(null);
-  const [ warning, setWarning ] = useState<string | null>(null);
+  const [ info, setInfo ] = useState<string | null>(null);
+  const [ contentRevealed, setContentRevealed ] = useState(false);
+  const [ revealToggling, setRevealToggling ] = useState(false);
 
-  const lastUpdatedAt = useMemo(() => {
-    if (!users.length) return null;
-    return users.reduce((acc, user) => Math.max(acc, user.updatedAt || 0), 0);
-  }, [ users ]);
+  const statusView = useMemo(() => {
+    if (state === 'loading') {
+      return { icon: loaderCircleIcon, text: 'Загружаем…', tone: 'muted' as const, spin: true };
+    }
+    if (state === 'unavailable') {
+      return {
+        icon: circleAlertIcon,
+        text: 'Текущая вкладка не поддерживает форум',
+        tone: 'error' as const,
+        spin: false,
+      };
+    }
+    if (state === 'noForum') {
+      return {
+        icon: circleAlertIcon,
+        text: 'Не нашли данные форума. Откройте вкладку с разделом.',
+        tone: 'error' as const,
+        spin: false,
+      };
+    }
+    if (state === 'error' || error) {
+      return { icon: circleAlertIcon, text: error || 'Ошибка', tone: 'error' as const, spin: false };
+    }
+    if (info) {
+      return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
+    }
+    return null;
+  }, [ state, error, info ]);
 
   const syncReadyState = (nextUsers: IUserStore[], nextTopics: ITopicStore[]) => {
     setState(nextUsers.length || nextTopics.length ? 'ready' : 'empty');
   };
 
+  const loadRevealState = async () => {
+    try {
+      const resp = await sendMessageToActiveTab({ type: 'tundra_toolkit_ignore_reveal_state' });
+      setContentRevealed(!!resp?.revealed);
+    } catch (e) {
+      setContentRevealed(false);
+    }
+  };
+
   const load = async () => {
-    setLoading(true);
     setError(null);
+    setState('loading');
 
     try {
       const available = await checkForumAvailability();
@@ -140,6 +179,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
         setContext(null);
         setUsers([]);
         setTopics([]);
+        setContentRevealed(false);
         setState('unavailable');
         return;
       }
@@ -150,11 +190,15 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
         setContext(null);
         setUsers([]);
         setTopics([]);
+        setContentRevealed(false);
         setState('noForum');
         return;
       }
 
-      const storage = await safeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]);
+      const [ storage ] = await Promise.all([
+        safeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]),
+        loadRevealState(),
+      ]);
       const boardID = activeCtx.boardID;
       const forumID = activeCtx.forumID;
       const ignoreList: IBoardStore[] = storage?.ignoreList || [];
@@ -184,8 +228,6 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
     } catch (e) {
       setError('Не удалось загрузить список');
       setState('error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -212,10 +254,11 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
       const result = await safeStorageSet({ ignoreList: newData });
       if (result.fallback) {
-        setWarning('Память синхронизации переполнена. Список сохранён только в этом браузере.');
+        setInfo('Память синхронизации переполнена. Список сохранён только в этом браузере.');
       } else {
-        setWarning(null);
+        setInfo(null);
       }
+      setError(null);
     } catch (e) {
       setError('Не удалось обновить список');
       setState('error');
@@ -242,10 +285,11 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
       const result = await safeStorageSet({ ignoredTopicsList: newData });
       if (result.fallback) {
-        setWarning('Память синхронизации переполнена. Список сохранён только в этом браузере.');
+        setInfo('Память синхронизации переполнена. Список сохранён только в этом браузере.');
       } else {
-        setWarning(null);
+        setInfo(null);
       }
+      setError(null);
     } catch (e) {
       setError('Не удалось обновить список тем');
       setState('error');
@@ -254,35 +298,48 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
   const handleOpenSettings = () => openSettingsSection('blackList');
 
-  const renderStatus = () => {
-    if (state === 'loading') return <span class="text-secondary">Загружаем…</span>;
-    if (state === 'unavailable') return <span class="text-error">Текущая вкладка не поддерживает форум</span>;
-    if (state === 'noForum') return <span class="text-error">Не нашли данные форума. Откройте вкладку с разделом.</span>;
-    if (state === 'empty') {
-      const scope = context?.forumID ? 'В этом разделе' : 'На этом форуме';
-      return <span class="text-secondary">{ scope } никого не игнорируете и нет скрытых тем</span>;
+  const handleToggleReveal = async () => {
+    if (revealToggling || state === 'loading' || state === 'unavailable') return;
+
+    setRevealToggling(true);
+    try {
+      const resp = await sendMessageToActiveTab({ type: 'tundra_toolkit_ignore_toggle' });
+      setContentRevealed(!!resp?.revealed);
+    } catch (e) {
+      // ignore popup errors; user can retry
+    } finally {
+      setRevealToggling(false);
     }
-    if (state === 'error') return <span class="text-error">{ error || 'Ошибка' }</span>;
-    return null;
   };
 
   const boardUrl = context?.boardUrl;
+  const showForumGroups = !context?.forumID && !!board?.forums?.length;
+  const revealDisabled = revealToggling || state === 'loading' || state === 'unavailable';
+  const revealTitle = contentRevealed
+    ? 'Снова скрыть проигнорированный контент'
+    : 'Временно показать весь скрытый контент (до перезагрузки страницы)';
 
-  const renderUserRow = (user: IUserStore, key: string) => (
-    <li class="blackListUserItem" key={ key }>
-      { boardUrl ? (
-        <a
-          href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
-          target="_blank"
-          rel="noreferrer"
-        >
-          { user.userName }
-        </a>
-      ) : (
-        <span>{ user.userName }</span>
-      ) }
+  const renderUserItem = (user: IUserStore, key: string) => (
+    <li class="ignoreItem" key={ key }>
+      <div class="ignoreBody">
+        <div class="ignoreTitleRow">
+          { boardUrl ? (
+            <a
+              href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
+              target="_blank"
+              rel="noreferrer"
+              class="ignoreTitle"
+              title={ user.userName }
+            >
+              { user.userName }
+            </a>
+          ) : (
+            <span class="ignoreTitle" title={ user.userName }>{ user.userName }</span>
+          ) }
+        </div>
+      </div>
       <button
-        class="button small icon-only blackListRemoveItem"
+        class="button small icon-only ignoreRemove"
         title="Амнистировать пользователя"
         aria-label={ `Амнистировать ${ user.userName }` }
         onClick={ () => handleRemove(user) }
@@ -291,6 +348,43 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
       </button>
     </li>
   );
+
+  const renderTopicItem = (topic: ITopicStore) => {
+    const title = decodeEntities(topic.topicName) || `Тема ${ topic.topicID }`;
+    return (
+      <li class="ignoreItem" key={ topic.topicID }>
+        <div class="ignoreBody">
+          <div class="ignoreTitleRow">
+            { boardUrl ? (
+              <a
+                href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+                target="_blank"
+                rel="noreferrer"
+                class="ignoreTitle"
+                title={ title }
+              >
+                { title }
+              </a>
+            ) : (
+              <span class="ignoreTitle" title={ title }>{ title }</span>
+            ) }
+          </div>
+        </div>
+        <button
+          class="button small icon-only ignoreRemove"
+          title="Перестать игнорировать тему"
+          aria-label={ `Перестать игнорировать тему ${ title }` }
+          onClick={ () => handleRemoveTopic(topic) }
+        >
+          <MaskIcon src={ xIcon } />
+        </button>
+      </li>
+    );
+  };
+
+  const emptyMessage = context?.forumID
+    ? 'В этом разделе никого не игнорируете и нет скрытых тем'
+    : 'На этом форуме никого не игнорируете и нет скрытых тем';
 
   return (
     <div class="ignoreTab">
@@ -306,16 +400,24 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
           ) : (
             <p class="ignoreHeaderForum">Текущий раздел</p>
           ) }
-          { warning && (
-            <p class="text-secondary ignoreHeaderWarning" aria-live="polite">
-              { warning }
-            </p>
-          ) }
         </div>
         <div class="ignoreHeaderActions">
+          { statusView && (
+            <span
+              class={ `ignoreStatus ignoreStatus--${ statusView.tone }` }
+              title={ statusView.text }
+              aria-label={ statusView.text }
+              role="status"
+            >
+              <MaskIcon
+                src={ statusView.icon }
+                class={ statusView.spin ? 'ttIconSpin' : '' }
+              />
+            </span>
+          ) }
           <button
             class="button small ignoreControlsToggle"
-            disabled={ controlsToggling }
+            disabled={ controlsToggling || state === 'loading' }
             onClick={ onToggleControls }
             title={ controlsVisible
               ? 'Скрыть кнопки игнора на страницах форума'
@@ -323,6 +425,16 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
             }
           >
             { controlsVisible ? 'Скрыть кнопки' : 'Показать кнопки' }
+          </button>
+          <button
+            class={ `button small ignoreHeaderReveal icon-only${ contentRevealed ? ' is-active' : '' }` }
+            disabled={ revealDisabled }
+            title={ revealTitle }
+            aria-label={ revealTitle }
+            aria-pressed={ contentRevealed }
+            onClick={ handleToggleReveal }
+          >
+            <MaskIcon src={ contentRevealed ? eyeOffIcon : eyeIcon } />
           </button>
           <button
             class="button small ignoreHeaderSettingsLink icon-only"
@@ -335,72 +447,50 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
         </div>
       </div>
 
-      <div class="ignoreStatus" aria-live="polite">{ renderStatus() }</div>
-
-      { state === 'ready' && users.length > 0 && (
-        <div class="ignoreUsersSection">
-          <p class="ignoreSectionTitle">Игнорируемые пользователи</p>
-          <ul class="blackList ignoreList ignoreUsersList">
-            { (context?.forumID && board)
-              ? users.map(user => renderUserRow(user, user.userID))
-              : (board?.forums || []).map(forum => (
-                <li class="ignoreForumGroup" key={ forum.forumID }>
-                  <p class="ignoreForumGroupTitle">
-                    { boardUrl ? (
-                      <a
-                        href={ `https://${ boardUrl }/viewforum.php?id=${ forum.forumID }` }
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        { forum.forumName }
-                      </a>
-                    ) : (
-                      <span>{ forum.forumName }</span>
-                    ) }
-                  </p>
-                  <ul class="blackListUsers">
-                    { (forum.users || []).map(user => renderUserRow(user, `${ forum.forumID }-${ user.userID }`)) }
-                  </ul>
-                </li>
-              )) }
-          </ul>
-        </div>
+      { state === 'empty' && (
+        <div class="emptyList">{ emptyMessage }</div>
       ) }
 
-      { state === 'ready' && context && (
-        <div class="ignoreTopicsSection">
-          <p class="ignoreSectionTitle">Игнорируемые темы</p>
-          { topics.length === 0 ? (
-            <div class="ignoreStatus">
-              <span class="text-secondary">На этом форуме нет игнорируемых тем</span>
-            </div>
-          ) : (
-            <ul class="blackList ignoreList ignoreTopicsList">
-              { topics.map(topic => (
-                <li class="blackListTopicItem" key={ topic.topicID }>
+      { state === 'ready' && users.length > 0 && (
+        <div class="ignoreSection">
+          <h5 class="ignoreSectionTitle">Пользователи</h5>
+          { showForumGroups ? (
+            (board?.forums || []).filter(forum => (forum.users || []).length > 0).map(forum => (
+              <div class="ignoreForumGroup" key={ forum.forumID }>
+                <p class="ignoreForumGroupTitle">
                   { boardUrl ? (
                     <a
-                      href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+                      href={ `https://${ boardUrl }/viewforum.php?id=${ forum.forumID }` }
                       target="_blank"
                       rel="noreferrer"
                     >
-                      { decodeEntities(topic.topicName) || `Тема ${ topic.topicID }` }
+                      { forum.forumName }
                     </a>
                   ) : (
-                    <span>{ decodeEntities(topic.topicName) || `Тема ${ topic.topicID }` }</span>
+                    <span>{ forum.forumName }</span>
                   ) }
-                  <button
-                    class="button small icon-only blackListRemoveItem"
-                    title="Перестать игнорировать тему"
-                    aria-label={ `Перестать игнорировать тему ${ decodeEntities(topic.topicName) || topic.topicID }` }
-                    onClick={ () => handleRemoveTopic(topic) }
-                  >
-                    <MaskIcon src={ xIcon } />
-                  </button>
-                </li>
-              )) }
+                </p>
+                <ul class="ignoreList">
+                  { (forum.users || []).map(user =>
+                    renderUserItem(user, `${ forum.forumID }-${ user.userID }`)
+                  ) }
+                </ul>
+              </div>
+            ))
+          ) : (
+            <ul class="ignoreList">
+              { users.map(user => renderUserItem(user, user.userID)) }
             </ul>
           ) }
+        </div>
+      ) }
+
+      { state === 'ready' && topics.length > 0 && (
+        <div class="ignoreSection">
+          <h5 class="ignoreSectionTitle">Темы</h5>
+          <ul class="ignoreList">
+            { topics.map(renderTopicItem) }
+          </ul>
         </div>
       ) }
     </div>
