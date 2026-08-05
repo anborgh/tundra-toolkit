@@ -3,6 +3,7 @@ import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
 import refreshIcon from '../../assets/icons/refresh-cw.svg';
+import xIcon from '../../assets/icons/x.svg';
 
 import '../../components/icon.css';
 import './style.css';
@@ -227,9 +228,10 @@ export function FavoritesOptions() {
         <button
           className="button small icon-only favoritesOptionsRemove"
           title="Убрать из избранного"
+          aria-label="Убрать из избранного"
           onClick={ () => handleRemove(item) }
         >
-          X
+          <MaskIcon src={ xIcon } />
         </button>
       </li>
     );

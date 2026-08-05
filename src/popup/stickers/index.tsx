@@ -3,7 +3,10 @@ import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 
 import { StickerList } from './stickerList';
 import { EditDialog } from './editDialog';
+import { MaskIcon } from '../../components/MaskIcon';
+import plusIcon from '../../assets/icons/plus.svg';
 
+import '../../components/icon.css';
 import './style.css';
 
 export function Stickers() {
@@ -133,11 +136,6 @@ export function Stickers() {
 
     return (
       <div class="stickerList">
-        { warning && (
-          <div class="text-secondary" style={{ marginBottom: '8px' }}>
-            { warning }
-          </div>
-        ) }
         <StickerList
           data={ data }
           editStickerPack={ onEditPack }
@@ -148,17 +146,26 @@ export function Stickers() {
 
   return (
     <div class="stickerTab">
+      <div class="stickerHeader">
+        <div class="stickerActions">
+          <button class="button small" onClick={ addPack } title="Новый стикерпак">
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              <MaskIcon src={ plusIcon } />
+              Новый стикерпак
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div class="stickerStatus">
         { loading && <span class="text-secondary">Загружаем…</span> }
         { error && <span class="text-error">Ошибка загрузки</span> }
         { !loading && !error && <span class="text-secondary">Паков: { data.length }</span> }
+        { warning && <span class="text-secondary">{ warning }</span> }
       </div>
 
       <div class="stickerListWrapper">
         { renderContent() }
-        <div class="stickerListActions">
-          <button class="button small" onClick={ addPack }>Новый стикерпак</button>
-        </div>
       </div>
 
       <EditDialog

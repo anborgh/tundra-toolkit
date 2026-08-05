@@ -28,7 +28,9 @@
     justify-content: space-between;
     align-items: center;
     height: 64px;
-    background: #8ba2a633;
+    background: var(--tt-accent-soft);
+    border: 1px solid var(--tt-border);
+    border-left: 3px solid var(--tt-frost);
     padding: 0 12px;
 }
 

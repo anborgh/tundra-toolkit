@@ -3,6 +3,11 @@ import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost, isAllowedBoardHost, buildHttpsForumApiUrl, assertHttpsResponse } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
 import refreshIcon from '../../assets/icons/refresh-cw.svg';
+import plusIcon from '../../assets/icons/plus.svg';
+import xIcon from '../../assets/icons/x.svg';
+import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
+import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import circleAlertIcon from '../../assets/icons/circle-alert.svg';
 
 import '../../components/icon.css';
 import './style.css';
@@ -122,6 +127,27 @@ export function Favorites() {
     if (refreshing || info || error || !lastRefreshAt) return ' Обновить (не чаще раза в 1 мин.)';
     return `Обновлено: ${ new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) } · каждые ${ intervalMinutes } мин.`;
   }, [ lastRefreshAt, intervalMinutes, refreshing, info, error ]);
+
+  const statusView = useMemo(() => {
+    if (error) {
+      return { icon: circleAlertIcon, text: error, tone: 'error' as const, spin: false };
+    }
+    if (info) {
+      return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
+    }
+    if (!loaded) {
+      return { icon: loaderCircleIcon, text: 'Загружаем…', tone: 'muted' as const, spin: true };
+    }
+    if (refreshing) {
+      return {
+        icon: loaderCircleIcon,
+        text: 'Проверяем новые сообщения…',
+        tone: 'muted' as const,
+        spin: true,
+      };
+    }
+    return null;
+  }, [ error, info, loaded, refreshing ]);
 
   const persist = async (items: IFavoriteTopic[]) => {
     const safeItems = filterFavoritesByAllowedHost(items);
@@ -345,9 +371,10 @@ export function Favorites() {
         <button
           class="button small icon-only favoriteRemove"
           title="Убрать из избранного"
+          aria-label="Убрать из избранного"
           onClick={ () => handleRemove(item) }
         >
-          X
+          <MaskIcon src={ xIcon } />
         </button>
       </li>
     );
@@ -357,6 +384,19 @@ export function Favorites() {
     <div class="favoritesTab">
       <div class="favoritesHeader">
         <div class="favoritesActions">
+          { statusView && (
+            <span
+              class={ `favoritesStatus favoritesStatus--${ statusView.tone }` }
+              title={ statusView.text }
+              aria-label={ statusView.text }
+              role="status"
+            >
+              <MaskIcon
+                src={ statusView.icon }
+                class={ statusView.spin ? 'ttIconSpin' : '' }
+              />
+            </span>
+          ) }
           <button
             class="button small icon-only"
             disabled={ refreshing }
@@ -367,7 +407,7 @@ export function Favorites() {
             <MaskIcon src={ refreshIcon } />
           </button>
           <button
-            class="button small"
+            class="button small primary"
             disabled={ !activeTopic || activeAlreadyAdded || adding }
             title={ !activeTopic
               ? 'Откройте страницу темы на форуме, чтобы добавить её'
@@ -375,21 +415,17 @@ export function Favorites() {
             }
             onClick={ handleAddActive }
           >
-            { activeAlreadyAdded ? 'Уже в избранном' : '+ Текущая тема' }
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              { !activeAlreadyAdded && <MaskIcon src={ plusIcon } /> }
+              { activeAlreadyAdded ? 'Уже в избранном' : 'Текущая тема' }
+            </span>
           </button>
         </div>
       </div>
 
-      <div class="favoritesStatus">
-        { !loaded && <span class="text-secondary">Загружаем…</span> }
-        { refreshing && <span class="text-secondary">Проверяем новые сообщения…</span> }
-        { info && <span class="text-success">{ info }</span> }
-        { error && <span class="text-error">{ error }</span> }
-      </div>
-
       { loaded && !favorites.length && (
         <div class="emptyList">
-          Пока пусто. Откройте тему на форуме и нажмите «+ Текущая тема».
+          Пока пусто. Откройте тему на форуме и нажмите «Текущая тема».
         </div>
       ) }
 

@@ -37,9 +37,11 @@ export function StyleTab({
 
   return (
     <div class="styleTab">
-      <div class="styleTabHeader">
-        <h4>Стиль</h4>
-        <p class="text-secondary">Настройки сохраняются отдельно для каждого форума.</p>
+      <div class="styleTabHeader tabPanelHeader">
+        <div>
+          <h4>Стиль</h4>
+          <p class="text-secondary">Настройки сохраняются отдельно для каждого форума.</p>
+        </div>
       </div>
 
       { !available && (

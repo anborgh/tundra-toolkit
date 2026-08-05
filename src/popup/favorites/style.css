@@ -6,7 +6,7 @@
 
 .favoritesHeader {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
@@ -16,22 +16,35 @@
   margin: 2px 0 0;
 }
 
-.favoritesActions .button.icon-only {
-  min-width: 34px;
-  width: 34px;
-  padding: 6px;
+.favoritesActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+
+.favoritesStatus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #22272b;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--popup-muted);
+  cursor: help;
 }
 
-.favoritesStatus {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  min-height: 22px;
+.favoritesStatus--success {
+  color: var(--tt-success);
+}
+
+.favoritesStatus--error {
+  color: var(--tt-danger);
+}
+
+.favoritesStatus--muted {
   color: var(--popup-muted);
 }
 
@@ -46,7 +59,17 @@
   color: var(--popup-muted);
   text-transform: uppercase;
   font-size: 11px;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
+  font-family: var(--tt-font-body);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favoritesSectionTitle::before {
+  content: '››';
+  color: var(--tt-earth);
+  letter-spacing: -0.12em;
 }
 
 .favoritesSectionUpdated .favoritesSectionTitle {
@@ -68,7 +91,8 @@
   gap: 10px;
   padding: 10px;
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
+  border-radius: 0;
+  border-left: 3px solid var(--tt-frost);
   background: var(--popup-card);
 }
 
@@ -116,10 +140,10 @@
 
 .favoriteNewBadge {
   flex: 0 0 auto;
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: rgba(90, 193, 147, 0.18);
-  border: 1px solid rgba(90, 193, 147, 0.4);
+  padding: 1px 6px;
+  border-radius: 0;
+  background: rgba(47, 107, 79, 0.14);
+  border: 1px solid rgba(47, 107, 79, 0.4);
   color: var(--popup-success);
   font-size: 10px;
   font-weight: 700;
@@ -159,10 +183,10 @@
 }
 
 .favoriteStaleBadge {
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: rgba(255, 107, 107, 0.12);
-  border: 1px solid rgba(255, 107, 107, 0.35);
+  padding: 1px 6px;
+  border-radius: 0;
+  background: rgba(161, 40, 48, 0.12);
+  border: 1px solid rgba(161, 40, 48, 0.35);
   color: var(--popup-danger);
   font-size: 10px;
   font-weight: 600;
@@ -170,11 +194,5 @@
 }
 
 .favoriteRemove {
-  border: 1px solid var(--popup-border);
-  border-radius: 8px;
-  background: var(--tt-input-bg, #2a3139);
-  color: var(--popup-text);
-  font-weight: 700;
-  cursor: pointer;
   flex: 0 0 auto;
 }

@@ -14,9 +14,10 @@
 }
 
 .blackListBoardItem {
-    border: solid 1px;
+    border: solid 1px var(--tt-border);
     border-width: 1px 0 0;
-    background: #8BA2A633;
+    border-left: 3px solid var(--tt-earth);
+    background: var(--tt-accent-soft);
 }
 
 .blackList .blackListForum {
@@ -25,7 +26,7 @@
 
 .blackList .blackListForumItem {
     padding: 4px 16px;
-    background: #8BA2A611;
+    background: rgba(165, 193, 207, 0.12);
 }
 
 .blackList .blackListUsers {
@@ -40,7 +41,7 @@
     align-items: center;
 }
 .blackList .blackListUserItem:hover {
-    background: #8BA2A611;
+    background: rgba(165, 193, 207, 0.12);
 }
 
 .blackList .blackListTopics {
@@ -56,5 +57,5 @@
 }
 
 .blackList .blackListTopicItem:hover {
-    background: #8BA2A611;
+    background: rgba(165, 193, 207, 0.12);
 }

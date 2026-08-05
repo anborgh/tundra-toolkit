@@ -7,17 +7,17 @@
 .stickerHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex-wrap: wrap;
 }
-
 
 .stickerActions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  margin-left: auto;
 }
 
 .stickerStatus {
@@ -49,8 +49,8 @@
   padding: 20px 12px;
   min-height: 140px;
   border: 1px dashed var(--popup-accent);
-  border-radius: 8px;
-  background: var(--tt-card-alt, #f9fbfd);
+  border-radius: 0;
+  background: var(--tt-card-alt);
   color: var(--popup-muted);
 }
 
@@ -64,21 +64,19 @@
 }
 
 .stickerList_emptyTitle {
+  font-family: var(--tt-font-display);
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
-}
-
-.stickerListActions {
-  display: flex;
-  justify-content: flex-end;
+  color: var(--popup-text);
 }
 
 .stickerPack {
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--popup-card);
   overflow: hidden;
+  border-left: 3px solid var(--tt-frost);
 }
 
 .stickerPackHeader {
@@ -101,9 +99,9 @@
   background-size: cover;
   background-position: center;
   flex: 0 0 32px;
-  border-radius: 8px;
+  border-radius: 0;
   border: 1px solid var(--popup-border);
-  background-color: var(--tt-card-alt, #eef2f7);
+  background-color: var(--tt-card-alt);
 }
 
 .stickerPackTitle {
@@ -116,6 +114,7 @@
 }
 
 .stickerPackTitleText {
+  font-family: var(--tt-font-display);
   font-weight: 600;
 }
 
@@ -134,14 +133,14 @@
   flex-wrap: wrap;
   gap: 8px;
   padding: 12px;
-  background: var(--tt-card-alt, #252c33);
+  background: var(--tt-card-alt);
 }
 
 .stickerItem {
   width: 64px;
   height: 64px;
   border: 1px solid var(--popup-border);
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--popup-card);
   display: flex;
   align-items: center;
@@ -154,21 +153,21 @@
   max-width: 60px;
   cursor: pointer;
   object-fit: contain;
-  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  transition: transform 0.1s ease;
 }
 
 .stickerItem img:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
 .editPackDialog {
   width: 520px;
   max-width: 90vw;
   padding: 0;
-  border: 1px solid var(--popup-border);
-  border-radius: 8px;
+  border: var(--tt-border-width) solid var(--tt-border-strong);
+  border-radius: 0;
   background: var(--popup-card);
+  color: var(--popup-text);
 }
 
 .editPackDialogWrapper {
@@ -184,8 +183,8 @@
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
-  background: var(--tt-input-bg, #2a3139);
+  border-radius: 0;
+  background: var(--tt-input-bg);
   color: var(--popup-text);
   box-sizing: border-box;
 }
@@ -199,4 +198,10 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stickerItem img {
+    transition: none;
+  }
 }

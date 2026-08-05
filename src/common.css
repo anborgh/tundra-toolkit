@@ -1,36 +1,210 @@
 :root {
-    --bg-color: #e8eced;
-    --color-primary: #0C2028;
+    /* Tundra shamanism — light (bone ground, night ink) */
+    --tt-night: #11222E;
+    --tt-bone: #F9F9F4;
+    --tt-frost: #A5C1CF;
+    --tt-earth: #7C5233;
+    --tt-pine: #2F6B4F;
+    --tt-ember: #A12830;
+
+    --bg-color: var(--tt-bone);
+    --font-color: var(--tt-night);
+    --color-primary: var(--tt-night);
     --width: 860px;
 
-    /* Общая палитра поверхностей: светлая тема по умолчанию */
-    --tt-card: #ffffff;
-    --tt-card-alt: #dfe5e9;
-    --tt-border: #c3ccd3;
-    --tt-muted: #5f6b76;
-    --tt-text: #2a3138;
-    --tt-input-bg: #ffffff;
-    --tt-success: #1e7c56;
-    --tt-danger: #a12830;
+    --tt-card: #FFFFFF;
+    --tt-card-alt: #E8EEF1;
+    --tt-border: #C5D2DA;
+    --tt-border-strong: var(--tt-night);
+    --tt-muted: #4A5C68;
+    --tt-text: var(--tt-night);
+    --tt-input-bg: #FFFFFF;
+    --tt-success: var(--tt-pine);
+    --tt-danger: var(--tt-ember);
+    --tt-accent: #5B7A8A;
+    --tt-accent-soft: rgba(165, 193, 207, 0.35);
+    --tt-focus: rgba(17, 34, 46, 0.22);
+    --tt-link: #1F5F8A;
+
+    --tt-radius: 0;
+    --tt-border-width: 2px;
+    --tt-btn-height: 32px;
+    --tt-btn-height-sm: 28px;
+    --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    --tt-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+    --tt-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 }
 
-.button.small {
-    padding: .3em;
+body {
+    font-family: var(--tt-font-body);
+    color: var(--tt-text);
+    background: var(--bg-color);
+}
+
+h1, h2, h3, h4, h5 {
+    font-family: var(--tt-font-display);
+    letter-spacing: 0.01em;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --font-color: #c0cad4;
-        --bg-color: #22272b;
-        --color-primary: #8BA2A6;
+        --bg-color: var(--tt-night);
+        --font-color: var(--tt-bone);
+        --color-primary: var(--tt-frost);
 
-        --tt-card: #2d343d;
-        --tt-card-alt: #252c33;
-        --tt-border: #3c4651;
-        --tt-muted: #9aa6b5;
-        --tt-text: #c0cad4;
-        --tt-input-bg: #2a3139;
-        --tt-success: #5ac193;
-        --tt-danger: #ff6b6b;
+        --tt-card: #1A2D3A;
+        --tt-card-alt: #152530;
+        --tt-border: #2E4452;
+        --tt-border-strong: var(--tt-bone);
+        --tt-muted: #A5C1CF;
+        --tt-text: var(--tt-bone);
+        --tt-input-bg: #152530;
+        --tt-success: #5AC193;
+        --tt-danger: #E07070;
+        --tt-accent: var(--tt-frost);
+        --tt-accent-soft: rgba(165, 193, 207, 0.18);
+        --tt-focus: rgba(165, 193, 207, 0.28);
+        --tt-link: #9CC8FF;
     }
+}
+
+/* Shared sharp controls + unified button height */
+.button,
+input,
+textarea,
+select,
+.tag {
+    border-radius: var(--tt-radius) !important;
+}
+
+.button {
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: var(--tt-btn-height);
+    min-height: var(--tt-btn-height);
+    padding: 0 12px;
+    line-height: 1;
+    vertical-align: middle;
+    background: var(--tt-card-alt);
+    border: 1px solid var(--tt-border);
+    color: var(--tt-text);
+}
+
+.button:hover {
+    border-color: var(--tt-earth);
+    background: var(--tt-input-bg);
+    color: var(--tt-text);
+    opacity: 1;
+}
+
+.button.primary,
+.button.success,
+.button.error,
+.button.dark,
+[type="submit"].button,
+button.primary {
+    background: var(--tt-frost);
+    border-color: var(--tt-frost);
+    color: var(--tt-night);
+}
+
+.button.primary:hover,
+.button.success:hover,
+button.primary:hover {
+    background: #B7D0DC;
+    border-color: #B7D0DC;
+    color: var(--tt-night);
+    opacity: 1;
+}
+
+.button.clear {
+    background: transparent;
+    border-color: transparent;
+    color: var(--tt-text);
+}
+
+.button.outline {
+    background: transparent;
+    border-color: var(--tt-border);
+    color: var(--tt-text);
+}
+
+.button.small {
+    height: var(--tt-btn-height-sm);
+    min-height: var(--tt-btn-height-sm);
+    padding: 0 10px;
+    font-size: 1.3rem;
+}
+
+.button.icon-only {
+    width: var(--tt-btn-height);
+    min-width: var(--tt-btn-height);
+    padding: 0;
+    color: var(--tt-text);
+}
+
+.button.small.icon-only {
+    width: var(--tt-btn-height-sm);
+    min-width: var(--tt-btn-height-sm);
+    padding: 0;
+}
+
+.button .ttIcon {
+    color: inherit;
+}
+
+.button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--tt-accent);
+    outline-offset: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .button.primary,
+    .button.success,
+    button.primary {
+        background: var(--tt-frost);
+        border-color: var(--tt-frost);
+        color: var(--tt-night);
+    }
+
+    .button.primary:hover,
+    .button.success:hover,
+    button.primary:hover {
+        background: #C5DCE6;
+        border-color: #C5DCE6;
+        color: var(--tt-night);
+    }
+}
+
+/* Chevron fringe divider — icon side motif */
+.tt-fringe {
+    display: flex;
+    align-items: stretch;
+    gap: 3px;
+    height: 14px;
+    opacity: 0.55;
+}
+
+.tt-fringe span {
+    width: 2px;
+    background: currentColor;
+}
+
+.tt-fringe span:nth-child(2) { height: 70%; align-self: flex-end; }
+.tt-fringe span:nth-child(3) { height: 100%; }
+.tt-fringe span:nth-child(4) { height: 55%; align-self: flex-end; }
+.tt-fringe span:nth-child(5) { height: 85%; }
+
+.tt-chevron-mark {
+    font-family: var(--tt-font-mono);
+    font-size: 11px;
+    letter-spacing: -0.08em;
+    color: var(--tt-earth);
+    user-select: none;
 }

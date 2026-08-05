@@ -1,48 +1,73 @@
 body {
     margin: 0;
+    font-family: var(--tt-font-body);
+    background: var(--bg-color);
+    color: var(--tt-text);
 }
 
 header {
-    background: #8BA2A6;
-    color: #22272b;
+    background: var(--tt-frost);
+    color: var(--tt-night);
     overflow: hidden;
-    padding: 12px 0;
+    padding: 16px 0;
+    border-bottom: var(--tt-border-width) solid var(--tt-earth);
+}
+
+header .main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
 header .logo {
-    width: 80px;
-    height: 80px;
-    float: left;
-    margin-right: 16px;
+    width: 72px;
+    height: 72px;
+    flex: 0 0 72px;
+    border: var(--tt-border-width) solid var(--tt-night);
+    background: var(--tt-night);
 }
 
 header .logo img {
     max-width: 100%;
+    display: block;
 }
 
 header h1 {
     margin: 0;
+    font-family: var(--tt-font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
 }
 
 header a {
-    color: #0C2028;
+    color: var(--tt-night);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
 }
 
 header h1 span {
-    opacity: .7;
+    opacity: .65;
     font-size: 1rem;
+    font-family: var(--tt-font-body);
+    font-weight: 500;
+}
+
+header .headerMeta {
+    margin-top: 4px;
+    font-size: 0.95rem;
 }
 
 .main {
     max-width: var(--width);
     margin: auto;
-    padding: 0 0 10px;
+    padding: 0 16px 10px;
 }
 
 main {
     max-width: var(--width);
     margin: auto;
-    padding: 24px;
+    padding: 24px 16px;
 }
 
 .optionsLayout {
@@ -63,60 +88,101 @@ main {
 .optionsNav {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 0;
+    border: var(--tt-border-width) solid var(--tt-border-strong);
+    background: var(--tt-card);
 }
 
 .optionsNavItem {
     width: 100%;
     justify-content: flex-start;
     text-align: left;
-    color: var(--font-color);
+    color: var(--tt-text);
     border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--tt-border);
+    background: transparent;
+    padding: 10px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--tt-font-body);
+}
+
+.optionsNavItemLabel {
+    flex: 1;
+    min-width: 0;
+}
+
+.optionsNavItem:last-child {
+    border-bottom: none;
+}
+
+.optionsNavItem::before {
+    content: '›';
+    color: var(--tt-earth);
+    font-family: var(--tt-font-mono);
+    font-size: 14px;
+    line-height: 1;
 }
 
 .optionsNavItem.active {
-    background: #8BA2A6;
-    border-color: #8BA2A6;
-    color: #0C2028;
+    background: var(--tt-frost);
+    color: var(--tt-night);
+    font-weight: 600;
+}
+
+.optionsNavItem.active::before {
+    content: '››';
+    letter-spacing: -0.1em;
 }
 
 .optionsContent > section {
     margin-bottom: 0;
 }
 
+.optionsSectionCard {
+    border: var(--tt-border-width) solid var(--tt-border);
+    border-left: 3px solid var(--tt-earth);
+    background: var(--tt-card);
+    padding: 16px;
+}
+
 .storageUsageCard {
-    border: 1px solid var(--tt-border, #32424f);
-    border-radius: 6px;
+    border: var(--tt-border-width) solid var(--tt-border);
+    border-radius: 0;
     padding: 10px;
-    background: var(--tt-card, #202c36);
+    background: var(--tt-card);
 }
 
 .storageUsageTitle {
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 8px;
+    font-family: var(--tt-font-display);
 }
 
 .storageUsageBar {
     width: 100%;
     height: 10px;
-    border-radius: 999px;
-    background: var(--tt-card-alt, #0f1922);
+    border-radius: 0;
+    border: 1px solid var(--tt-border);
+    background: var(--tt-card-alt);
     overflow: hidden;
 }
 
 .storageUsageFill {
     height: 100%;
-    background: #3bc86e;
+    background: var(--tt-success);
     transition: width 0.2s ease;
 }
 
 .storageUsageFill.warn {
-    background: #e0b741;
+    background: #C9A227;
 }
 
 .storageUsageFill.danger {
-    background: #de5a5a;
+    background: var(--tt-danger);
 }
 
 .storageUsageMeta {
@@ -124,10 +190,41 @@ main {
     font-size: 0.85rem;
 }
 
+.storageLocalBadge {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    padding: 2px 5px;
+    border: 1px solid var(--tt-earth);
+    color: var(--tt-earth);
+    background: rgba(124, 82, 51, 0.12);
+    white-space: nowrap;
+}
+
+.storageLocalNotice {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--tt-earth);
+    border-left: 3px solid var(--tt-earth);
+    background: rgba(124, 82, 51, 0.1);
+    color: var(--tt-text);
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.storageLocalNotice .storageLocalBadge {
+    margin-top: 1px;
+}
+
 .optionsGuideLink {
     border: 0;
     background: transparent;
-    color: var(--tt-muted, #9aa5af);
+    color: var(--tt-muted);
     font-size: 0.85rem;
     text-align: left;
     padding: 0 2px;
@@ -138,27 +235,31 @@ main {
 }
 
 .optionsGuideLink:hover {
-    color: var(--font-color, #c4ccd4);
+    color: var(--tt-text);
 }
 
 .optionsGuideLink.active {
-    color: var(--font-color, #d9e0e7);
+    color: var(--tt-text);
+    font-weight: 600;
 }
 
 .optionsGuide h3 {
     margin-bottom: 8px;
+    font-family: var(--tt-font-display);
 }
 
 .optionsGuideBlock {
     margin-top: 16px;
     padding: 12px;
-    border: 1px solid var(--tt-border, #32424f);
-    border-radius: 6px;
-    background: var(--tt-card, #202c36);
+    border: 1px solid var(--tt-border);
+    border-radius: 0;
+    border-left: 3px solid var(--tt-frost);
+    background: var(--tt-card);
 }
 
 .optionsGuideBlock h5 {
     margin: 0 0 8px;
+    font-family: var(--tt-font-display);
 }
 
 .optionsGuideBlock ul {
@@ -171,12 +272,13 @@ main {
 }
 
 .optionsGuideWarning {
-    border-color: #d69a2d;
-    background: rgba(214, 154, 45, 0.12);
+    border-color: var(--tt-earth);
+    border-left-color: var(--tt-earth);
+    background: rgba(124, 82, 51, 0.1);
 }
 
 .optionsGuideWarning h5 {
-    color: #f0c36a;
+    color: var(--tt-earth);
 }
 
 .optionsGuideWarning p {
@@ -188,8 +290,11 @@ main {
     justify-content: center;
     align-items: center;
     height: 100px;
-    border: dashed 1px;
-    opacity: 0.6;
+    border: dashed 1px var(--tt-accent);
+    border-radius: 0;
+    opacity: 0.85;
+    color: var(--tt-muted);
+    background: var(--tt-card-alt);
 }
 
 @media (max-width: 860px) {
@@ -208,5 +313,13 @@ main {
 
     .optionsNavItem {
         width: auto;
+        border-bottom: none;
+        border-right: 1px solid var(--tt-border);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .storageUsageFill {
+        transition: none;
     }
 }

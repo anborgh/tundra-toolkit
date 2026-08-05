@@ -10,43 +10,58 @@
     style.setAttribute(MODAL_STYLE_ATTR, 'true');
     style.textContent = `
         #hvPostStatsModal {
-          --tt-post-stats-card: var(--tt-card, #ffffff);
-          --tt-post-stats-card-alt: var(--tt-card-alt, #dfe5e9);
-          --tt-post-stats-border: var(--tt-border, #c3ccd3);
-          --tt-post-stats-muted: var(--tt-muted, #5f6b76);
-          --tt-post-stats-text: var(--tt-text, #2a3138);
-          --tt-post-stats-input-bg: var(--tt-input-bg, #ffffff);
-          --tt-post-stats-success: var(--tt-success, #1e7c56);
-          --tt-post-stats-heading: var(--font-color, var(--tt-text, #1f2933));
-          --tt-post-stats-accent: var(--color-primary, #0C2028);
-          --tt-post-stats-backdrop: rgba(12, 32, 40, 0.32);
-          --tt-post-stats-shadow: rgba(12, 32, 40, 0.18);
-          --tt-post-stats-focus: rgba(12, 32, 40, 0.18);
-          --tt-post-stats-link: #2368a2;
+          --tt-night: #11222E;
+          --tt-bone: #F9F9F4;
+          --tt-frost: #A5C1CF;
+          --tt-earth: #7C5233;
+          --tt-pine: #2F6B4F;
+          --tt-ember: #A12830;
+
+          --tt-post-stats-card: #FFFFFF;
+          --tt-post-stats-card-alt: #E8EEF1;
+          --tt-post-stats-border: #C5D2DA;
+          --tt-post-stats-border-strong: var(--tt-night);
+          --tt-post-stats-muted: #4A5C68;
+          --tt-post-stats-text: var(--tt-night);
+          --tt-post-stats-input-bg: #FFFFFF;
+          --tt-post-stats-success: var(--tt-pine);
+          --tt-post-stats-heading: var(--tt-night);
+          --tt-post-stats-accent: #5B7A8A;
+          --tt-post-stats-backdrop: rgba(17, 34, 46, 0.45);
+          --tt-post-stats-shadow: rgba(17, 34, 46, 0.22);
+          --tt-post-stats-focus: rgba(17, 34, 46, 0.22);
+          --tt-post-stats-link: #1F5F8A;
+          --tt-post-stats-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+          --tt-post-stats-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+          --tt-post-stats-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
           background: transparent;
           border: none;
           box-shadow: none;
           color: var(--tt-post-stats-text);
+          font-family: var(--tt-post-stats-font-body);
           margin: 0;
           padding: 0;
+          color-scheme: light;
         }
 
         @media (prefers-color-scheme: dark) {
           #hvPostStatsModal {
             color-scheme: dark;
-            --tt-post-stats-card: var(--tt-card, #2d343d);
-            --tt-post-stats-card-alt: var(--tt-card-alt, #252c33);
-            --tt-post-stats-border: var(--tt-border, #3c4651);
-            --tt-post-stats-muted: var(--tt-muted, #9aa6b5);
-            --tt-post-stats-text: var(--tt-text, #c0cad4);
-            --tt-post-stats-input-bg: var(--tt-input-bg, #2a3139);
-            --tt-post-stats-success: var(--tt-success, #5ac193);
-            --tt-post-stats-heading: var(--font-color, var(--tt-text, #f2f7fc));
-            --tt-post-stats-accent: var(--color-primary, #8BA2A6);
+            --tt-post-stats-card: #1A2D3A;
+            --tt-post-stats-card-alt: #152530;
+            --tt-post-stats-border: #2E4452;
+            --tt-post-stats-border-strong: var(--tt-bone);
+            --tt-post-stats-muted: var(--tt-frost);
+            --tt-post-stats-text: var(--tt-bone);
+            --tt-post-stats-input-bg: #152530;
+            --tt-post-stats-success: #5AC193;
+            --tt-post-stats-heading: var(--tt-bone);
+            --tt-post-stats-accent: var(--tt-frost);
             --tt-post-stats-backdrop: rgba(5, 10, 16, 0.78);
-            --tt-post-stats-shadow: rgba(0, 0, 0, 0.45);
-            --tt-post-stats-focus: rgba(139, 162, 166, 0.25);
-            --tt-post-stats-link: #9cc8ff;
+            --tt-post-stats-shadow: rgba(0, 0, 0, 0.5);
+            --tt-post-stats-focus: rgba(165, 193, 207, 0.28);
+            --tt-post-stats-link: #9CC8FF;
           }
         }
 
@@ -77,24 +92,43 @@
           overflow: hidden;
           overscroll-behavior: contain;
           padding: 18px;
-          background: linear-gradient(180deg, var(--tt-post-stats-card) 0%, var(--tt-post-stats-card-alt) 100%);
-          border: 1px solid var(--tt-post-stats-border);
-          border-radius: 12px;
-          box-shadow: 0 24px 52px var(--tt-post-stats-shadow);
+          background: var(--tt-post-stats-card);
+          border: 2px solid var(--tt-post-stats-border-strong);
+          border-radius: 0;
+          box-shadow: 0 18px 40px var(--tt-post-stats-shadow);
           color: var(--tt-post-stats-text);
         }
 
+        #hvPostStatsModal .hvPostStatsModal__content::before {
+          content: '›››';
+          position: absolute;
+          top: 18px;
+          left: 18px;
+          font-family: var(--tt-post-stats-font-mono);
+          font-size: 11px;
+          letter-spacing: -0.12em;
+          color: var(--tt-earth);
+          opacity: 0.75;
+          pointer-events: none;
+        }
+
         #hvPostStatsModal h2 {
+          flex: 0 0 auto;
           margin: 0;
-          padding-right: 36px;
+          padding: 0 40px 0 36px;
           color: var(--tt-post-stats-heading);
-          font-size: 27px;
+          font-family: var(--tt-post-stats-font-display);
+          font-size: 26px;
+          font-weight: 600;
           line-height: 1.15;
           letter-spacing: 0.01em;
           text-wrap: balance;
+          border-bottom: 1px solid var(--tt-earth);
+          padding-bottom: 10px;
         }
 
         #hvPostStatsModal .hvPostStatsModal__form {
+          flex: 0 0 auto;
           display: grid;
           gap: 10px;
         }
@@ -119,7 +153,8 @@
           background: var(--tt-post-stats-input-bg);
           color: var(--tt-post-stats-text);
           border: 1px solid var(--tt-post-stats-border);
-          border-radius: 8px;
+          border-radius: 0;
+          font-family: inherit;
           transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
 
@@ -169,9 +204,9 @@
           max-height: 100%;
           padding: 14px;
           background: var(--tt-post-stats-card);
-          border: 1px solid var(--tt-post-stats-border);
-          border-radius: 10px;
-          box-shadow: 0 16px 36px var(--tt-post-stats-shadow);
+          border: 2px solid var(--tt-post-stats-border-strong);
+          border-radius: 0;
+          box-shadow: 0 12px 28px var(--tt-post-stats-shadow);
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerHeader {
@@ -180,6 +215,7 @@
           justify-content: space-between;
           gap: 10px;
           color: var(--tt-post-stats-heading);
+          font-family: var(--tt-post-stats-font-display);
           font-size: 16px;
         }
 
@@ -194,7 +230,7 @@
           overflow: auto;
           overscroll-behavior: contain;
           border: 1px solid var(--tt-post-stats-border);
-          border-radius: 8px;
+          border-radius: 0;
           background: var(--tt-post-stats-input-bg);
         }
 
@@ -246,16 +282,18 @@
         #hvPostStatsModal .hvPostStatsModal__pickerActions button {
           min-width: 96px;
           padding: 7px 12px;
-          border-radius: 8px;
+          border-radius: 0;
           border: 1px solid var(--tt-post-stats-border);
           background: var(--tt-post-stats-card-alt);
           color: var(--tt-post-stats-text);
           cursor: pointer;
           touch-action: manipulation;
+          font-family: inherit;
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerActions button:hover {
           background: var(--tt-post-stats-input-bg);
+          border-color: var(--tt-earth);
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerActions button:focus-visible {
@@ -267,7 +305,7 @@
         #hvPostStatsModal #countPostsForumsApply {
           background: var(--tt-post-stats-success);
           border-color: var(--tt-post-stats-success);
-          color: var(--tt-post-stats-card);
+          color: var(--tt-bone);
           font-weight: 600;
         }
 
@@ -294,7 +332,7 @@
           min-width: 32px;
           padding: 0;
           line-height: 1;
-          border-radius: 8px;
+          border-radius: 0;
           border: 1px solid var(--tt-post-stats-border);
           background: var(--tt-post-stats-card-alt);
           color: var(--tt-post-stats-heading);
@@ -305,8 +343,19 @@
           touch-action: manipulation;
         }
 
+        #hvPostStatsModal .hvPostStatsModal__close svg {
+          width: 16px;
+          height: 16px;
+          stroke: currentColor;
+          fill: none;
+          stroke-width: 2;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+
         #hvPostStatsModal .hvPostStatsModal__close:hover {
           background: var(--tt-post-stats-input-bg);
+          border-color: var(--tt-earth);
         }
 
         #hvPostStatsModal .hvPostStatsModal__close:focus-visible {
@@ -322,17 +371,22 @@
 
         #hvPostStatsModal .hvPostStatsModal__formActions {
           display: flex;
-          justify-content: flex-start;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-top: 4px;
+          padding-top: 10px;
+          border-top: 1px solid var(--tt-post-stats-border);
         }
 
         #hvPostStatsModal #countPostsSubmit {
           min-width: 126px;
           padding: 8px 14px;
-          border-radius: 8px;
+          border-radius: 0;
           background: var(--tt-post-stats-success);
           border: 1px solid var(--tt-post-stats-success);
-          color: var(--tt-post-stats-card);
+          color: var(--tt-bone);
           font-weight: 600;
+          font-family: inherit;
           cursor: pointer;
           touch-action: manipulation;
         }
@@ -352,6 +406,7 @@
         }
 
         #hvPostStatsModal .hvPostStatsModal__progress {
+          flex: 0 0 auto;
           display: none;
           margin-top: -2px;
           margin-bottom: 2px;
@@ -367,7 +422,7 @@
           width: 100%;
           height: 10px;
           border: 1px solid var(--tt-post-stats-border);
-          border-radius: 8px;
+          border-radius: 0;
           overflow: hidden;
           background: var(--tt-post-stats-card-alt);
         }
@@ -375,21 +430,21 @@
         #hvPostStatsModal #countPostsProgressFill {
           height: 100%;
           width: 0%;
-          background: linear-gradient(90deg, var(--tt-post-stats-success) 0%, var(--tt-post-stats-accent) 100%);
+          background: linear-gradient(90deg, var(--tt-post-stats-success) 0%, var(--tt-frost) 100%);
           transition: width 0.15s ease;
         }
 
         #hvPostStatsModal .hvPostStatsModal__result {
           flex: 1 1 auto;
-          min-height: 180px;
-          max-height: calc(90vh - 300px);
+          min-height: 0;
           overflow-y: auto;
           overscroll-behavior: contain;
           margin-top: 2px;
           padding: 12px 14px;
           background: var(--tt-post-stats-card-alt);
           border: 1px solid var(--tt-post-stats-border);
-          border-radius: 10px;
+          border-left: 3px solid var(--tt-earth);
+          border-radius: 0;
           line-height: 1.4;
           font-variant-numeric: tabular-nums;
         }
@@ -406,10 +461,12 @@
           margin: 10px 0;
           border: none;
           height: 1px;
-          background-color: var(--tt-post-stats-border);
+          background-color: var(--tt-earth);
+          opacity: 0.45;
         }
 
         #hvPostStatsModal .hvPostStatsModal__bbcodeToggle {
+          flex: 0 0 auto;
           margin-top: 2px;
         }
 
@@ -419,19 +476,18 @@
 
         #hvPostStatsModal .hvPostStatsModal__bbcode {
           flex: 1 1 auto;
-          min-height: 180px;
-          max-height: calc(90vh - 300px);
+          min-height: 0;
           width: 100%;
           box-sizing: border-box;
           margin-top: 2px;
           padding: 12px 14px;
-          resize: vertical;
+          resize: none;
           background: var(--tt-post-stats-card-alt);
           color: var(--tt-post-stats-text);
           border: 1px solid var(--tt-post-stats-border);
-          border-radius: 10px;
+          border-radius: 0;
           line-height: 1.4;
-          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-family: var(--tt-post-stats-font-mono);
           font-size: 12px;
         }
 
@@ -445,7 +501,8 @@
           }
 
           #hvPostStatsModal h2 {
-            font-size: 23px;
+            font-size: 22px;
+            padding-left: 28px;
           }
 
           #hvPostStatsModal .hvPostStatsModal__formRow {
@@ -456,6 +513,8 @@
     document.head.appendChild(style);
   };
 
+  const CLOSE_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+
   const createModal = () => {
     const modal = document.createElement('dialog');
     modal.style = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: min(940px, calc(100vw - 32px)); max-height: 90vh;';
@@ -463,7 +522,7 @@
     modal.classList.add('hvPostStatsModal');
     modal.innerHTML = `
         <div class="hvPostStatsModal__content">
-          <button type="button" class="hvPostStatsModal__close" id="hvPostStatsModalClose" aria-label="Закрыть">×</button>
+          <button type="button" class="hvPostStatsModal__close" id="hvPostStatsModalClose" aria-label="Закрыть">${CLOSE_ICON}</button>
           <h2>Счётчик постов</h2>
           <div class="hvPostStatsModal__form">
             <div class="hvPostStatsModal__formItem">
@@ -516,7 +575,7 @@
             <div class="hvPostStatsModal__pickerInner">
               <div class="hvPostStatsModal__pickerHeader">
                 <strong>Выбор форумов</strong>
-                <button type="button" class="hvPostStatsModal__close" id="hvPostStatsForumsPickerClose" aria-label="Закрыть">×</button>
+                <button type="button" class="hvPostStatsModal__close" id="hvPostStatsForumsPickerClose" aria-label="Закрыть">${CLOSE_ICON}</button>
               </div>
               <input type="search" id="countPostsForumsSearch" placeholder="Поиск по названию или ID…" autocomplete="off" spellcheck="false" aria-label="Поиск форумов" />
               <div id="countPostsForumsList" class="hvPostStatsModal__pickerList" role="group" aria-label="Список форумов"></div>
@@ -530,7 +589,7 @@
             <div class="hvPostStatsModal__pickerInner">
               <div class="hvPostStatsModal__pickerHeader">
                 <strong>Выбор пользователей</strong>
-                <button type="button" class="hvPostStatsModal__close" id="hvPostStatsUsersPickerClose" aria-label="Закрыть">×</button>
+                <button type="button" class="hvPostStatsModal__close" id="hvPostStatsUsersPickerClose" aria-label="Закрыть">${CLOSE_ICON}</button>
               </div>
               <input type="search" id="countPostsUsersSearch" placeholder="Поиск по нику или ID…" autocomplete="off" spellcheck="false" aria-label="Поиск пользователей" />
               <div id="countPostsUsersList" class="hvPostStatsModal__pickerList" role="group" aria-label="Список пользователей"></div>

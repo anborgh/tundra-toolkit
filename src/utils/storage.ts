@@ -19,6 +19,10 @@ const readFallbacks = async (): Promise<Record<string, 'local'>> => {
   }
 };
 
+export const getStorageFallbacks = (): Promise<Record<string, 'local'>> => readFallbacks();
+
+export const STORAGE_FALLBACKS_KEY = FALLBACKS_KEY;
+
 const writeFallbacks = async (fallbacks: Record<string, 'local'>) => {
   try {
     await chrome.storage.sync.set({ [FALLBACKS_KEY]: fallbacks });

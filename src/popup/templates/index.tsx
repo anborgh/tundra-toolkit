@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import { MaskIcon } from '../../components/MaskIcon';
+import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
+import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import circleAlertIcon from '../../assets/icons/circle-alert.svg';
+
+import '../../components/icon.css';
 
 const STORAGE_KEY = 'templates';
 
@@ -40,6 +46,19 @@ export function Templates() {
     const ids = templates.map(item => item.id);
     return ids.length ? Math.max(...ids) + 1 : 0;
   }, [templates]);
+
+  const statusView = useMemo(() => {
+    if (error) {
+      return { icon: circleAlertIcon, text: error, tone: 'error' as const, spin: false };
+    }
+    if (info) {
+      return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
+    }
+    if (busy) {
+      return { icon: loaderCircleIcon, text: 'В процессе…', tone: 'muted' as const, spin: true };
+    }
+    return null;
+  }, [error, info, busy]);
 
   useEffect(() => {
     const load = async () => {
@@ -203,22 +222,31 @@ export function Templates() {
     <div class="templatesTab">
       <div class="templatesHeader">
         <div class="templatesActions">
-          <button class="button small" onClick={ addEmptyTemplate }>Добавить пустой</button>
+          { statusView && (
+            <span
+              class={ `templatesStatus templatesStatus--${ statusView.tone }` }
+              title={ statusView.text }
+              aria-label={ statusView.text }
+              role="status"
+            >
+              <MaskIcon
+                src={ statusView.icon }
+                class={ statusView.spin ? 'ttIconSpin' : '' }
+              />
+            </span>
+          ) }
+          <button class="button small" onClick={ addEmptyTemplate } title="Добавить пустой шаблон">
+            Добавить пустой
+          </button>
           <button
-            class="button small"
+            class="button small primary"
             onClick={ handleSaveFromForm }
             disabled={ busy || canUse === false }
-            title={ canUse === false ? 'Откройте страницу форума с полем ответа' : undefined }
+            title={ canUse === false ? 'Откройте страницу форума с полем ответа' : 'Сохранить текст из поля ответа' }
           >
             Сохранить из формы
           </button>
         </div>
-      </div>
-
-      <div class="templatesStatus">
-        { busy && <span class="text-secondary">В процессе…</span> }
-        { info && <span class="text-success">{ info }</span> }
-        { error && <span class="text-error">{ error }</span> }
       </div>
 
       { !templates.length && (

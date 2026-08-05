@@ -98,7 +98,7 @@ export default function TemplateOptions() {
           <h6>Глобальные черновики для вставки в #main-reply</h6>
         </div>
         <div className="templateOptionsActions">
-          <button className="button small" onClick={ addTemplate }>Добавить</button>
+          <button className="button small primary" onClick={ addTemplate }>Добавить</button>
           { !!templates.length && (
             <button className="button small clear" onClick={ clearTemplates }>Очистить все</button>
           ) }

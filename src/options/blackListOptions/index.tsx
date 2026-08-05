@@ -175,7 +175,7 @@ export function BlackListOptions() {
 
       {!data.length && !topicsData.length && (
         <div className="emptyList">
-          Список пока пуст. Кнопка «Игнорировать» появится в постах пользователей на форуме, символ ⊘ — в списке тем.
+          Список пока пуст. Кнопка ⊘ появится в ссылках поста (рядом с E-mail) и в списке тем.
         </div>
       )}
     </section>

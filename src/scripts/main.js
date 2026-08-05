@@ -188,6 +188,83 @@ function getTopicFromRow(row) {
   };
 }
 
+const ensureTundraEmbedStyles = (() => {
+  let injected = false;
+
+  return () => {
+    if (injected) return;
+    injected = true;
+
+    const style = document.createElement('style');
+    style.setAttribute('data-tundra-embed-style', 'true');
+    style.textContent = `
+      a.tundra-btn,
+      .tundra-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        min-width: 1.45em;
+        height: 1.45em;
+        padding: 0 0.28em;
+        margin: 0 0 0 0.2em;
+        border: 1px solid rgba(124, 82, 51, 0.9);
+        border-left: 2px solid #7C5233;
+        border-radius: 0;
+        background: rgba(17, 34, 46, 0.07);
+        color: inherit;
+        font: 700 0.82em/1 "Avenir Next", "Segoe UI", system-ui, sans-serif;
+        letter-spacing: 0;
+        text-decoration: none !important;
+        opacity: 0.78;
+        vertical-align: middle;
+        cursor: pointer;
+      }
+      a.tundra-btn:hover,
+      .tundra-btn:hover {
+        opacity: 1;
+        background: rgba(165, 193, 207, 0.32);
+        border-color: #A5C1CF;
+        color: inherit;
+      }
+      a.tundra-btn:focus-visible,
+      .tundra-btn:focus-visible {
+        outline: 2px solid #A5C1CF;
+        outline-offset: 1px;
+      }
+      .post-links li.pl-email.ignore {
+        list-style: none;
+      }
+      .post-links li.pl-email.ignore a.tundra-btn {
+        margin-left: 0;
+      }
+      .tclcon a.tundra-btn.tundra-ignore-topic {
+        margin-left: 0.35em;
+      }
+      @media (prefers-color-scheme: dark) {
+        a.tundra-btn,
+        .tundra-btn {
+          background: rgba(249, 249, 244, 0.08);
+          border-color: rgba(165, 193, 207, 0.55);
+          border-left-color: #A5C1CF;
+        }
+        a.tundra-btn:hover,
+        .tundra-btn:hover {
+          background: rgba(165, 193, 207, 0.22);
+          border-color: #F9F9F4;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        a.tundra-btn,
+        .tundra-btn {
+          transition: none;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  };
+})();
+
 const hvTopicIgnore = /** @type {any} */ ({
   ignoredTopics: [],
   boardID: null,
@@ -208,6 +285,7 @@ const hvTopicIgnore = /** @type {any} */ ({
 
     this.style = document.createElement('style');
     document.head.appendChild(this.style);
+    ensureTundraEmbedStyles();
 
     this.apply();
     this.applyButtonVisibility();
@@ -255,13 +333,13 @@ const hvTopicIgnore = /** @type {any} */ ({
       if (!topic || ignoredIds.has(topic.topicID)) return;
       if (row.querySelector('[data-link="ignoreTopicLink"]')) return;
 
-      const ignoreLink = ' &nbsp;<a href="#" class="tundra-ignore-topic" data-link="ignoreTopicLink" data-topic-id="' + topic.topicID + '" title="Игнорировать тему [Tundra Toolkit]">⊘</a>';
+      const ignoreLink = '<a href="#" class="tundra-btn tundra-ignore-topic" data-link="ignoreTopicLink" data-topic-id="' + topic.topicID + '" title="Игнорировать тему [Tundra Toolkit]" aria-label="Игнорировать тему">⊘</a>';
       const byuser = topic.tclcon.querySelector('.byuser');
 
       if (byuser) {
-        byuser.insertAdjacentHTML('afterend', ignoreLink);
+        byuser.insertAdjacentHTML('afterend', ' ' + ignoreLink);
       } else {
-        topic.tclcon.insertAdjacentHTML('beforeend', ignoreLink);
+        topic.tclcon.insertAdjacentHTML('beforeend', ' ' + ignoreLink);
       }
     });
   },
@@ -294,11 +372,12 @@ const hvTopicIgnore = /** @type {any} */ ({
       return;
     }
 
-    if (target.dataset.link !== 'ignoreTopicLink') return;
+    const ignoreLink = target.closest('[data-link="ignoreTopicLink"]');
+    if (!ignoreLink) return;
     event.preventDefault();
 
-    const { topicId } = target.dataset;
-    const row = target.closest('tr');
+    const { topicId } = ignoreLink.dataset;
+    const row = ignoreLink.closest('tr');
     const topic = getTopicFromRow(row);
     if (!topic) return;
 
@@ -307,7 +386,7 @@ const hvTopicIgnore = /** @type {any} */ ({
 
     this.ignoredTopics.push({ topicID: topicId, topicName: topic.topicName, updatedAt: Date.now() });
     this.apply();
-    target.remove();
+    ignoreLink.remove();
 
     ttPost({
       type: 'tundra_toolkit_update_topic_ignore_list',
@@ -405,7 +484,7 @@ const hvIgnoreList = /** @type {any} */ ({
   addUser: function ({ userID, userName }) {
     const isConfirmed = confirm(`Игнорировать посты ${userName} в разделе [ ${this.forumName} ]?`);
 
-    if (!isConfirmed) return;
+    if (!isConfirmed) return false;
 
     this.ignoreList.push({ userID, userName, updatedAt: Date.now() });
     this.generateStyle();
@@ -420,6 +499,7 @@ const hvIgnoreList = /** @type {any} */ ({
       forumName: this.forumName,
       data: this.ignoreList,
     });
+    return true;
   },
 });
 
@@ -507,52 +587,54 @@ function main() {
     if (!unsafeReady) {
       unsafeReady = true;
 
-  const ensureIgnoreUserStyle = (() => {
-    let injected = false;
+  ensureTundraEmbedStyles();
 
-    return () => {
-      if (injected) return;
-      injected = true;
-
-      const style = document.createElement('style');
-      style.setAttribute('data-tundra-ignore-user-style', 'true');
-      style.innerHTML = '.tundra-ignore-user { margin-left: 6px; font-size: 12px; opacity: 0.75; text-decoration: none; } ' +
-        '.tundra-ignore-user:hover { opacity: 1; }';
-      document.head.appendChild(style);
-    };
-  })();
-
-  /** @param {any} post */
+  /** @param {HTMLElement} post */
   const addIgnoreLink = post => {
     const postUserId = post.dataset.userId;
 
     if (!postUserId || +postUserId === userID || postUserId === '1') return;
+    if (post.querySelector('[data-link="ignoreLink"]')) return;
 
-    const author = post.querySelector('.pa-author');
-    if (!author || author.querySelector('[data-link="ignoreLink"]')) return;
+    const postLinks = post.querySelector('.post-links');
+    if (!postLinks) return;
 
-    ensureIgnoreUserStyle();
-
-    const profileLink = author.querySelector('a[href*="profile.php"]') || author.querySelector('a');
-    const ignoreAnchor = `<a href="#" class="tundra-ignore-user" data-link="ignoreLink" data-user-id="${postUserId}" title="Игнорировать пользователя [Tundra Toolkit]">⊘</a>`;
-
-    if (profileLink) {
-      profileLink.insertAdjacentHTML('afterend', ` ${ignoreAnchor}`);
-    } else {
-      author.insertAdjacentHTML('beforeend', ignoreAnchor);
+    let linksList = postLinks.querySelector(':scope > ul');
+    if (!linksList) {
+      linksList = document.createElement('ul');
+      postLinks.appendChild(linksList);
     }
 
-    author.addEventListener('click', addUserToIgnoreList);
-  }
+    const ignoreItem = `<li class="pl-email ignore"><a href="#" class="tundra-btn tundra-ignore-user" data-link="ignoreLink" data-user-id="${postUserId}" title="Игнорировать пользователя [Tundra Toolkit]" aria-label="Игнорировать пользователя">⊘</a></li>`;
+    const emailLi = linksList.querySelector('li.pl-email.email')
+      || linksList.querySelector('li.pl-email:not(.ignore)');
+
+    if (emailLi) {
+      emailLi.insertAdjacentHTML('afterend', ignoreItem);
+      return;
+    }
+
+    const quoteLi = linksList.querySelector('li.pl-quote');
+    if (quoteLi) {
+      quoteLi.insertAdjacentHTML('beforebegin', ignoreItem);
+      return;
+    }
+
+    linksList.insertAdjacentHTML('beforeend', ignoreItem);
+  };
 
   document.querySelectorAll('.post').forEach(addIgnoreLink);
 
-  /** @param {any} event */
+  /** @param {Event} event */
   async function addUserToIgnoreList(event) {
-    if (event.target.dataset.link !== "ignoreLink") return;
+    const target = event.target instanceof Element
+      ? event.target.closest('[data-link="ignoreLink"]')
+      : null;
+    if (!target) return;
     event.preventDefault();
 
-    const { userId } = event.target.dataset;
+    const userId = target.getAttribute('data-user-id');
+    if (!userId) return;
 
     const fetchData = await fetch(`/api.php?method=users.get&user_id=${userId}`);
     const { response: { users: [user] } } = await fetchData.json();
@@ -562,11 +644,20 @@ function main() {
       return;
     }
 
-    hvIgnoreList.addUser({
+    const added = hvIgnoreList.addUser({
       userID: userId,
       userName: user.username,
-    })
+    });
+    if (!added) return;
+
+    document.querySelectorAll(`[data-link="ignoreLink"][data-user-id="${userId}"]`).forEach(el => {
+      const item = el.closest('li.pl-email.ignore');
+      if (item) item.remove();
+      else el.remove();
+    });
   }
+
+  document.addEventListener('click', addUserToIgnoreList);
 
     }
 

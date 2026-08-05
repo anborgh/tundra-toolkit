@@ -172,7 +172,17 @@
           outcome = 'counted';
         }, { result, onRetry });
 
-        if (outcome === 'stop' || stopForum) break;
+        if (outcome === 'stop' || stopForum) {
+          // Формально учитываем текущую и все оставшиеся темы форума,
+          // отброшенные досрочным прерыванием по дате последнего поста.
+          processedTopics += topics.length - topicIndex;
+          onProgress?.(
+            processedTopics,
+            totalTopics,
+            `Считаю посты в форуме ${forumTitle}`
+          );
+          break;
+        }
         if (outcome === 'skip') continue;
 
         processedTopics += 1;

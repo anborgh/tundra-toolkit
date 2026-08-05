@@ -95,7 +95,7 @@ export default function () {
           <h6>Можно перетаскивать стикеры для сортировки</h6>
         </div>
         <div>
-          <button className="button small" title="Добавить стикерпак" onClick={ addStickerPack }>Добавить</button>
+          <button className="button small primary" title="Добавить стикерпак" onClick={ addStickerPack }>Добавить</button>
         </div>
       </div>
       <div>

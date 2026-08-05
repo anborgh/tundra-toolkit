@@ -1,13 +1,13 @@
 :root {
-  --popup-bg: var(--bg-color, #22272b);
-  --popup-card: var(--tt-card, #2d343d);
-  --popup-border: var(--tt-border, #3c4651);
-  --popup-muted: var(--tt-muted, #9aa6b5);
-  --popup-text: var(--tt-text, #c0cad4);
-  --popup-accent: #8BA2A6;
-  --popup-success: var(--tt-success, #5ac193);
-  --popup-danger: var(--tt-danger, #ff6b6b);
-  --popup-radius: 10px;
+  --popup-bg: var(--bg-color);
+  --popup-card: var(--tt-card);
+  --popup-border: var(--tt-border);
+  --popup-muted: var(--tt-muted);
+  --popup-text: var(--tt-text);
+  --popup-accent: var(--tt-accent);
+  --popup-success: var(--tt-success);
+  --popup-danger: var(--tt-danger);
+  --popup-radius: 0;
 }
 
 #app {
@@ -17,18 +17,21 @@
   box-sizing: border-box;
   background: var(--popup-bg);
   color: var(--popup-text);
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--tt-font-body);
+  border: var(--tt-border-width) solid var(--tt-border-strong);
 }
 
 h4 {
   margin: 0;
-  font-size: 18px;
+  font-family: var(--tt-font-display);
+  font-size: 17px;
   font-weight: 600;
 }
 
 h5 {
   margin: 0;
-  font-size: 15px;
+  font-family: var(--tt-font-display);
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -37,19 +40,23 @@ h5 {
   flex-direction: column;
 }
 
+/* Tab bar — frost strip + chevron side motif */
 .popupTabs {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px;
-  background: var(--popup-accent);
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--tt-frost);
+  color: var(--tt-night);
+  border-bottom: var(--tt-border-width) solid var(--tt-earth);
+  position: relative;
 }
 
 .popupTabsMain,
 .popupTabsActions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .popupTabsMain {
@@ -58,21 +65,26 @@ h5 {
 }
 
 .popupTabsActions {
-  margin-left: auto;
   flex: 0 0 auto;
 }
 
 .popupTabs .button {
   flex: 0 0 auto;
-  min-width: 38px;
-  width: 38px;
-  padding: 8px;
+  min-width: 36px;
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
   font-weight: 600;
-  border: none;
-  border-radius: 8px;
-  color: #22272b;
-  background: #e0e6e9;
-  transition: background 0.15s ease, color 0.15s ease;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: var(--tt-night);
+  background: var(--tt-bone);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.popupTabs .button .ttIcon {
+  color: inherit;
 }
 
 .popupTabs .button.tabButton {
@@ -88,49 +100,53 @@ h5 {
 
 .tabBadge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: 999px;
-  background: #e05252;
-  color: #fff;
-  font-size: 10px;
+  top: -3px;
+  right: -3px;
+  min-width: 14px;
+  height: 14px;
+  padding: 0 3px;
+  border-radius: 0;
+  background: var(--tt-ember);
+  color: var(--tt-bone);
+  font-size: 9px;
   font-weight: 700;
-  line-height: 16px;
+  line-height: 14px;
   text-align: center;
   pointer-events: none;
+  border: 1px solid var(--tt-night);
 }
 
 .popupTabs .button:hover {
-  background: #f5f7f8;
+  background: #FFFFFF;
+  border-color: var(--tt-earth);
 }
 
 .popupTabs .button.primary {
-  background: #22272b;
-  color: #fff;
+  background: var(--tt-night);
+  color: var(--tt-bone);
+  border-color: var(--tt-night);
 }
 
 .popupTabs .button.forumPowerToggle.muted {
-  background: #c8d0d4;
-  color: #3c4651;
+  background: #C8D4DA;
+  color: #3C4651;
 }
 
 .popupTabs .button.forumPowerToggle.active {
-  background: #22272b;
-  color: #5ac193;
+  background: var(--tt-night);
+  color: var(--tt-success);
+  border-color: var(--tt-night);
 }
 
 .popupTabs .button.forumPowerToggle.active:hover {
-  background: #2d343d;
+  background: #1A2D3A;
 }
 
 .popupTabs .button.controlsSettings {
   flex: 0 0 auto;
   min-width: 0;
-  width: 38px;
-  padding: 8px;
+  width: 36px;
+  padding: 0;
 }
 
 .controlsSettingsContent {
@@ -154,6 +170,74 @@ h5 {
   overflow: auto;
 }
 
+/* Unified tab panel header — actions always top-right */
+.tabPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tabPanelHeader > div:first-child {
+  min-width: 0;
+}
+
+.tabPanelHeader h4 {
+  margin: 0;
+}
+
+.tabPanelHeader p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--popup-muted);
+}
+
+.tabPanelActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
+}
+
+.tabPanelStatus {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-height: 22px;
+  color: var(--popup-muted);
+  font-size: 13px;
+}
+
+.tabPanelDivider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tt-earth);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tabPanelDivider::before,
+.tabPanelDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--tt-earth) 12%,
+    var(--tt-earth) 88%,
+    transparent
+  );
+  opacity: 0.55;
+}
+
+/* Style tab */
 .styleTab {
   display: flex;
   flex-direction: column;
@@ -168,10 +252,10 @@ h5 {
 
 .styleTabNotice {
   padding: 9px 10px;
-  border: 1px solid var(--popup-border);
-  border-radius: 8px;
+  border: var(--tt-border-width) solid var(--popup-border);
+  border-radius: 0;
   color: var(--popup-muted);
-  background: var(--tt-card-alt, #252c33);
+  background: var(--tt-card-alt);
 }
 
 .styleControl {
@@ -182,19 +266,21 @@ h5 {
   min-height: 58px;
   padding: 10px;
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
-  background: var(--tt-card-alt, #252c33);
+  border-left: 3px solid var(--tt-earth);
+  border-radius: 0;
+  background: var(--tt-card-alt);
 }
 
 .styleControl > div:first-child {
   min-width: 0;
 }
 
+/* Sharp switch — no pills */
 .styleSwitch {
   position: relative;
   flex: 0 0 auto;
   width: 42px;
-  height: 24px;
+  height: 22px;
   margin: 0;
 }
 
@@ -208,7 +294,8 @@ h5 {
 .styleSwitch > span[aria-hidden] {
   position: absolute;
   inset: 0;
-  border-radius: 999px;
+  border-radius: 0;
+  border: 1px solid var(--popup-border);
   background: #596572;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -217,21 +304,22 @@ h5 {
 .styleSwitch > span[aria-hidden]::after {
   content: '';
   position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 0;
+  background: var(--tt-bone);
   transition: transform 0.15s ease;
 }
 
 .styleSwitch input:checked + span {
   background: var(--popup-success);
+  border-color: var(--popup-success);
 }
 
 .styleSwitch input:checked + span::after {
-  transform: translateX(18px);
+  transform: translateX(20px);
 }
 
 .styleSwitch input:focus-visible + span {
@@ -254,11 +342,17 @@ h5 {
 .fontScaleControl .button,
 .fontScaleValue {
   min-width: 32px;
-  height: 32px;
+  height: var(--tt-btn-height-sm);
+  min-height: var(--tt-btn-height-sm);
   margin: 0;
   padding: 0 8px;
   border: 1px solid var(--popup-border);
-  border-radius: 7px;
+  border-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  box-sizing: border-box;
 }
 
 .fontScaleValue {
@@ -287,36 +381,78 @@ h5 {
   border: 0;
 }
 
-.templatesTab {
+.templatesTab,
+.stickerTab,
+.favoritesTab,
+.ignoreTab {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.templatesHeader {
+.templatesHeader,
+.stickerHeader,
+.favoritesHeader,
+.ignoreHeader {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.templatesHeader h4 {
+.templatesHeader h4,
+.stickerHeader h4,
+.favoritesHeader h4,
+.ignoreHeader h4 {
   margin: 0;
 }
 
-.templatesHeader p {
+.templatesHeader p,
+.stickerHeader p,
+.favoritesHeader p,
+.ignoreHeader p {
   margin: 2px 0 0;
 }
 
-.templatesActions {
+.templatesActions,
+.stickerActions,
+.favoritesActions,
+.ignoreHeaderActions,
+.ignoreActions {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
+  margin-left: auto;
 }
 
 .templatesStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--popup-muted);
+  cursor: help;
+}
+
+.templatesStatus--success {
+  color: var(--tt-success);
+}
+
+.templatesStatus--error {
+  color: var(--tt-danger);
+}
+
+.templatesStatus--muted {
+  color: var(--popup-muted);
+}
+
+.stickerStatus,
+.ignoreStatus {
   display: flex;
   gap: 10px;
   align-items: center;
@@ -333,9 +469,10 @@ h5 {
 
 .templateCard {
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 10px;
   background: var(--popup-card);
+  border-left: 3px solid var(--tt-frost);
 }
 
 .templateHeader {
@@ -369,8 +506,8 @@ h5 {
   margin-bottom: 8px;
   padding: 8px 10px;
   border: 1px solid var(--popup-border);
-  border-radius: 8px;
-  background: var(--tt-input-bg, #2a3139);
+  border-radius: 0;
+  background: var(--tt-input-bg);
   color: var(--popup-text);
 }
 
@@ -384,39 +521,39 @@ h5 {
   text-align: center;
   color: var(--popup-muted);
   border: 1px dashed var(--popup-accent);
-  border-radius: 8px;
-  background: var(--tt-card-alt, #252c33);
+  border-radius: 0;
+  background: var(--tt-card-alt);
 }
 
 .tag.success {
-  background: rgba(43, 154, 102, 0.12);
-  color: var(--tt-success, #1e7c56);
-  border: 1px solid rgba(43, 154, 102, 0.2);
+  background: rgba(47, 107, 79, 0.12);
+  color: var(--tt-success);
+  border: 1px solid rgba(47, 107, 79, 0.25);
 }
 
 .tag.error {
-  background: rgba(209, 67, 75, 0.12);
-  color: var(--tt-danger, #a12830);
-  border: 1px solid rgba(209, 67, 75, 0.2);
+  background: rgba(161, 40, 48, 0.12);
+  color: var(--tt-danger);
+  border: 1px solid rgba(161, 40, 48, 0.25);
 }
 
-.button.icon-only {
-  padding: 0 8px;
-  width: 32px;
-  height: 32px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
 
 .text-secondary {
   color: var(--popup-muted);
 }
 
 .text-success {
-  color: var(--tt-success, #1e7c56);
+  color: var(--tt-success);
 }
 
 .text-error {
-  color: var(--tt-danger, #a12830);
+  color: var(--tt-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popupTabs .button,
+  .styleSwitch > span[aria-hidden],
+  .styleSwitch > span[aria-hidden]::after {
+    transition: none;
+  }
 }

@@ -6,7 +6,7 @@ import { Templates } from './templates';
 import { IgnoreList } from './ignoreList';
 import { Favorites } from './favorites';
 import { StyleTab } from './style';
-import settingsIcon from './assets/settings.svg';
+import settingsIcon from '../assets/icons/settings.svg';
 import stickerIcon from '../assets/icons/sticker.svg';
 import filePenIcon from '../assets/icons/file-pen.svg';
 import banIcon from '../assets/icons/ban.svg';
@@ -488,14 +488,12 @@ export function App() {
             </button>
           ) }
           <button
-            class="button small controlsSettings"
+            class="button small controlsSettings tabButton"
             onClick={ handleOpenOptions }
             title="Настройки"
             aria-label="Настройки"
           >
-            <span class="controlsSettingsContent">
-              <img src={ settingsIcon } alt="" class="controlsSettingsIcon" />
-            </span>
+            <MaskIcon src={ settingsIcon } />
           </button>
         </div>
       </div>

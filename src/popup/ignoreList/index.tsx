@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { openSettingsSection } from '../../utils/settingsSections';
 import { decodeEntities } from '../../utils';
+import { MaskIcon } from '../../components/MaskIcon';
+import externalLinkIcon from '../../assets/icons/external-link.svg';
+import xIcon from '../../assets/icons/x.svg';
 
+import '../../components/icon.css';
 import './style.css';
 
 type ForumContext = {
@@ -264,15 +268,46 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
   const boardUrl = context?.boardUrl;
 
+  const renderUserRow = (user: IUserStore, key: string) => (
+    <li class="blackListUserItem" key={ key }>
+      { boardUrl ? (
+        <a
+          href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
+          target="_blank"
+          rel="noreferrer"
+        >
+          { user.userName }
+        </a>
+      ) : (
+        <span>{ user.userName }</span>
+      ) }
+      <button
+        class="button small icon-only blackListRemoveItem"
+        title="Амнистировать пользователя"
+        aria-label={ `Амнистировать ${ user.userName }` }
+        onClick={ () => handleRemove(user) }
+      >
+        <MaskIcon src={ xIcon } />
+      </button>
+    </li>
+  );
+
   return (
     <div class="ignoreTab">
       <div class="ignoreHeader">
-        <div>
-          <p class="text-secondary">
-            { context ? `${ context.boardName } — ${ context.forumName }` : 'Текущий раздел' }
-          </p>
+        <div class="ignoreHeaderMeta">
+          { context ? (
+            <>
+              <p class="ignoreHeaderBoard" title={ context.boardName }>{ context.boardName }</p>
+              <p class="ignoreHeaderForum" title={ context.forumName || undefined }>
+                { context.forumName || 'Текущий раздел' }
+              </p>
+            </>
+          ) : (
+            <p class="ignoreHeaderForum">Текущий раздел</p>
+          ) }
           { warning && (
-            <p class="text-secondary" aria-live="polite">
+            <p class="text-secondary ignoreHeaderWarning" aria-live="polite">
               { warning }
             </p>
           ) }
@@ -282,16 +317,20 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
             class="button small ignoreControlsToggle"
             disabled={ controlsToggling }
             onClick={ onToggleControls }
+            title={ controlsVisible
+              ? 'Скрыть кнопки игнора на страницах форума'
+              : 'Показать кнопки игнора на страницах форума'
+            }
           >
-            { controlsVisible ? 'Скрыть элементы игнора' : 'Показать элементы игнора' }
+            { controlsVisible ? 'Скрыть кнопки' : 'Показать кнопки' }
           </button>
           <button
-            class="button small ignoreHeaderSettingsLink"
+            class="button small ignoreHeaderSettingsLink icon-only"
             title="Открыть полный чёрный список в настройках расширения"
             aria-label="Открыть полный чёрный список в настройках расширения"
             onClick={ handleOpenSettings }
           >
-            »
+            <MaskIcon src={ externalLinkIcon } />
           </button>
         </div>
       </div>
@@ -299,101 +338,33 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
       <div class="ignoreStatus" aria-live="polite">{ renderStatus() }</div>
 
       { state === 'ready' && users.length > 0 && (
-        <ul class="blackList ignoreList">
-          <li class="blackListBoardItem">
-            { boardUrl ? (
-              <a href={ `https://${ boardUrl }` } target="_blank" rel="noreferrer">{ context?.boardName }</a>
-            ) : (
-              <span>{ context?.boardName }</span>
-            ) }
-            <ul class="blackListForum">
-              { (context?.forumID && board)
-                ? (
-                  <li class="blackListForumItem">
+        <div class="ignoreUsersSection">
+          <p class="ignoreSectionTitle">Игнорируемые пользователи</p>
+          <ul class="blackList ignoreList ignoreUsersList">
+            { (context?.forumID && board)
+              ? users.map(user => renderUserRow(user, user.userID))
+              : (board?.forums || []).map(forum => (
+                <li class="ignoreForumGroup" key={ forum.forumID }>
+                  <p class="ignoreForumGroupTitle">
                     { boardUrl ? (
                       <a
-                        href={ `https://${ boardUrl }/viewforum.php?id=${ context?.forumID }` }
+                        href={ `https://${ boardUrl }/viewforum.php?id=${ forum.forumID }` }
                         target="_blank"
                         rel="noreferrer"
                       >
-                        { context?.forumName }
+                        { forum.forumName }
                       </a>
                     ) : (
-                      <span>{ context?.forumName }</span>
+                      <span>{ forum.forumName }</span>
                     ) }
-                    <ul class="blackListUsers">
-                      { users.map(user => (
-                        <li class="blackListUserItem" key={ user.userID }>
-                          { boardUrl ? (
-                            <a
-                              href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              { user.userName }
-                            </a>
-                          ) : (
-                            <span>{ user.userName }</span>
-                          ) }
-                          <button
-                            class="button small icon-only blackListRemoveItem"
-                            title="Амнистировать пользователя"
-                            aria-label={ `Амнистировать ${ user.userName }` }
-                            onClick={ () => handleRemove(user) }
-                          >
-                            X
-                          </button>
-                        </li>
-                      )) }
-                    </ul>
-                  </li>
-                )
-                : (
-                  (board?.forums || []).map(forum => (
-                    <li class="blackListForumItem" key={ forum.forumID }>
-                      { boardUrl ? (
-                        <a
-                          href={ `https://${ boardUrl }/viewforum.php?id=${ forum.forumID }` }
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          { forum.forumName }
-                        </a>
-                      ) : (
-                        <span>{ forum.forumName }</span>
-                      ) }
-                      <ul class="blackListUsers">
-                        { (forum.users || []).map(user => (
-                          <li class="blackListUserItem" key={ `${ forum.forumID }-${ user.userID }` }>
-                            { boardUrl ? (
-                              <a
-                                href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
-                                target="_blank"
-                                rel="noreferrer"
-                              >
-                                { user.userName }
-                              </a>
-                            ) : (
-                              <span>{ user.userName }</span>
-                            ) }
-                            <button
-                              class="button small icon-only blackListRemoveItem"
-                              title="Амнистировать пользователя"
-                              aria-label={ `Амнистировать ${ user.userName }` }
-                              onClick={ () => handleRemove(user) }
-                            >
-                              X
-                            </button>
-                          </li>
-                        )) }
-                      </ul>
-                    </li>
-                  ))
-                )
-              }
-            </ul>
-          </li>
-        </ul>
+                  </p>
+                  <ul class="blackListUsers">
+                    { (forum.users || []).map(user => renderUserRow(user, `${ forum.forumID }-${ user.userID }`)) }
+                  </ul>
+                </li>
+              )) }
+          </ul>
+        </div>
       ) }
 
       { state === 'ready' && context && (
@@ -404,34 +375,30 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
               <span class="text-secondary">На этом форуме нет игнорируемых тем</span>
             </div>
           ) : (
-            <ul class="blackList ignoreList">
-              <li class="blackListBoardItem">
-                <ul class="blackListTopics">
-                  { topics.map(topic => (
-                    <li class="blackListTopicItem" key={ topic.topicID }>
-                      { boardUrl ? (
-                        <a
-                          href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          { decodeEntities(topic.topicName) || `Тема ${ topic.topicID }` }
-                        </a>
-                      ) : (
-                        <span>{ decodeEntities(topic.topicName) || `Тема ${ topic.topicID }` }</span>
-                      ) }
-                      <button
-                        class="button small icon-only blackListRemoveItem"
-                        title="Перестать игнорировать тему"
-                        aria-label={ `Перестать игнорировать тему ${ decodeEntities(topic.topicName) || topic.topicID }` }
-                        onClick={ () => handleRemoveTopic(topic) }
-                      >
-                        X
-                      </button>
-                    </li>
-                  )) }
-                </ul>
-              </li>
+            <ul class="blackList ignoreList ignoreTopicsList">
+              { topics.map(topic => (
+                <li class="blackListTopicItem" key={ topic.topicID }>
+                  { boardUrl ? (
+                    <a
+                      href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      { decodeEntities(topic.topicName) || `Тема ${ topic.topicID }` }
+                    </a>
+                  ) : (
+                    <span>{ decodeEntities(topic.topicName) || `Тема ${ topic.topicID }` }</span>
+                  ) }
+                  <button
+                    class="button small icon-only blackListRemoveItem"
+                    title="Перестать игнорировать тему"
+                    aria-label={ `Перестать игнорировать тему ${ decodeEntities(topic.topicName) || topic.topicID }` }
+                    onClick={ () => handleRemoveTopic(topic) }
+                  >
+                    <MaskIcon src={ xIcon } />
+                  </button>
+                </li>
+              )) }
             </ul>
           ) }
         </div>

@@ -7,6 +7,7 @@ import { ConflictResolver } from './conflictResolver';
 import TemplateOptions from './templateOptions';
 import { FavoritesOptions } from './favoritesOptions';
 import { DEFAULT_SETTINGS_SECTION, isSettingsSection, SettingsSection } from '../utils/settingsSections';
+import { getStorageFallbacks, STORAGE_FALLBACKS_KEY } from '../utils/storage';
 
 import '../chota.min.css';
 import '../common.css';
@@ -17,16 +18,34 @@ const getSectionFromHash = (): SettingsSection => {
 	return isSettingsSection(hash) ? hash : DEFAULT_SETTINGS_SECTION;
 };
 
+const SECTION_STORAGE_KEYS: Partial<Record<SettingsSection, string[]>> = {
+	stickers: [ 'stickerPack' ],
+	templates: [ 'templates' ],
+	blackList: [ 'ignoreList', 'ignoredTopicsList' ],
+	favorites: [ 'favoriteTopics' ],
+};
+
+const isSectionLocal = (
+	section: SettingsSection,
+	fallbacks: Record<string, 'local'>,
+) => {
+	const keys = SECTION_STORAGE_KEYS[section];
+	if (!keys?.length) return false;
+	return keys.some(key => fallbacks[key] === 'local');
+};
+
 export function App() {
 	const [ activeSection, setActiveSection ] = useState<SettingsSection>(getSectionFromHash);
 	const [ syncBytesInUse, setSyncBytesInUse ] = useState<number | null>(null);
 	const [ syncUsageError, setSyncUsageError ] = useState<string | null>(null);
+	const [ storageFallbacks, setStorageFallbacks ] = useState<Record<string, 'local'>>({});
 
 	const syncQuotaBytes = chrome.storage?.sync?.QUOTA_BYTES || 102400;
 	const syncUsagePercent = useMemo(() => {
 		if (syncBytesInUse === null) return 0;
 		return Math.min(100, Math.round((syncBytesInUse / syncQuotaBytes) * 100));
 	}, [ syncBytesInUse, syncQuotaBytes ]);
+	const activeSectionIsLocal = isSectionLocal(activeSection, storageFallbacks);
 
 	useEffect(() => {
 		const updateSyncUsage = () => {
@@ -41,11 +60,21 @@ export function App() {
 			});
 		};
 
-		updateSyncUsage();
+		const updateFallbacks = () => {
+			getStorageFallbacks()
+				.then(setStorageFallbacks)
+				.catch(() => setStorageFallbacks({}));
+		};
 
-		const handleStorageChange = (_changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+		updateSyncUsage();
+		updateFallbacks();
+
+		const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
 			if (areaName !== 'sync') return;
 			updateSyncUsage();
+			if (changes[STORAGE_FALLBACKS_KEY]) {
+				updateFallbacks();
+			}
 		};
 
 		chrome.storage.onChanged.addListener(handleStorageChange);
@@ -121,7 +150,7 @@ export function App() {
 						<div className="optionsGuideBlock">
 							<h5>Игнор</h5>
 							<ul>
-								<li>На странице темы можно скрыть посты конкретного пользователя в выбранном разделе.</li>
+								<li>На странице темы в блоке ссылок поста (после E-mail) есть кнопка ⊘ — скрыть посты пользователя в выбранном разделе.</li>
 								<li>На странице раздела или поиска можно скрывать отдельные темы.</li>
 								<li>Игнор работает только для вас: форум и другие пользователи ничего не меняют.</li>
 								<li>Если нужно вернуть скрытое, откройте настройки и удалите пользователя или тему из списка.</li>
@@ -131,7 +160,7 @@ export function App() {
 						<div className="optionsGuideBlock">
 							<h5>Избранное</h5>
 							<ul>
-								<li>Откройте тему и нажмите «+ Текущая тема», чтобы добавить её в список эпизодов.</li>
+								<li>Откройте тему и нажмите «Текущая тема», чтобы добавить её в список эпизодов.</li>
 								<li>В список можно добавлять темы с разных форумов: всё будет собрано в одном месте.</li>
 								<li>Расширение проверяет новые сообщения в фоне и показывает счётчик в попапе и на иконке.</li>
 								<li>Отметьте галочкой темы, где сейчас ваш ход, чтобы они не терялись среди остальных.</li>
@@ -165,7 +194,7 @@ export function App() {
 							<ul>
 								<li>По возможности данные сохраняются в Chrome Sync, чтобы быть доступными в вашем браузере на разных устройствах.</li>
 								<li>Если места в Chrome Sync не хватает, расширение сохранит часть данных локально только на этом устройстве.</li>
-								<li>Индикатор слева показывает, сколько места уже занято в синхронизируемом хранилище.</li>
+								<li>У таких разделов в меню появляется метка «локально»; индикатор слева показывает, сколько места уже занято в синхронизируемом хранилище.</li>
 							</ul>
 						</div>
 					</section>
@@ -187,10 +216,12 @@ export function App() {
 			<header>
 				<div className="main">
 					<div className="logo">
-						<img src='./icon512.png' />
+						<img src='./icon512.png' alt="" />
 					</div>
-					<h1>Tundra Toolkit <span>v3.2</span></h1>
-					<div>Набор инструментов от <a href="https://t.me/hvscripts" target="_blank">Человека-Шамана</a>.</div>
+					<div>
+						<h1>Tundra Toolkit <span>v3.2</span></h1>
+						<div className="headerMeta">Набор инструментов от <a href="https://t.me/hvscripts" target="_blank" rel="noreferrer">Человека-Шамана</a>.</div>
+					</div>
 				</div>
 			</header>
 			<main>
@@ -198,15 +229,26 @@ export function App() {
 				<div className="optionsLayout">
 					<aside className="optionsSidebar">
 						<nav className="optionsNav">
-							{ sections.map(section => (
-								<button
-									key={ section.id }
-									className={ `button outline optionsNavItem ${ activeSection === section.id ? 'active' : '' }` }
-									onClick={ () => selectSection(section.id) }
-								>
-									{ section.label }
-								</button>
-							)) }
+							{ sections.map(section => {
+								const localOnly = isSectionLocal(section.id, storageFallbacks);
+								return (
+									<button
+										key={ section.id }
+										className={ `button outline optionsNavItem ${ activeSection === section.id ? 'active' : '' }` }
+										onClick={ () => selectSection(section.id) }
+									>
+										<span className="optionsNavItemLabel">{ section.label }</span>
+										{ localOnly && (
+											<span
+												className="storageLocalBadge"
+												title="Сохранено только на этом устройстве"
+											>
+												локально
+											</span>
+										) }
+									</button>
+								);
+							}) }
 						</nav>
 						<div className="storageUsageCard">
 							<div className="storageUsageTitle">Память Chrome</div>
@@ -242,6 +284,12 @@ export function App() {
 						</button>
 					</aside>
 					<div className="optionsContent">
+						{ activeSectionIsLocal && (
+							<div className="storageLocalNotice" role="status">
+								<span className="storageLocalBadge">локально</span>
+								<span>Эти данные сохранены только на этом устройстве и не синхронизируются через Chrome.</span>
+							</div>
+						) }
 						{ renderSection() }
 					</div>
 				</div>
