@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import {
+  getCollectionLocations,
+  ItemLocation,
+  safeStorageGet,
+  safeStorageSet,
+  setItemCloudPinned,
+} from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
+import { CloudSyncButton, hasCloudOverflow } from '../../components/CloudSyncButton';
 import refreshIcon from '../../assets/icons/refresh-cw.svg';
 import xIcon from '../../assets/icons/x.svg';
 
@@ -45,6 +52,13 @@ export function FavoritesOptions() {
   const [ error, setError ] = useState<string | null>(null);
   const [ info, setInfo ] = useState<string | null>(null);
   const [ viewMode, setViewMode ] = useState<ViewMode>('byForum');
+  const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
+
+  const refreshLocations = () => {
+    getCollectionLocations('favoriteTopics')
+      .then(setLocations)
+      .catch(() => setLocations({}));
+  };
 
   const loadFromStorage = async () => {
     const [ storage, metaStore, viewStore ] = await Promise.all([
@@ -53,6 +67,7 @@ export function FavoritesOptions() {
       chrome.storage.local.get(VIEW_MODE_KEY),
     ]);
     setFavorites(storage?.[ STORAGE_KEY ] || []);
+    refreshLocations();
     const meta = (metaStore as any)?.[ META_KEY ] || {};
     setBoardStatuses(meta.boardStatuses || {});
     setLastRefreshAt(meta.lastRefreshAt || null);
@@ -163,6 +178,8 @@ export function FavoritesOptions() {
     await persist(next);
   };
 
+  const showCloudControls = hasCloudOverflow(locations);
+
   const renderItem = (item: IFavoriteTopic, showBoard: boolean) => {
     const status = boardStatuses[item.boardUrl];
     const stale = status === 'guest' || status === 'error';
@@ -225,6 +242,17 @@ export function FavoritesOptions() {
           </div>
         </div>
 
+        { showCloudControls && (
+          <CloudSyncButton
+            location={ locations[item.id] || 'local' }
+            onToggle={ async () => {
+              const current = locations[item.id] || 'local';
+              const result = await setItemCloudPinned('favoriteTopics', item.id, current !== 'localPinned');
+              setLocations(prev => ({ ...prev, [item.id]: result.location }));
+              setError(result.error || null);
+            } }
+          />
+        ) }
         <button
           className="button small icon-only favoritesOptionsRemove"
           title="Убрать из избранного"

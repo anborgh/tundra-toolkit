@@ -1,33 +1,44 @@
 :root {
-    /* Tundra shamanism — light (bone ground, night ink) */
-    --tt-night: #11222E;
+    /*
+     * Five primitives only. Everything else is derived via color-mix / relative color.
+     * Light: deep peat ink, bone paper, iced teal, dry earth, coal ember.
+     */
+    --tt-night: #152122;
     --tt-bone: #F9F9F4;
-    --tt-frost: #A5C1CF;
+    --tt-frost: #275355;
     --tt-earth: #7C5233;
-    --tt-pine: #2F6B4F;
     --tt-ember: #A12830;
 
-    --bg-color: var(--tt-bone);
-    --font-color: var(--tt-night);
-    --color-primary: var(--tt-night);
+    --tt-bg: var(--tt-bone);
+    --tt-fg: var(--tt-night);
+
+    --bg-color: var(--tt-bg);
+    --font-color: var(--tt-fg);
+    --color-primary: var(--tt-fg);
+    --tt-text: var(--tt-fg);
     --width: 860px;
 
-    --tt-card: #FFFFFF;
-    --tt-card-alt: #E8EEF1;
-    --tt-border: #C5D2DA;
-    --tt-border-strong: var(--tt-night);
-    --tt-muted: #4A5C68;
-    --tt-text: var(--tt-night);
-    --tt-input-bg: #FFFFFF;
+    --tt-card: oklch(from var(--tt-bg) calc(l + 0.03) c h);
+    --tt-card-alt: color-mix(in oklab, var(--tt-frost) 12%, var(--tt-bg));
+    --tt-border: color-mix(in oklab, var(--tt-frost) 16%, var(--tt-bg));
+    --tt-border-strong: color-mix(in oklab, var(--tt-frost) 28%, var(--tt-bg));
+    --tt-muted: color-mix(in oklab, var(--tt-fg) 58%, var(--tt-frost));
+    --tt-input-bg: oklch(from var(--tt-bg) calc(l + 0.02) c h);
+    --tt-pine: oklch(from var(--tt-frost) calc(l + 0.1) calc(c * 1.05) calc(h - 28));
     --tt-success: var(--tt-pine);
     --tt-danger: var(--tt-ember);
-    --tt-accent: #5B7A8A;
-    --tt-accent-soft: rgba(165, 193, 207, 0.35);
-    --tt-focus: rgba(17, 34, 46, 0.22);
-    --tt-link: #1F5F8A;
+    --tt-warn: oklch(from var(--tt-earth) calc(l + 0.14) calc(c * 1.2) calc(h + 18));
+    --tt-accent: color-mix(in oklab, var(--tt-frost) 70%, var(--tt-fg));
+    --tt-accent-soft: color-mix(in oklab, var(--tt-frost) 20%, transparent);
+    --tt-focus: color-mix(in oklab, var(--tt-frost) 28%, transparent);
+    --tt-link: color-mix(in oklab, var(--tt-frost) 50%, var(--tt-fg));
+    --tt-on-frost: var(--tt-bg);
+    --tt-frost-hover: color-mix(in oklab, var(--tt-frost) 42%, var(--tt-bone));
+    --tt-night-lift: oklch(from var(--tt-night) calc(l + 0.06) c h);
+    --tt-overlay: color-mix(in oklab, var(--tt-fg) 27%, transparent);
 
     --tt-radius: 0;
-    --tt-border-width: 2px;
+    --tt-border-width: 1px;
     --tt-btn-height: 32px;
     --tt-btn-height-sm: 28px;
     --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
@@ -48,23 +59,16 @@ h1, h2, h3, h4, h5 {
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg-color: var(--tt-night);
-        --font-color: var(--tt-bone);
-        --color-primary: var(--tt-frost);
+        /* Five primitives — dark: peat void, mist bone, luminous ice, lichen, coals */
+        --tt-night: #0E1A1C;
+        --tt-bone: #E4EEF0;
+        --tt-frost: #275355;
+        --tt-earth: #C9A57A;
+        --tt-ember: #E07878;
 
-        --tt-card: #1A2D3A;
-        --tt-card-alt: #152530;
-        --tt-border: #2E4452;
-        --tt-border-strong: var(--tt-bone);
-        --tt-muted: #A5C1CF;
-        --tt-text: var(--tt-bone);
-        --tt-input-bg: #152530;
-        --tt-success: #5AC193;
-        --tt-danger: #E07070;
-        --tt-accent: var(--tt-frost);
-        --tt-accent-soft: rgba(165, 193, 207, 0.18);
-        --tt-focus: rgba(165, 193, 207, 0.28);
-        --tt-link: #9CC8FF;
+        --tt-bg: var(--tt-night);
+        --tt-fg: var(--tt-bone);
+        --color-primary: var(--tt-frost);
     }
 }
 
@@ -108,14 +112,14 @@ select,
 button.primary {
     background: var(--tt-frost);
     border-color: var(--tt-frost);
-    color: var(--tt-night);
+    color: var(--tt-on-frost);
 }
 
 .button.primary:hover,
 .button.success:hover,
 button.primary:hover {
-    background: #B7D0DC;
-    border-color: #B7D0DC;
+    background: var(--tt-frost-hover);
+    border-color: var(--tt-frost-hover);
     color: var(--tt-night);
     opacity: 1;
 }
@@ -168,17 +172,7 @@ select:focus-visible {
     .button.primary,
     .button.success,
     button.primary {
-        background: var(--tt-frost);
-        border-color: var(--tt-frost);
-        color: var(--tt-night);
-    }
-
-    .button.primary:hover,
-    .button.success:hover,
-    button.primary:hover {
-        background: #C5DCE6;
-        border-color: #C5DCE6;
-        color: var(--tt-night);
+        color: var(--tt-text);
     }
 }
 
@@ -218,6 +212,55 @@ select:focus-visible {
     padding: 2px 5px;
     border: 1px solid var(--tt-earth);
     color: var(--tt-earth);
-    background: rgba(124, 82, 51, 0.12);
+    background: color-mix(in oklab, var(--tt-earth) 12%, transparent);
     white-space: nowrap;
+}
+
+.cloudSyncBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    padding: 0;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--tt-frost);
+    cursor: pointer;
+    flex: 0 0 auto;
+    opacity: 0.85;
+}
+
+.cloudSyncBtn:hover,
+.cloudSyncBtn:focus-visible {
+    background: transparent;
+    opacity: 1;
+    outline: none;
+}
+
+.cloudSyncBtn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.cloudSyncBtn .ttIcon {
+    width: 14px;
+    height: 14px;
+}
+
+.cloudSyncBtn--local {
+    color: var(--tt-muted);
+    opacity: 0.65;
+}
+
+.cloudSyncBtn--localPinned {
+    color: var(--tt-earth);
+}
+
+.cloudSyncIconMuted {
+    opacity: 0.55;
 }

@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { safeStorageGet, safeStorageSet } from '../../utils/storage';
+import {
+  getCollectionLocations,
+  ItemLocation,
+  safeStorageGet,
+  safeStorageSet,
+  setItemCloudPinned,
+} from '../../utils/storage';
 import { decodeEntities } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
+import { CloudSyncButton, hasCloudOverflow } from '../../components/CloudSyncButton';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
@@ -16,6 +23,17 @@ export function BlackListOptions() {
   const [ loaded, setLoaded ] = useState(false);
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ error, setError ] = useState<string | null>(null);
+  const [ userLocations, setUserLocations ] = useState<Record<string, ItemLocation>>({});
+  const [ topicLocations, setTopicLocations ] = useState<Record<string, ItemLocation>>({});
+
+  const refreshLocations = async () => {
+    const [ users, topics ] = await Promise.all([
+      getCollectionLocations('ignoreList'),
+      getCollectionLocations('ignoredTopicsList'),
+    ]);
+    setUserLocations(users);
+    setTopicLocations(topics);
+  };
 
   const usersCount = useMemo(
     () => data.reduce(
@@ -47,6 +65,7 @@ export function BlackListOptions() {
   }, [ loaded, error, warning ]);
 
   const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
+    refreshLocations().catch(() => {});
     if (result.fallback) {
       setWarning('Память синхронизации переполнена. Списки сохранены только в этом браузере.');
     } else {
@@ -117,6 +136,7 @@ export function BlackListOptions() {
         const storage = await safeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]);
         setData(storage[ 'ignoreList' ] || []);
         setTopicsData(storage[ 'ignoredTopicsList' ] || []);
+        await refreshLocations();
       } catch (e) {
         setError('Не удалось загрузить чёрный список');
       } finally {
@@ -126,6 +146,24 @@ export function BlackListOptions() {
 
     fetchData();
   }, []);
+
+  const toggleUserCloud = async (boardID: string, forumID: string) => {
+    const id = `${ boardID }:${ forumID }`;
+    const current = userLocations[id] || 'local';
+    const result = await setItemCloudPinned('ignoreList', id, current !== 'localPinned');
+    setUserLocations(prev => ({ ...prev, [id]: result.location }));
+    setError(result.error || null);
+  };
+
+  const toggleTopicCloud = async (boardID: string) => {
+    const id = `${ boardID }`;
+    const current = topicLocations[id] || 'local';
+    const result = await setItemCloudPinned('ignoredTopicsList', id, current !== 'localPinned');
+    setTopicLocations(prev => ({ ...prev, [id]: result.location }));
+    setError(result.error || null);
+  };
+
+  const showCloudControls = hasCloudOverflow(userLocations) || hasCloudOverflow(topicLocations);
 
   return (
     <section className="blackListOptions">
@@ -153,6 +191,12 @@ export function BlackListOptions() {
         </div>
       </div>
 
+      { error && (
+        <div className="text-error" style={{ marginBottom: 8 }}>
+          { error }
+        </div>
+      ) }
+
       { loaded && !data.length && !topicsData.length && (
         <div className="emptyList">
           Список пока пуст. Кнопка ⊘ появится в ссылках поста (рядом с E-mail) и в списке тем.
@@ -175,14 +219,22 @@ export function BlackListOptions() {
 
               { forums.map(({ forumID, forumName, users }) => (
                 <div className="blackListOptionsForum" key={ forumID }>
-                  <a
-                    href={ `https://${ boardUrl }/viewforum.php?id=${ forumID }` }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="blackListOptionsForumTitle"
-                  >
-                    { forumName }
-                  </a>
+                  <div className="blackListOptionsForumHeader">
+                    <a
+                      href={ `https://${ boardUrl }/viewforum.php?id=${ forumID }` }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blackListOptionsForumTitle"
+                    >
+                      { forumName }
+                    </a>
+                    { showCloudControls && (
+                      <CloudSyncButton
+                        location={ userLocations[`${ boardID }:${ forumID }`] || 'local' }
+                        onToggle={ () => toggleUserCloud(boardID, forumID) }
+                      />
+                    ) }
+                  </div>
                   <ul className="blackListOptionsList">
                     { users.map(user => (
                       <li className="blackListOptionsItem" key={ user.userID }>
@@ -220,14 +272,22 @@ export function BlackListOptions() {
           <h5 className="blackListOptionsSectionTitle">Темы</h5>
           { topicsData.map(({ boardID, boardName, boardUrl, topics }) => (
             <div className="blackListOptionsBoard" key={ `topic-${ boardID }` }>
-              <a
-                href={ `https://${ boardUrl }` }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="blackListOptionsBoardTitle"
-              >
-                { boardName }
-              </a>
+              <div className="blackListOptionsForumHeader">
+                <a
+                  href={ `https://${ boardUrl }` }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="blackListOptionsBoardTitle"
+                >
+                  { boardName }
+                </a>
+                { showCloudControls && (
+                  <CloudSyncButton
+                    location={ topicLocations[String(boardID)] || 'local' }
+                    onToggle={ () => toggleTopicCloud(boardID) }
+                  />
+                ) }
+              </div>
               <ul className="blackListOptionsList">
                 { topics.map(topic => (
                   <li className="blackListOptionsItem" key={ topic.topicID }>

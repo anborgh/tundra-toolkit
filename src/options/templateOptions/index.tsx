@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  getStorageFallbacks,
-  isChunkedStorageChange,
-  isStorageItemLocal,
+  getCollectionLocations,
+  ItemLocation,
   safeStorageGet,
   safeStorageSet,
+  setItemCloudPinned,
   STORAGE_FALLBACKS_KEY,
-  StorageFallbackMap,
 } from '../../utils/storage';
+import { CloudSyncButton } from '../../components/CloudSyncButton';
 
 import './style.css';
 
@@ -16,17 +16,18 @@ const STORAGE_KEY = 'templates';
 export default function TemplateOptions() {
   const [ templates, setTemplates ] = useState<ITemplate[]>([]);
   const [ loaded, setLoaded ] = useState(false);
-  const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
+  const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
+  const [ cloudError, setCloudError ] = useState<string | null>(null);
 
   const nextId = useMemo(() => {
     const ids = templates.map(item => item.id);
     return ids.length ? Math.max(...ids) + 1 : 0;
   }, [ templates ]);
 
-  const refreshFallbacks = () => {
-    getStorageFallbacks()
-      .then(setFallbacks)
-      .catch(() => setFallbacks({}));
+  const refreshLocations = () => {
+    getCollectionLocations('templates')
+      .then(setLocations)
+      .catch(() => setLocations({}));
   };
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function TemplateOptions() {
         const storage = await safeStorageGet([ STORAGE_KEY ]);
         const stored = storage[ STORAGE_KEY ] || [];
         setTemplates(stored);
-        refreshFallbacks();
+        refreshLocations();
       } finally {
         setLoaded(true);
       }
@@ -47,7 +48,7 @@ export default function TemplateOptions() {
   useEffect(() => {
     if (!loaded) return;
     safeStorageSet({ [ STORAGE_KEY ]: templates })
-      .then(() => refreshFallbacks())
+      .then(() => refreshLocations())
       .catch(() => {});
   }, [ templates, loaded ]);
 
@@ -57,17 +58,9 @@ export default function TemplateOptions() {
       areaName: string,
     ) => {
       if (areaName !== 'sync' && areaName !== 'local') return;
-      if (changes[STORAGE_FALLBACKS_KEY]) {
-        refreshFallbacks();
+      if (changes[STORAGE_FALLBACKS_KEY] || changes['tt2/loc']) {
+        refreshLocations();
       }
-      if (!isChunkedStorageChange(changes, STORAGE_KEY)) return;
-
-      safeStorageGet([ STORAGE_KEY ])
-        .then(storage => {
-          setTemplates(storage[ STORAGE_KEY ] || []);
-          refreshFallbacks();
-        })
-        .catch(() => {});
     };
 
     chrome.storage.onChanged.addListener(handleChange);
@@ -106,6 +99,13 @@ export default function TemplateOptions() {
     setTemplates([]);
   };
 
+  const toggleCloud = async (templateId: number) => {
+    const current = locations[String(templateId)] || 'local';
+    const result = await setItemCloudPinned('templates', templateId, current !== 'localPinned');
+    setLocations(prev => ({ ...prev, [String(templateId)]: result.location }));
+    setCloudError(result.error || null);
+  };
+
   const formatDate = (value?: number) => {
     if (!value) return '';
     try {
@@ -134,6 +134,12 @@ export default function TemplateOptions() {
         </div>
       </div>
 
+      { cloudError && (
+        <div className="text-error" style={{ marginBottom: 8 }}>
+          { cloudError }
+        </div>
+      ) }
+
       { !templates.length && (
         <div className="emptyList">
           Пока нет ни одного шаблона. Добавьте новый или сохраните из всплывающего окна.
@@ -142,7 +148,7 @@ export default function TemplateOptions() {
 
       <div className="templateOptionsList">
         { templates.map(template => {
-          const localOnly = isStorageItemLocal(fallbacks, STORAGE_KEY, template.id);
+          const location = locations[String(template.id)] || 'local';
           return (
             <div className="templateOptionsItem" key={ template.id }>
               <div className="templateOptionsRow">
@@ -155,14 +161,10 @@ export default function TemplateOptions() {
                   />
                 </label>
                 <div className="templateOptionsMeta">
-                  { localOnly && (
-                    <span
-                      className="storageLocalBadge"
-                      title="Сохранено только на этом устройстве"
-                    >
-                      локально
-                    </span>
-                  ) }
+                  <CloudSyncButton
+                    location={ location }
+                    onToggle={ () => toggleCloud(template.id) }
+                  />
                   { template.updatedAt && (
                     <span className="text-secondary">Обновлено: { formatDate(template.updatedAt) }</span>
                   ) }

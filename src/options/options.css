@@ -7,7 +7,7 @@ body {
 
 header {
     background: var(--tt-frost);
-    color: var(--tt-night);
+    color: var(--tt-on-frost);
     overflow: hidden;
     padding: 16px 0;
     border-bottom: var(--tt-border-width) solid var(--tt-earth);
@@ -39,7 +39,7 @@ header h1 {
 }
 
 header a {
-    color: var(--tt-night);
+    color: var(--tt-on-frost);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
 }
@@ -126,7 +126,7 @@ main {
 
 .optionsNavItem.active {
     background: var(--tt-frost);
-    color: var(--tt-night);
+    color: var(--tt-on-frost);
     font-weight: 600;
 }
 
@@ -176,7 +176,7 @@ main {
 }
 
 .storageUsageFill.warn {
-    background: #C9A227;
+    background: var(--tt-warn);
 }
 
 .storageUsageFill.danger {

@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 
 import gripVerticalIcon from '../../assets/icons/grip-vertical.svg';
 import { MaskIcon } from '../../components/MaskIcon';
+import { CloudSyncButton } from '../../components/CloudSyncButton';
 import { useBatchedItems } from '../../hooks/useBatchedItems';
 import { checkImageURL } from '../../utils';
+import type { ItemLocation } from '../../utils/storage';
 
 import '../../components/icon.css';
 import './style.css';
@@ -12,11 +14,19 @@ type Props = {
   pack: IStickerPack;
   onChange: (pack: IStickerPack) => void;
   onRemove: (packId: number) => void;
-  localOnly?: boolean;
+  location?: ItemLocation;
+  onCloudToggle?: () => void;
   reorderMode?: boolean;
 }
 
-export default function ({ pack, onChange, onRemove, localOnly = false, reorderMode = false }: Props) {
+export default function ({
+  pack,
+  onChange,
+  onRemove,
+  location = 'local',
+  onCloudToggle,
+  reorderMode = false,
+}: Props) {
   const dragItem = useRef();
   const dragOverItem = useRef();
 
@@ -126,13 +136,8 @@ export default function ({ pack, onChange, onRemove, localOnly = false, reorderM
               </span>
             ) }
             <h4>{ name }</h4>
-            { localOnly && (
-              <span
-                className="storageLocalBadge"
-                title="Сохранено только на этом устройстве"
-              >
-                локально
-              </span>
+            { onCloudToggle && (
+              <CloudSyncButton location={ location } onToggle={ onCloudToggle } />
             ) }
           </div>
         ) }

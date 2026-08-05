@@ -1,6 +1,6 @@
 :root {
   --popup-bg: var(--bg-color);
-  --popup-card: var(--tt-card);
+  --popup-card: var(--tt-accent-soft);
   --popup-border: var(--tt-border);
   --popup-muted: var(--tt-muted);
   --popup-text: var(--tt-text);
@@ -123,8 +123,9 @@ h5 {
 }
 
 .popupTabs .button:hover {
-  background: #FFFFFF;
+  background: var(--tt-card);
   border-color: var(--tt-earth);
+  color: var(--tt-text);
 }
 
 .popupTabs .button.primary {
@@ -134,8 +135,8 @@ h5 {
 }
 
 .popupTabs .button.forumPowerToggle.muted {
-  background: #C8D4DA;
-  color: #3C4651;
+  background: var(--tt-card-alt);
+  color: var(--tt-muted);
 }
 
 .popupTabs .button.forumPowerToggle.active {
@@ -145,7 +146,7 @@ h5 {
 }
 
 .popupTabs .button.forumPowerToggle.active:hover {
-  background: #1A2D3A;
+  background: var(--tt-night-lift);
 }
 
 .popupTabs .button.controlsSettings {
@@ -174,6 +175,7 @@ h5 {
   padding: 12px;
   max-height: 560px;
   overflow: auto;
+  min-height: 270px;
 }
 
 /* Unified tab panel header — actions always top-right */
@@ -302,7 +304,7 @@ h5 {
   inset: 0;
   border-radius: 0;
   border: 1px solid var(--popup-border);
-  background: #596572;
+  background: var(--tt-muted);
   cursor: pointer;
   transition: background 0.15s ease;
 }

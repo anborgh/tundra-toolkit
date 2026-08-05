@@ -10,36 +10,36 @@
     style.setAttribute(MODAL_STYLE_ATTR, 'true');
     style.textContent = `
         #hvPostStatsModal {
-          --tt-night: #11222E;
+          --tt-night: #152122;
           --tt-bone: #F9F9F4;
-          --tt-frost: #A5C1CF;
+          --tt-frost: #275355;
           --tt-earth: #7C5233;
-          --tt-pine: #2F6B4F;
           --tt-ember: #A12830;
 
-          --tt-post-stats-card: #FFFFFF;
-          --tt-post-stats-card-alt: #E8EEF1;
-          --tt-post-stats-border: #C5D2DA;
-          --tt-post-stats-border-strong: var(--tt-night);
-          --tt-post-stats-muted: #4A5C68;
-          --tt-post-stats-text: var(--tt-night);
-          --tt-post-stats-input-bg: #FFFFFF;
-          --tt-post-stats-success: var(--tt-pine);
-          --tt-post-stats-heading: var(--tt-night);
-          --tt-post-stats-accent: #5B7A8A;
-          --tt-post-stats-backdrop: rgba(17, 34, 46, 0.45);
-          --tt-post-stats-shadow: rgba(17, 34, 46, 0.22);
-          --tt-post-stats-focus: rgba(17, 34, 46, 0.22);
-          --tt-post-stats-link: #1F5F8A;
-          --tt-post-stats-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
-          --tt-post-stats-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
-          --tt-post-stats-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+          --tt-bg: var(--tt-bone);
+          --tt-fg: var(--tt-night);
+          --tt-card: var(--tt-bone);
+          --tt-card-alt: var(--tt-bg);
+          --tt-border: var(--tt-frost);
+          --tt-border-strong: var(--tt-night);
+          --tt-muted: var(--tt-frost);
+          --tt-text: var(--tt-fg);
+          --tt-input-bg: var(--tt-bone);
+          --tt-success: var(--tt-frost);
+          --tt-accent: var(--tt-frost);
+          --tt-focus: var(--tt-frost);
+          --tt-link: var(--tt-frost);
+          --tt-overlay: var(--tt-night);
+          --tt-on-frost: var(--tt-bg);
+          --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+          --tt-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+          --tt-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
 
           background: transparent;
           border: none;
           box-shadow: none;
-          color: var(--tt-post-stats-text);
-          font-family: var(--tt-post-stats-font-body);
+          color: var(--tt-text);
+          font-family: var(--tt-font-body);
           margin: 0;
           padding: 0;
           color-scheme: light;
@@ -48,25 +48,33 @@
         @media (prefers-color-scheme: dark) {
           #hvPostStatsModal {
             color-scheme: dark;
-            --tt-post-stats-card: #1A2D3A;
-            --tt-post-stats-card-alt: #152530;
-            --tt-post-stats-border: #2E4452;
-            --tt-post-stats-border-strong: var(--tt-bone);
-            --tt-post-stats-muted: var(--tt-frost);
-            --tt-post-stats-text: var(--tt-bone);
-            --tt-post-stats-input-bg: #152530;
-            --tt-post-stats-success: #5AC193;
-            --tt-post-stats-heading: var(--tt-bone);
-            --tt-post-stats-accent: var(--tt-frost);
-            --tt-post-stats-backdrop: rgba(5, 10, 16, 0.78);
-            --tt-post-stats-shadow: rgba(0, 0, 0, 0.5);
-            --tt-post-stats-focus: rgba(165, 193, 207, 0.28);
-            --tt-post-stats-link: #9CC8FF;
+            --tt-night: #0E1A1C;
+            --tt-bone: #E4EEF0;
+            --tt-frost: #275355;
+            --tt-earth: #C9A57A;
+            --tt-ember: #E07878;
+
+            --tt-bg: var(--tt-night);
+            --tt-fg: var(--tt-bone);
+            --tt-card: var(--tt-night);
+            --tt-card-alt: var(--tt-night);
+            --tt-border: var(--tt-frost);
+            --tt-border-strong: var(--tt-bone);
+            --tt-muted: var(--tt-frost);
+            --tt-text: var(--tt-fg);
+            --tt-input-bg: var(--tt-night);
+            --tt-success: var(--tt-frost);
+            --tt-accent: var(--tt-frost);
+            --tt-focus: var(--tt-frost);
+            --tt-link: var(--tt-frost);
+            --tt-overlay: var(--tt-night);
+            --tt-on-frost: var(--tt-bg);
           }
         }
 
         #hvPostStatsModal::backdrop {
-          background: var(--tt-post-stats-backdrop);
+          background: var(--tt-overlay);
+          opacity: 0.72;
           backdrop-filter: blur(2px);
         }
 
@@ -92,11 +100,11 @@
           overflow: hidden;
           overscroll-behavior: contain;
           padding: 18px;
-          background: var(--tt-post-stats-card);
-          border: 2px solid var(--tt-post-stats-border-strong);
+          background: var(--tt-card);
+          border: 2px solid var(--tt-border-strong);
           border-radius: 0;
-          box-shadow: 0 18px 40px var(--tt-post-stats-shadow);
-          color: var(--tt-post-stats-text);
+          box-shadow: 0 18px 40px var(--tt-night);
+          color: var(--tt-text);
         }
 
         #hvPostStatsModal .hvPostStatsModal__content::before {
@@ -104,7 +112,7 @@
           position: absolute;
           top: 18px;
           left: 18px;
-          font-family: var(--tt-post-stats-font-mono);
+          font-family: var(--tt-font-mono);
           font-size: 11px;
           letter-spacing: -0.12em;
           color: var(--tt-earth);
@@ -116,8 +124,8 @@
           flex: 0 0 auto;
           margin: 0;
           padding: 0 40px 0 36px;
-          color: var(--tt-post-stats-heading);
-          font-family: var(--tt-post-stats-font-display);
+          color: var(--tt-text);
+          font-family: var(--tt-font-display);
           font-size: 26px;
           font-weight: 600;
           line-height: 1.15;
@@ -139,7 +147,7 @@
         }
 
         #hvPostStatsModal label {
-          color: var(--tt-post-stats-muted);
+          color: var(--tt-muted);
           font-weight: 500;
           font-size: 13px;
         }
@@ -150,9 +158,9 @@
           width: 100%;
           box-sizing: border-box;
           padding: 8px 10px;
-          background: var(--tt-post-stats-input-bg);
-          color: var(--tt-post-stats-text);
-          border: 1px solid var(--tt-post-stats-border);
+          background: var(--tt-input-bg);
+          color: var(--tt-text);
+          border: 1px solid var(--tt-border);
           border-radius: 0;
           font-family: inherit;
           transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
@@ -163,13 +171,13 @@
         #hvPostStatsModal input[type="date"]:focus-visible,
         #hvPostStatsModal .hvPostStatsModal__bbcode:focus-visible {
           outline: none;
-          border-color: var(--tt-post-stats-accent);
-          box-shadow: 0 0 0 2px var(--tt-post-stats-focus);
-          background: var(--tt-post-stats-input-bg);
+          border-color: var(--tt-accent);
+          box-shadow: 0 0 0 2px var(--tt-focus);
+          background: var(--tt-input-bg);
         }
 
         #hvPostStatsModal .hvPostStatsModal__hint {
-          color: var(--tt-post-stats-muted);
+          color: var(--tt-muted);
           font-size: 12px;
         }
 
@@ -188,7 +196,7 @@
           align-items: stretch;
           justify-content: center;
           padding: 14px;
-          background: var(--tt-post-stats-backdrop);
+          background: var(--tt-overlay);
           overscroll-behavior: contain;
         }
 
@@ -203,10 +211,10 @@
           width: min(520px, 100%);
           max-height: 100%;
           padding: 14px;
-          background: var(--tt-post-stats-card);
-          border: 2px solid var(--tt-post-stats-border-strong);
+          background: var(--tt-card);
+          border: 2px solid var(--tt-border-strong);
           border-radius: 0;
-          box-shadow: 0 12px 28px var(--tt-post-stats-shadow);
+          box-shadow: 0 12px 28px var(--tt-night);
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerHeader {
@@ -214,8 +222,8 @@
           align-items: center;
           justify-content: space-between;
           gap: 10px;
-          color: var(--tt-post-stats-heading);
-          font-family: var(--tt-post-stats-font-display);
+          color: var(--tt-text);
+          font-family: var(--tt-font-display);
           font-size: 16px;
         }
 
@@ -229,9 +237,9 @@
           max-height: 46vh;
           overflow: auto;
           overscroll-behavior: contain;
-          border: 1px solid var(--tt-post-stats-border);
+          border: 1px solid var(--tt-border);
           border-radius: 0;
-          background: var(--tt-post-stats-input-bg);
+          background: var(--tt-input-bg);
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerItem {
@@ -240,8 +248,8 @@
           align-items: center;
           gap: 8px;
           padding: 8px 10px;
-          border-bottom: 1px solid var(--tt-post-stats-border);
-          color: var(--tt-post-stats-text);
+          border-bottom: 1px solid var(--tt-border);
+          color: var(--tt-text);
           cursor: pointer;
           content-visibility: auto;
           contain-intrinsic-size: auto 40px;
@@ -253,7 +261,7 @@
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerItem:hover {
-          background: var(--tt-post-stats-card-alt);
+          background: var(--tt-card-alt);
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerName {
@@ -263,13 +271,13 @@
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerId {
-          color: var(--tt-post-stats-muted);
+          color: var(--tt-muted);
           font-size: 12px;
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerEmpty {
           padding: 16px 12px;
-          color: var(--tt-post-stats-muted);
+          color: var(--tt-muted);
           text-align: center;
         }
 
@@ -283,34 +291,34 @@
           min-width: 96px;
           padding: 7px 12px;
           border-radius: 0;
-          border: 1px solid var(--tt-post-stats-border);
-          background: var(--tt-post-stats-card-alt);
-          color: var(--tt-post-stats-text);
+          border: 1px solid var(--tt-border);
+          background: var(--tt-card-alt);
+          color: var(--tt-text);
           cursor: pointer;
           touch-action: manipulation;
           font-family: inherit;
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerActions button:hover {
-          background: var(--tt-post-stats-input-bg);
+          background: var(--tt-input-bg);
           border-color: var(--tt-earth);
         }
 
         #hvPostStatsModal .hvPostStatsModal__pickerActions button:focus-visible {
           outline: none;
-          box-shadow: 0 0 0 2px var(--tt-post-stats-focus);
+          box-shadow: 0 0 0 2px var(--tt-focus);
         }
 
         #hvPostStatsModal #countPostsUsersApply,
         #hvPostStatsModal #countPostsForumsApply {
-          background: var(--tt-post-stats-success);
-          border-color: var(--tt-post-stats-success);
-          color: var(--tt-bone);
+          background: var(--tt-success);
+          border-color: var(--tt-success);
+          color: var(--tt-on-frost);
           font-weight: 600;
         }
 
         #hvPostStatsModal input[type="checkbox"] {
-          accent-color: var(--tt-post-stats-success);
+          accent-color: var(--tt-success);
           transform: translateY(1px);
         }
 
@@ -318,7 +326,7 @@
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          color: var(--tt-post-stats-text);
+          color: var(--tt-text);
           user-select: none;
           touch-action: manipulation;
         }
@@ -333,9 +341,9 @@
           padding: 0;
           line-height: 1;
           border-radius: 0;
-          border: 1px solid var(--tt-post-stats-border);
-          background: var(--tt-post-stats-card-alt);
-          color: var(--tt-post-stats-heading);
+          border: 1px solid var(--tt-border);
+          background: var(--tt-card-alt);
+          color: var(--tt-text);
           display: inline-flex;
           align-items: center;
           justify-content: center;
@@ -354,13 +362,13 @@
         }
 
         #hvPostStatsModal .hvPostStatsModal__close:hover {
-          background: var(--tt-post-stats-input-bg);
+          background: var(--tt-input-bg);
           border-color: var(--tt-earth);
         }
 
         #hvPostStatsModal .hvPostStatsModal__close:focus-visible {
           outline: none;
-          box-shadow: 0 0 0 2px var(--tt-post-stats-focus);
+          box-shadow: 0 0 0 2px var(--tt-focus);
         }
 
         #hvPostStatsModal .hvPostStatsModal__formRow {
@@ -375,16 +383,16 @@
           gap: 8px;
           margin-top: 4px;
           padding-top: 10px;
-          border-top: 1px solid var(--tt-post-stats-border);
+          border-top: 1px solid var(--tt-border);
         }
 
         #hvPostStatsModal #countPostsSubmit {
           min-width: 126px;
           padding: 8px 14px;
           border-radius: 0;
-          background: var(--tt-post-stats-success);
-          border: 1px solid var(--tt-post-stats-success);
-          color: var(--tt-bone);
+          background: var(--tt-success);
+          border: 1px solid var(--tt-success);
+          color: var(--tt-text);
           font-weight: 600;
           font-family: inherit;
           cursor: pointer;
@@ -397,7 +405,7 @@
 
         #hvPostStatsModal #countPostsSubmit:focus-visible {
           outline: none;
-          box-shadow: 0 0 0 2px var(--tt-post-stats-focus);
+          box-shadow: 0 0 0 2px var(--tt-focus);
         }
 
         #hvPostStatsModal #countPostsSubmit:disabled {
@@ -415,22 +423,22 @@
         #hvPostStatsModal #countPostsProgressText {
           margin-bottom: 6px;
           font-size: 12px;
-          color: var(--tt-post-stats-muted);
+          color: var(--tt-muted);
         }
 
         #hvPostStatsModal .hvPostStatsModal__progressBar {
           width: 100%;
           height: 10px;
-          border: 1px solid var(--tt-post-stats-border);
+          border: 1px solid var(--tt-border);
           border-radius: 0;
           overflow: hidden;
-          background: var(--tt-post-stats-card-alt);
+          background: var(--tt-card-alt);
         }
 
         #hvPostStatsModal #countPostsProgressFill {
           height: 100%;
           width: 0%;
-          background: linear-gradient(90deg, var(--tt-post-stats-success) 0%, var(--tt-frost) 100%);
+          background: var(--tt-frost);
           transition: width 0.15s ease;
         }
 
@@ -441,8 +449,8 @@
           overscroll-behavior: contain;
           margin-top: 2px;
           padding: 12px 14px;
-          background: var(--tt-post-stats-card-alt);
-          border: 1px solid var(--tt-post-stats-border);
+          background: var(--tt-card-alt);
+          border: 1px solid var(--tt-border);
           border-left: 3px solid var(--tt-earth);
           border-radius: 0;
           line-height: 1.4;
@@ -454,7 +462,7 @@
         }
 
         #hvPostStatsModal .hvPostStatsModal__result a {
-          color: var(--tt-post-stats-link);
+          color: var(--tt-link);
         }
 
         #hvPostStatsModal .hvPostStatsModal__result hr {
@@ -476,18 +484,18 @@
 
         #hvPostStatsModal .hvPostStatsModal__bbcode {
           flex: 1 1 auto;
-          min-height: 0;
+          min-height: 180px;
           width: 100%;
           box-sizing: border-box;
           margin-top: 2px;
           padding: 12px 14px;
           resize: none;
-          background: var(--tt-post-stats-card-alt);
-          color: var(--tt-post-stats-text);
-          border: 1px solid var(--tt-post-stats-border);
+          background: var(--tt-card-alt);
+          color: var(--tt-text);
+          border: 1px solid var(--tt-border);
           border-radius: 0;
           line-height: 1.4;
-          font-family: var(--tt-post-stats-font-mono);
+          font-family: var(--tt-font-mono);
           font-size: 12px;
         }
 

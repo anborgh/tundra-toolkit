@@ -17,7 +17,7 @@
 
 .templateOptionsHeader h6 {
   margin: 4px 0 0;
-  color: var(--tt-muted, #666);
+  color: var(--tt-muted);
 }
 
 .templateOptionsActions {
@@ -32,11 +32,11 @@
 }
 
 .templateOptionsItem {
-  border: 1px solid var(--tt-border, #e0e0e0);
+  border: 1px solid var(--tt-border);
   border-radius: 0;
   border-left: 3px solid var(--tt-frost);
   padding: 12px;
-  background: var(--tt-card, #fff);
+  background: var(--tt-card);
 }
 
 .templateOptionsRow {
@@ -75,7 +75,7 @@
   align-items: flex-end;
   gap: 6px;
   text-align: right;
-  color: var(--tt-muted, #666);
+  color: var(--tt-muted);
   font-size: 0.9em;
 }
 

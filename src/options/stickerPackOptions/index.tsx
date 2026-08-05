@@ -1,12 +1,12 @@
 import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'react';
 import {
-  getStorageFallbacks,
-  isStorageItemLocal,
+  getCollectionLocations,
+  ItemLocation,
   safeStorageGet,
   safeStorageSet,
+  setItemCloudPinned,
   STORAGE_FALLBACKS_KEY,
-  StorageFallbackMap,
 } from '../../utils/storage';
 
 import StickerPack from './stickerPack';
@@ -21,17 +21,17 @@ export default function () {
   const [ data, setData ] = useState<IStickerPack[]>([]);
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ error, setError ] = useState<string | null>(null);
-  const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
+  const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
   const [ reorderMode, setReorderMode ] = useState(false);
 
-  const refreshFallbacks = () => {
-    getStorageFallbacks()
-      .then(setFallbacks)
-      .catch(() => setFallbacks({}));
+  const refreshLocations = () => {
+    getCollectionLocations('stickerPack')
+      .then(setLocations)
+      .catch(() => setLocations({}));
   };
 
   const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
-    refreshFallbacks();
+    refreshLocations();
     if (result.fallback) {
       setWarning('Память синхронизации переполнена. Часть стикеров или все они сохранены только в этом браузере.');
     } else {
@@ -162,7 +162,7 @@ export default function () {
       const stickerPack = result.stickerPack || [];
 
       setData(stickerPack);
-      refreshFallbacks();
+      refreshLocations();
     }
 
     fetchData();
@@ -174,8 +174,8 @@ export default function () {
       areaName: string,
     ) => {
       if (areaName !== 'sync' && areaName !== 'local') return;
-      if (changes[STORAGE_FALLBACKS_KEY]) {
-        refreshFallbacks();
+      if (changes[STORAGE_FALLBACKS_KEY] || changes['tt2/loc']) {
+        refreshLocations();
       }
     };
 
@@ -236,7 +236,13 @@ export default function () {
               onChange={ updateStickerPack }
               onRemove={ removeStickerPack }
               pack={ pack }
-              localOnly={ isStorageItemLocal(fallbacks, STORAGE_KEY, pack.id) }
+              location={ locations[String(pack.id)] || 'local' }
+              onCloudToggle={ async () => {
+                const current = locations[String(pack.id)] || 'local';
+                const result = await setItemCloudPinned('stickerPack', pack.id, current !== 'localPinned');
+                setLocations(prev => ({ ...prev, [String(pack.id)]: result.location }));
+                setError(result.error || null);
+              } }
               reorderMode={ reorderMode }
             />
           </div>

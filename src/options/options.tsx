@@ -3,13 +3,13 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { BlackListOptions } from './blackListOptions';
 import StickerPackOptions from './stickerPackOptions';
-import { ConflictResolver } from './conflictResolver';
 import TemplateOptions from './templateOptions';
 import { FavoritesOptions } from './favoritesOptions';
 import { DEFAULT_SETTINGS_SECTION, isSettingsSection, SettingsSection } from '../utils/settingsSections';
 import {
 	getStorageFallbacks,
 	isStorageKeyLocal,
+	safeStoragePromoteFallbacks,
 	STORAGE_FALLBACKS_KEY,
 	StorageFallbackMap,
 } from '../utils/storage';
@@ -71,13 +71,22 @@ export function App() {
 				.catch(() => setStorageFallbacks({}));
 		};
 
-		updateSyncUsage();
-		updateFallbacks();
+		const reconcileStorage = async () => {
+			try {
+				await safeStoragePromoteFallbacks();
+			} catch (e) {
+				// ignore promote errors; UI still reflects current fallbacks
+			}
+			updateSyncUsage();
+			updateFallbacks();
+		};
+
+		reconcileStorage();
 
 		const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
-			if (areaName !== 'sync') return;
+			if (areaName !== 'sync' && areaName !== 'local') return;
 			updateSyncUsage();
-			if (changes[STORAGE_FALLBACKS_KEY]) {
+			if (changes[STORAGE_FALLBACKS_KEY] || changes['tt2/loc']) {
 				updateFallbacks();
 			}
 		};
@@ -197,10 +206,9 @@ export function App() {
 						<div className="optionsGuideBlock">
 							<h5>Синхронизация и память</h5>
 							<ul>
-								<li>По возможности данные сохраняются в Chrome Sync, чтобы быть доступными в вашем браузере на разных устройствах.</li>
-								<li>Если места в Chrome Sync не хватает, расширение сохранит часть данных локально только на этом устройстве.</li>
-								<li>У таких разделов в меню появляется метка «локально»; у отдельных черновиков и стикерпаков — своя метка.</li>
-								<li>Место в Chrome Sync заполняется по приоритету: избранное, затем шаблоны, стикерпаки и чёрный список.</li>
+								<li>Каждый элемент сначала сохраняется в браузере, а в Chrome Sync попадает отдельно, если есть место.</li>
+								<li>Иконка облака у элемента включает или отключает выгрузку в облако вручную.</li>
+								<li>При нехватке места элементы снимаются с облака автоматически (по приоритету: избранное важнее шаблонов, стикеров и игнора).</li>
 								<li>Индикатор слева показывает, сколько места уже занято в синхронизируемом хранилище.</li>
 							</ul>
 						</div>
@@ -232,7 +240,6 @@ export function App() {
 				</div>
 			</header>
 			<main>
-				<ConflictResolver />
 				<div className="optionsLayout">
 					<aside className="optionsSidebar">
 						<nav className="optionsNav">

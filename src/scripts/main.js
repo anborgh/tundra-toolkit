@@ -200,6 +200,11 @@ const ensureTundraEmbedStyles = (() => {
     style.textContent = `
       a.tundra-btn,
       .tundra-btn {
+        --tt-night: #152122;
+        --tt-bone: #F9F9F4;
+        --tt-frost: #275355;
+        --tt-earth: #7C5233;
+        --tt-ember: #A12830;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -208,10 +213,10 @@ const ensureTundraEmbedStyles = (() => {
         height: 1.45em;
         padding: 0 0.28em;
         margin: 0 0 0 0.2em;
-        border: 1px solid rgba(124, 82, 51, 0.9);
-        border-left: 2px solid #7C5233;
+        border: 1px solid color-mix(in oklab, var(--tt-earth) 90%, transparent);
+        border-left: 2px solid var(--tt-earth);
         border-radius: 0;
-        background: rgba(17, 34, 46, 0.07);
+        background: color-mix(in oklab, var(--tt-night) 7%, transparent);
         color: inherit;
         font: 700 0.82em/1 "Avenir Next", "Segoe UI", system-ui, sans-serif;
         letter-spacing: 0;
@@ -223,13 +228,13 @@ const ensureTundraEmbedStyles = (() => {
       a.tundra-btn:hover,
       .tundra-btn:hover {
         opacity: 1;
-        background: rgba(165, 193, 207, 0.32);
-        border-color: #A5C1CF;
+        background: color-mix(in oklab, var(--tt-frost) 32%, transparent);
+        border-color: color-mix(in oklab, var(--tt-frost) 45%, var(--tt-bone));
         color: inherit;
       }
       a.tundra-btn:focus-visible,
       .tundra-btn:focus-visible {
-        outline: 2px solid #A5C1CF;
+        outline: 2px solid color-mix(in oklab, var(--tt-frost) 45%, var(--tt-bone));
         outline-offset: 1px;
       }
       .post-links li.pl-email.ignore {
@@ -244,14 +249,19 @@ const ensureTundraEmbedStyles = (() => {
       @media (prefers-color-scheme: dark) {
         a.tundra-btn,
         .tundra-btn {
-          background: rgba(249, 249, 244, 0.08);
-          border-color: rgba(165, 193, 207, 0.55);
-          border-left-color: #A5C1CF;
+          --tt-night: #0E1A1C;
+          --tt-bone: #E4EEF0;
+          --tt-frost: #7EC4C8;
+          --tt-earth: #C9A57A;
+          --tt-ember: #E07878;
+          background: color-mix(in oklab, var(--tt-bone) 8%, transparent);
+          border-color: color-mix(in oklab, var(--tt-frost) 55%, transparent);
+          border-left-color: var(--tt-frost);
         }
         a.tundra-btn:hover,
         .tundra-btn:hover {
-          background: rgba(165, 193, 207, 0.22);
-          border-color: #F9F9F4;
+          background: color-mix(in oklab, var(--tt-frost) 22%, transparent);
+          border-color: var(--tt-bone);
         }
       }
       @media (prefers-reduced-motion: reduce) {
