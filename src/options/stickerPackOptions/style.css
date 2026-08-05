@@ -88,6 +88,17 @@
     min-width: 0;
 }
 
+.stickerListDragHandle {
+    display: inline-flex;
+    align-items: center;
+    color: var(--tt-muted, #888);
+    flex-shrink: 0;
+}
+
+.stickerList.reorderMode .stickerListDragHandle {
+    color: var(--tt-frost, #5b9bd5);
+}
+
 .stickerItem {
     max-height: 100px;
     position: relative;

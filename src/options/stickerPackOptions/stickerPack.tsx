@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 
+import gripVerticalIcon from '../../assets/icons/grip-vertical.svg';
+import { MaskIcon } from '../../components/MaskIcon';
 import { useBatchedItems } from '../../hooks/useBatchedItems';
 import { checkImageURL } from '../../utils';
 
+import '../../components/icon.css';
 import './style.css';
 
 type Props = {
@@ -117,6 +120,11 @@ export default function ({ pack, onChange, onRemove, localOnly = false, reorderM
           </div>
         ) : (
           <div className="stickerListTitle">
+            { reorderMode && (
+              <span className="stickerListDragHandle" title="Перетащите для изменения порядка">
+                <MaskIcon src={ gripVerticalIcon } />
+              </span>
+            ) }
             <h4>{ name }</h4>
             { localOnly && (
               <span

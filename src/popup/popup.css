@@ -116,6 +116,12 @@ h5 {
   border: 1px solid var(--tt-night);
 }
 
+.tabBadgeWarn {
+  min-width: 14px;
+  font-size: 11px;
+  line-height: 12px;
+}
+
 .popupTabs .button:hover {
   background: #FFFFFF;
   border-color: var(--tt-earth);
