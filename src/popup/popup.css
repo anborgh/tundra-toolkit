@@ -541,23 +541,6 @@ h5 {
   flex-wrap: wrap;
 }
 
-.templateEditor input,
-.templateEditor textarea {
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 8px;
-  padding: 8px 10px;
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
-  background: var(--tt-input-bg);
-  color: var(--popup-text);
-}
-
-.templateEditor textarea {
-  resize: vertical;
-  min-height: 120px;
-}
-
 .emptyList {
   padding: 18px;
   text-align: center;

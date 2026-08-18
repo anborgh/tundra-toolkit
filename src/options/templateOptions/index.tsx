@@ -8,21 +8,34 @@ import {
   STORAGE_FALLBACKS_KEY,
 } from '../../utils/storage';
 import { CloudSyncButton } from '../../components/CloudSyncButton';
+import {
+  ItemEditor,
+  TEMPLATE_BODY_PLACEHOLDER,
+  TEMPLATE_NAME_PLACEHOLDER,
+  TEMPLATE_REMOVE_CONFIRM,
+  nextCollectionId,
+  previewText,
+} from '../../components/ItemEditor';
 
 import './style.css';
 
 const STORAGE_KEY = 'templates';
+
+type TemplateDraft = {
+  name: string;
+  content: string;
+};
 
 export default function TemplateOptions() {
   const [ templates, setTemplates ] = useState<ITemplate[]>([]);
   const [ loaded, setLoaded ] = useState(false);
   const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
   const [ cloudError, setCloudError ] = useState<string | null>(null);
+  const [ error, setError ] = useState<string | null>(null);
+  const [ editingId, setEditingId ] = useState<number | null>(null);
+  const [ draft, setDraft ] = useState<TemplateDraft>({ name: '', content: '' });
 
-  const nextId = useMemo(() => {
-    const ids = templates.map(item => item.id);
-    return ids.length ? Math.max(...ids) + 1 : 0;
-  }, [ templates ]);
+  const nextId = useMemo(() => nextCollectionId(templates), [ templates ]);
 
   const refreshLocations = () => {
     getCollectionLocations('templates')
@@ -67,35 +80,58 @@ export default function TemplateOptions() {
     return () => chrome.storage.onChanged.removeListener(handleChange);
   }, []);
 
+  const startEdit = (template: ITemplate) => {
+    setError(null);
+    setEditingId(template.id);
+    setDraft({ name: template.name, content: template.content });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft({ name: '', content: '' });
+  };
+
   const addTemplate = () => {
+    const name = `Шаблон ${ nextId + 1 }`;
     setTemplates(prev => [
       ...prev,
       {
         id: nextId,
-        name: `Шаблон ${ nextId + 1 }`,
+        name,
         content: '',
         updatedAt: Date.now(),
       }
     ]);
+    setEditingId(nextId);
+    setDraft({ name, content: '' });
+    setError(null);
   };
 
-  const updateTemplate = (templateId: number, patch: Partial<ITemplate>) => {
+  const saveEdit = (templateId: number) => {
     setTemplates(prev => prev.map(item => item.id === templateId ? {
       ...item,
-      ...patch,
+      name: draft.name.trim(),
+      content: draft.content,
       updatedAt: Date.now(),
     } : item));
+    cancelEdit();
+    setError(null);
+  };
+
+  const deleteTemplate = (templateId: number) => {
+    setTemplates(prev => prev.filter(item => item.id !== templateId));
+    if (editingId === templateId) cancelEdit();
   };
 
   const removeTemplate = (templateId: number) => {
-    const confirmed = confirm('Удалить черновик или шаблон? После удаления восстановить его нельзя.');
-    if (!confirmed) return;
-    setTemplates(prev => prev.filter(item => item.id !== templateId));
+    if (!confirm(TEMPLATE_REMOVE_CONFIRM)) return;
+    deleteTemplate(templateId);
   };
 
   const clearTemplates = () => {
     const confirmed = confirm('Очистить все черновики и шаблоны? После удаления восстановить их нельзя.');
     if (!confirmed) return;
+    cancelEdit();
     setTemplates([]);
   };
 
@@ -119,6 +155,8 @@ export default function TemplateOptions() {
     }
   };
 
+  const notice = error || cloudError;
+
   return (
     <section className="templateOptions">
       <div className="templateOptionsHeader">
@@ -134,9 +172,9 @@ export default function TemplateOptions() {
         </div>
       </div>
 
-      { cloudError && (
+      { notice && (
         <div className="text-error" style={{ marginBottom: 8 }}>
-          { cloudError }
+          { notice }
         </div>
       ) }
 
@@ -151,37 +189,42 @@ export default function TemplateOptions() {
           const location = locations[String(template.id)] || 'local';
           return (
             <div className="templateOptionsItem" key={ template.id }>
-              <div className="templateOptionsRow">
-                <label>
-                  Название
-                  <input
-                    type="text"
-                    value={ template.name }
-                    onInput={ (event: any) => updateTemplate(template.id, { name: event.target.value }) }
-                  />
-                </label>
-                <div className="templateOptionsMeta">
-                  <CloudSyncButton
-                    location={ location }
-                    onToggle={ () => toggleCloud(template.id) }
-                  />
-                  { template.updatedAt && (
-                    <span className="text-secondary">Обновлено: { formatDate(template.updatedAt) }</span>
-                  ) }
-                </div>
-              </div>
-              <label className="templateOptionsLabel">
-                Текст
-                <textarea
-                  rows={ 6 }
-                  value={ template.content }
-                  onInput={ (event: any) => updateTemplate(template.id, { content: event.target.value }) }
-                  placeholder="Обычный текст, BBCode или HTML"
+              { editingId === template.id ? (
+                <ItemEditor
+                  name={ draft.name }
+                  body={ draft.content }
+                  namePlaceholder={ TEMPLATE_NAME_PLACEHOLDER }
+                  bodyPlaceholder={ TEMPLATE_BODY_PLACEHOLDER }
+                  bodyRows={ 6 }
+                  onNameChange={ value => setDraft({ ...draft, name: value }) }
+                  onBodyChange={ value => setDraft({ ...draft, content: value }) }
+                  onSave={ () => saveEdit(template.id) }
+                  onCancel={ cancelEdit }
+                  onRemove={ () => deleteTemplate(template.id) }
+                  onInvalid={ setError }
+                  removeConfirm={ TEMPLATE_REMOVE_CONFIRM }
                 />
-              </label>
-              <div className="templateOptionsFooter">
-                <button className="button small clear" onClick={ () => removeTemplate(template.id) }>Удалить</button>
-              </div>
+              ) : (
+                <>
+                  <div className="templateOptionsViewHeader">
+                    <h5>{ template.name }</h5>
+                    <div className="templateOptionsMeta">
+                      <CloudSyncButton
+                        location={ location }
+                        onToggle={ () => toggleCloud(template.id) }
+                      />
+                      { template.updatedAt && (
+                        <span className="text-secondary">Обновлено: { formatDate(template.updatedAt) }</span>
+                      ) }
+                    </div>
+                  </div>
+                  <div className="templateOptionsPreview">{ previewText(template.content) }</div>
+                  <div className="templateOptionsFooter">
+                    <button className="button small" onClick={ () => startEdit(template) }>Редактировать</button>
+                    <button className="button small clear" onClick={ () => removeTemplate(template.id) }>Удалить</button>
+                  </div>
+                </>
+              ) }
             </div>
           );
         }) }

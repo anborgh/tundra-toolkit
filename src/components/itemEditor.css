@@ -1,0 +1,42 @@
+.itemEditor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.itemEditor input,
+.itemEditor textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--popup-border, var(--tt-border));
+  border-radius: 0;
+  background: var(--tt-input-bg);
+  color: var(--popup-text, var(--tt-text));
+  font-family: inherit;
+}
+
+.itemEditor textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.itemEditorActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.stickerPack > .itemEditor {
+  padding: 12px;
+}
+
+.stickerListEditor {
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--tt-border);
+  border-left: 3px solid var(--tt-frost);
+  background: var(--tt-card);
+}

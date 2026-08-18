@@ -11,6 +11,14 @@ import { MaskIcon } from '../../components/MaskIcon';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
 import { usePopupToast } from '../popupToast';
+import {
+  ItemEditor,
+  TEMPLATE_BODY_PLACEHOLDER,
+  TEMPLATE_NAME_PLACEHOLDER,
+  TEMPLATE_REMOVE_CONFIRM,
+  nextCollectionId,
+  previewText,
+} from '../../components/ItemEditor';
 
 import '../../components/icon.css';
 
@@ -57,10 +65,7 @@ export function Templates() {
       .catch(() => setFallbacks({}));
   };
 
-  const nextId = useMemo(() => {
-    const ids = templates.map(item => item.id);
-    return ids.length ? Math.max(...ids) + 1 : 0;
-  }, [templates]);
+  const nextId = useMemo(() => nextCollectionId(templates), [templates]);
 
   const statusView = useMemo(() => {
     if (error) return null;
@@ -167,12 +172,6 @@ export function Templates() {
   };
 
   const saveEdit = (templateId: number) => {
-    if (!draft.name.trim()) {
-      setError('Укажите название');
-      showError('Укажите название');
-      return;
-    }
-
     setTemplates(prev => prev.map(item => item.id === templateId ? {
       ...item,
       name: draft.name.trim(),
@@ -183,12 +182,15 @@ export function Templates() {
     setInfo('Сохранено');
   };
 
+  const deleteTemplate = (templateId: number) => {
+    setTemplates(prev => prev.filter(item => item.id !== templateId));
+    if (editingId === templateId) cancelEdit();
+  };
+
   const removeTemplate = (templateId: number) => {
     resetInfo();
-    const confirmDelete = confirm('Удалить черновик или шаблон? После удаления восстановить его нельзя.');
-    if (!confirmDelete) return;
-
-    setTemplates(prev => prev.filter(item => item.id !== templateId));
+    if (!confirm(TEMPLATE_REMOVE_CONFIRM)) return;
+    deleteTemplate(templateId);
   };
 
   const handleInsert = async (template: ITemplate) => {
@@ -251,12 +253,6 @@ export function Templates() {
     }
   };
 
-  const renderPreview = (content: string) => {
-    if (!content) return 'Пустой шаблон';
-    const cleaned = content.replace(/\s+/g, ' ').trim();
-    return cleaned.length > 140 ? `${cleaned.slice(0, 140)}…` : cleaned;
-  };
-
   return (
     <div class="templatesTab">
       <div class="templatesHeader">
@@ -298,24 +294,23 @@ export function Templates() {
         { templates.map(template => (
           <div class="templateCard" key={ template.id }>
             { editingId === template.id ? (
-              <div class="templateEditor">
-                <input
-                  type="text"
-                  value={ draft.name }
-                  onInput={ event => setDraft({ ...draft, name: (event.target as HTMLInputElement).value }) }
-                  placeholder="Название"
-                />
-                <textarea
-                  rows={ 5 }
-                  value={ draft.content }
-                  onInput={ event => setDraft({ ...draft, content: (event.target as HTMLTextAreaElement).value }) }
-                  placeholder="Текст, BBCode или HTML"
-                />
-                <div class="templateCardActions">
-                  <button class="button small success" onClick={ () => saveEdit(template.id) }>Сохранить</button>
-                  <button class="button small" onClick={ cancelEdit }>Отмена</button>
-                </div>
-              </div>
+              <ItemEditor
+                name={ draft.name }
+                body={ draft.content }
+                namePlaceholder={ TEMPLATE_NAME_PLACEHOLDER }
+                bodyPlaceholder={ TEMPLATE_BODY_PLACEHOLDER }
+                bodyRows={ 6 }
+                onNameChange={ value => setDraft({ ...draft, name: value }) }
+                onBodyChange={ value => setDraft({ ...draft, content: value }) }
+                onSave={ () => saveEdit(template.id) }
+                onCancel={ cancelEdit }
+                onRemove={ () => {
+                  resetInfo();
+                  deleteTemplate(template.id);
+                } }
+                onInvalid={ showError }
+                removeConfirm={ TEMPLATE_REMOVE_CONFIRM }
+              />
             ) : (
               <div class="templateView">
                 <div class="templateHeader">
@@ -329,7 +324,7 @@ export function Templates() {
                     </span>
                   ) }
                 </div>
-                <div class="templatePreview">{ renderPreview(template.content) }</div>
+                <div class="templatePreview">{ previewText(template.content) }</div>
                 <div class="templateCardActions">
                   <button
                     class="button small success"

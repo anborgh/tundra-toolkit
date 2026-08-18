@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 
 import gripVerticalIcon from '../../assets/icons/grip-vertical.svg';
+import pencilIcon from '../../assets/icons/pencil.svg';
 import { MaskIcon } from '../../components/MaskIcon';
 import { CloudSyncButton } from '../../components/CloudSyncButton';
+import {
+  ItemEditor,
+  PACK_BODY_PLACEHOLDER,
+  PACK_NAME_PLACEHOLDER,
+  PACK_REMOVE_CONFIRM,
+} from '../../components/ItemEditor';
 import { useBatchedItems } from '../../hooks/useBatchedItems';
 import { checkImageURL } from '../../utils';
 import type { ItemLocation } from '../../utils/storage';
@@ -12,17 +19,25 @@ import './style.css';
 
 type Props = {
   pack: IStickerPack;
+  editing: boolean;
+  onEdit: () => void;
+  onCancelEdit: () => void;
   onChange: (pack: IStickerPack) => void;
   onRemove: (packId: number) => void;
+  onInvalid?: (message: string) => void;
   location?: ItemLocation;
   onCloudToggle?: () => void;
   reorderMode?: boolean;
-}
+};
 
 export default function ({
   pack,
+  editing,
+  onEdit,
+  onCancelEdit,
   onChange,
   onRemove,
+  onInvalid,
   location = 'local',
   onCloudToggle,
   reorderMode = false,
@@ -30,50 +45,26 @@ export default function ({
   const dragItem = useRef();
   const dragOverItem = useRef();
 
-  const [ edit, setEdit ] = useState<boolean>(false);
-  const [ name, setName ] = useState<string>('');
-  const [ items, setItems ] = useState<IStickerPack['items']>([]);
-  const [ textItems, setTextItems ] = useState<string>('');
-  const visibleStickers = useBatchedItems(items, !edit);
-
-  const handleNameChange = ({ target }) => {
-    setName(target.value);
-  }
-
-  const handleItemsChange = ({ target }) => {
-    setTextItems(target.value);
-  }
-
-  const showEditPack = () => setEdit(true);
-
-  const hideEditPack = () => {
-    setName(pack.name);
-    setEdit(false);
-  }
+  const [ name, setName ] = useState(pack.name);
+  const [ items, setItems ] = useState<IStickerPack['items']>(pack.items || []);
+  const [ textItems, setTextItems ] = useState((pack.items || []).join('\n'));
+  const visibleStickers = useBatchedItems(items, !editing);
 
   const savePack = () => {
     const clearedItems = textItems.split('\n').filter(item => checkImageURL(item));
 
     onChange({
       id: pack.id,
-      name,
+      name: name.trim(),
       items: clearedItems,
     });
-    setEdit(false);
-  }
-
-  const hideRemovePack = () => {
-    const isConfirmed = confirm('Удалить стикерпак? После удаления восстановить его нельзя.')
-
-    if (!isConfirmed) return;
-
-    onRemove(pack.id);
-  }
+    onCancelEdit();
+  };
 
   const handleDragStart = event => {
     dragItem.current = event.currentTarget.dataset.index;
     event.currentTarget.classList.add('moving');
-  }
+  };
 
   const handleDragEnter = event => {
     dragOverItem.current = event.currentTarget.dataset.index;
@@ -84,12 +75,12 @@ export default function ({
     event.currentTarget.classList.toggle(
       'hoveredRight',
       Number(dragItem.current) < Number(dragOverItem.current));
-  }
+  };
 
   const handleDragLeave = event => {
     event.currentTarget.classList.remove('hoveredLeft');
     event.currentTarget.classList.remove('hoveredRight');
-  }
+  };
 
   const drop = event => {
     event.currentTarget.classList.remove('moving');
@@ -112,49 +103,64 @@ export default function ({
       id: pack.id,
       name: pack.name,
       items: newData,
-    })
-  }
+    });
+  };
 
   useEffect(() => {
     setName(pack.name || 'UNKNOWN');
     setItems(pack.items || []);
-    setTextItems(pack?.items?.join('\n') || '');
+    setTextItems((pack.items || []).join('\n'));
   }, [ pack ]);
+
+  if (editing && !reorderMode) {
+    return (
+      <div className="stickerList">
+        <div className="stickerListEditor">
+          <ItemEditor
+            name={ name }
+            body={ textItems }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ setName }
+            onBodyChange={ setTextItems }
+            onSave={ savePack }
+            onCancel={ () => {
+              setName(pack.name);
+              setTextItems((pack.items || []).join('\n'));
+              onCancelEdit();
+            } }
+            onRemove={ () => onRemove(pack.id) }
+            onInvalid={ onInvalid }
+            removeConfirm={ PACK_REMOVE_CONFIRM }
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={ `stickerList${ reorderMode ? ' reorderMode' : '' }` }>
       <div className="stickerListHeader">
-        { edit && !reorderMode ? (
-          <div>
-            <input type="text" value={ name } onChange={ handleNameChange } placeholder="Название"/>
-          </div>
-        ) : (
-          <div className="stickerListTitle">
-            { reorderMode && (
-              <span className="stickerListDragHandle" title="Перетащите стикерпак выше или ниже">
-                <MaskIcon src={ gripVerticalIcon } />
-              </span>
-            ) }
-            <h4>{ name }</h4>
-            { onCloudToggle && (
-              <CloudSyncButton location={ location } onToggle={ onCloudToggle } />
-            ) }
-          </div>
-        ) }
+        <div className="stickerListTitle">
+          { reorderMode && (
+            <span className="stickerListDragHandle" title="Перетащите стикерпак выше или ниже">
+              <MaskIcon src={ gripVerticalIcon } />
+            </span>
+          ) }
+          <h4>{ name }</h4>
+          { onCloudToggle && (
+            <CloudSyncButton location={ location } onToggle={ onCloudToggle } />
+          ) }
+        </div>
         { !reorderMode && (
           <div className="actions">
-            { !edit && <button className="button small" onClick={ showEditPack } title="Редактировать стикерпак">🖋️</button> }
-            { edit && <button className="button success small" onClick={ savePack } title="Сохранить изменения">Сохранить</button> }
-            { edit && <button className="button small" onClick={ hideEditPack } title="Отменить изменения">Отменить</button> }
-            { edit && <button className="button clear small" onClick={ hideRemovePack } title="Удалить стикерпак">Удалить</button> }
+            <button className="button small icon-only" onClick={ onEdit } title="Редактировать стикерпак">
+              <MaskIcon src={ pencilIcon } />
+            </button>
           </div>
         ) }
       </div>
-      { !reorderMode && (edit ? (
-        <div className="stickerListContent edited">
-          <textarea rows={10} value={textItems} onChange={ handleItemsChange } placeholder="Прямые ссылки на картинки — по одной на строку" />
-        </div>
-      ) : (
+      { !reorderMode && (
         <div className="stickerListContent">
           { visibleStickers.map((sticker, index) => (
             <div
@@ -171,7 +177,7 @@ export default function ({
             </div>
           )) }
         </div>
-      )) }
+      ) }
     </div>
-  )
+  );
 }

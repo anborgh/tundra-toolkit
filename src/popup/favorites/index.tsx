@@ -312,15 +312,23 @@ export function Favorites() {
     const isNew = hasNewPosts(item);
     const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }&action=${isNew ? 'new' : 'last'}`;
 
+    const turnLabel = item.myTurn
+      ? 'Сейчас ваш ход. Нажмите, чтобы отметить: жду хода соигрока'
+      : 'Ждёте хода соигрока. Нажмите, чтобы отметить: следующий ход мой';
+
     return (
-      <li class={ `favoriteItem ${ stale ? 'stale' : '' }` } key={ item.id }>
-        <label class="favoriteTurnToggle" title="Мой ход">
-          <input
-            type="checkbox"
-            checked={ item.myTurn }
-            onChange={ () => handleToggleMyTurn(item) }
-          />
-        </label>
+      <li class={ `favoriteItem ${ stale ? 'stale' : '' } ${ item.myTurn ? 'is-myTurn' : '' }` } key={ item.id }>
+        <button
+          type="button"
+          class="favoriteTurnCue"
+          aria-pressed={ item.myTurn ? 'true' : 'false' }
+          aria-label={ turnLabel }
+          title={ turnLabel }
+          onClick={ () => handleToggleMyTurn(item) }
+        >
+          <span class="favoriteTurnCueWick" aria-hidden="true" />
+          <span class="favoriteTurnCueWord">{ item.myTurn ? 'ход' : 'жду' }</span>
+        </button>
 
         <div class="favoriteBody">
           <div class="favoriteTitleRow">

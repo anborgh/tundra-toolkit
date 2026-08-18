@@ -10,6 +10,7 @@ import {
 } from '../../utils/storage';
 
 import StickerPack from './stickerPack';
+import { nextCollectionId } from '../../components/ItemEditor';
 
 const STORAGE_KEY = 'stickerPack';
 
@@ -23,6 +24,7 @@ export default function () {
   const [ error, setError ] = useState<string | null>(null);
   const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
   const [ reorderMode, setReorderMode ] = useState(false);
+  const [ editingId, setEditingId ] = useState<number | null>(null);
 
   const refreshLocations = () => {
     getCollectionLocations('stickerPack')
@@ -58,21 +60,20 @@ export default function () {
   }
 
   const addStickerPack = async () => {
-    const newData = [ ...data ];
-    const indexes = data.map(item => item.id);
-    const newIndex = newData.length ? Math.max(...indexes) + 1 : 0;
-    newData.push({
+    const newIndex = nextCollectionId(data);
+    const newData = [ ...data, {
       id: newIndex,
-      name: `New Pack ${ newIndex + 1 }`,
+      name: `Стикерпак ${ newIndex + 1 }`,
       items: [],
       updatedAt: Date.now(),
-    });
+    } ];
 
     setError(null);
     try {
       const result = await safeStorageSet({ stickerPack: newData })
       handleSaveResult(result);
       setData(newData);
+      setEditingId(newIndex);
       ref.current?.scrollIntoView();
     } catch (e) {
       handleSaveError();
@@ -91,6 +92,7 @@ export default function () {
       const result = await safeStorageSet({ stickerPack: newData });
       handleSaveResult(result);
       setData(newData);
+      if (editingId === packId) setEditingId(null);
     } catch (e) {
       handleSaveError();
     }
@@ -199,7 +201,10 @@ export default function () {
             <button
               className={ `button small${ reorderMode ? ' success' : '' }` }
               title={ reorderMode ? 'Завершить изменение порядка' : 'Изменить порядок стикерпаков' }
-              onClick={ () => setReorderMode(prev => !prev) }
+              onClick={ () => {
+                setEditingId(null);
+                setReorderMode(prev => !prev);
+              } }
             >
               { reorderMode ? 'Готово' : 'Изменить порядок' }
             </button>
@@ -236,6 +241,13 @@ export default function () {
               onChange={ updateStickerPack }
               onRemove={ removeStickerPack }
               pack={ pack }
+              editing={ editingId === pack.id }
+              onEdit={ () => {
+                setError(null);
+                setEditingId(pack.id);
+              } }
+              onCancelEdit={ () => setEditingId(null) }
+              onInvalid={ setError }
               location={ locations[String(pack.id)] || 'local' }
               onCloudToggle={ async () => {
                 const current = locations[String(pack.id)] || 'local';

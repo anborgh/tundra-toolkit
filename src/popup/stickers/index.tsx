@@ -9,7 +9,6 @@ import {
 } from '../../utils/storage';
 
 import { StickerList } from './stickerList';
-import { EditDialog } from './editDialog';
 import { MaskIcon } from '../../components/MaskIcon';
 import plusIcon from '../../assets/icons/plus.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
@@ -17,6 +16,7 @@ import circleCheckIcon from '../../assets/icons/circle-check.svg';
 import { addRecentSticker, getRecentStickers, RECENT_STICKERS_KEY } from './recentStickers';
 import { insertSticker } from './insertSticker';
 import { usePopupToast } from '../popupToast';
+import { nextCollectionId } from '../../components/ItemEditor';
 
 import '../../components/icon.css';
 import './style.css';
@@ -33,7 +33,7 @@ export function Stickers() {
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
 
-  const [ editPack, setEditPack ] = useState<IStickerPack | null>(null);
+  const [ editPackId, setEditPackId ] = useState<number | null>(null);
 
   const statusView = useMemo(() => {
     if (error) return null;
@@ -81,44 +81,30 @@ export function Stickers() {
   };
 
   const addPack = () => {
-    const indexes = data.map(item => item.id);
-    const newIndex = data.length ? Math.max(...indexes) + 1 : 0;
+    const newIndex = nextCollectionId(data);
 
     const newData = [ ...data, {
       id: newIndex,
-      name: `New Pack ${ newIndex + 1 }`,
+      name: `Стикерпак ${ newIndex + 1 }`,
       items: [],
       updatedAt: Date.now(),
-    } ]
+    } ];
 
     setData(newData);
-  }
+    setEditPackId(newIndex);
+  };
 
   const removePack = (packId: number) => {
-    const newData = [ ...data ];
-    const index = newData.findIndex(item => item.id === packId);
-    newData.splice(index, 1);
-    setData(newData);
-  }
+    setData(data.filter(item => item.id !== packId));
+    if (editPackId === packId) setEditPackId(null);
+  };
 
-  const updateStickerPack = (packId: number, { name, items }: { name?: string, items?: string[] }) => {
-    const newData = [ ...data ];
-    const index = newData.findIndex(item => item.id === packId);
-    newData[ index ].name = name || newData[ index ].name;
-    newData[ index ].items = items || newData[ index ].items;
-    newData[ index ].updatedAt = Date.now();
-    setData(newData);
-  }
-
-  const onEditPack = (packId: number) => {
-    const pack = data.find(item => item.id === packId);
-    setEditPack(pack);
-  }
-
-  const handleSavePack = (newData: IStickerPack) => {
-    updateStickerPack(newData.id, newData);
-    setEditPack(null);
-  }
+  const handleSavePack = (nextPack: IStickerPack) => {
+    setData(data.map(item => item.id === nextPack.id
+      ? { ...nextPack, updatedAt: Date.now() }
+      : item));
+    setEditPackId(null);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -216,7 +202,11 @@ export function Stickers() {
       <div class="stickerList">
         <StickerList
           data={ data }
-          editStickerPack={ onEditPack }
+          editingId={ editPackId }
+          onEdit={ setEditPackId }
+          onCancelEdit={ () => setEditPackId(null) }
+          onSave={ handleSavePack }
+          onRemove={ removePack }
           onStickerUsed={ handleStickerUsed }
           localIds={ data
             .filter(pack => isStorageItemLocal(fallbacks, 'stickerPack', pack.id))
@@ -267,13 +257,6 @@ export function Stickers() {
       <div class="stickerListWrapper">
         { renderContent() }
       </div>
-
-      <EditDialog
-        pack={ editPack }
-        close={ () => setEditPack(null) }
-        onSave={ handleSavePack }
-        onRemove={ removePack }
-      />
     </div>
   )
 }

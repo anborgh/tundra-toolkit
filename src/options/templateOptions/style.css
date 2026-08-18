@@ -39,33 +39,23 @@
   background: var(--tt-card);
 }
 
-.templateOptionsRow {
+.templateOptionsViewHeader {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 12px;
-  align-items: flex-end;
-  flex-wrap: wrap;
 }
 
-.templateOptionsRow label {
-  flex: 1;
-  min-width: 240px;
+.templateOptionsViewHeader h5 {
+  margin: 0;
+  min-width: 0;
 }
 
-.templateOptionsRow input {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.templateOptionsLabel {
-  display: block;
-  margin-top: 8px;
-}
-
-.templateOptionsLabel textarea {
-  width: 100%;
-  box-sizing: border-box;
-  font-family: inherit;
+.templateOptionsPreview {
+  margin: 6px 0 10px;
+  font-size: 0.95em;
+  color: var(--tt-muted);
+  word-break: break-word;
 }
 
 .templateOptionsMeta {
@@ -82,5 +72,6 @@
 .templateOptionsFooter {
   margin-top: 8px;
   display: flex;
-  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
 }
