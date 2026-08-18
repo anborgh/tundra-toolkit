@@ -1,0 +1,86 @@
+.turnSwitch {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 0 0 auto;
+  width: calc(var(--tt-btn-height-sm) * 2);
+  height: var(--tt-btn-height-sm);
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid var(--tt-border-strong);
+  background: var(--tt-bg);
+}
+
+.turnSwitch::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 0;
+  width: 50%;
+  background: var(--tt-frost);
+  pointer-events: none;
+  transition: transform 0.15s ease;
+}
+
+.turnSwitch.is-myTurn::before {
+  transform: translateX(100%);
+}
+
+.turnSwitch > .turnSwitchOpt {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tt-muted);
+  font-size: inherit;
+  line-height: 1;
+  cursor: pointer;
+  appearance: none;
+  box-shadow: none;
+  opacity: 1;
+  transform: none;
+}
+
+.turnSwitch > .turnSwitchOpt[aria-checked="true"] {
+  color: var(--tt-bone);
+}
+
+.turnSwitch > .turnSwitchOpt:hover {
+  opacity: 1;
+  transform: none;
+}
+
+.turnSwitch > .turnSwitchOpt:hover:not([aria-checked="true"]) {
+  color: var(--tt-earth);
+}
+
+.turnSwitch > .turnSwitchOpt:active {
+  transform: none;
+}
+
+.turnSwitch > .turnSwitchOpt:focus-visible {
+  outline: 2px solid var(--tt-accent);
+  outline-offset: -2px;
+}
+
+.turnSwitch > .turnSwitchOpt .ttIcon {
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turnSwitch::before {
+    transition: none;
+  }
+}

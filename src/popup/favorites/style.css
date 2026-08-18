@@ -110,56 +110,11 @@
   border-style: dashed;
 }
 
-.favoriteTurnCue {
+.favoriteActions {
+  display: flex;
   flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  min-width: 24px;
-  height: 24px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--popup-muted);
-  opacity: 0.55;
-  cursor: pointer;
-  appearance: none;
-  box-shadow: none;
-  transition: color 0.15s ease, opacity 0.15s ease;
-}
-
-.favoriteTurnCue .ttIcon {
-  width: 16px;
-  height: 16px;
-}
-
-.favoriteTurnCue:hover {
-  opacity: 0.85;
-  color: var(--tt-earth);
-}
-
-.favoriteItem.is-myTurn .favoriteTurnCue {
-  color: var(--tt-frost);
-  opacity: 1;
-}
-
-.favoriteItem.is-myTurn .favoriteTurnCue:hover {
-  color: color-mix(in oklab, var(--tt-frost) 72%, var(--tt-fg));
-}
-
-.favoriteTurnCue:focus-visible {
-  outline: 2px solid var(--tt-accent);
-  outline-offset: 2px;
-  opacity: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .favoriteTurnCue {
-    transition: none;
-  }
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .favoriteBody {

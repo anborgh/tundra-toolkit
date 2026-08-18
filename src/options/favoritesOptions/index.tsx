@@ -8,6 +8,7 @@ import {
 } from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
+import { TurnSwitch } from '../../components/TurnSwitch';
 import { CloudSyncButton, hasCloudOverflow } from '../../components/CloudSyncButton';
 import refreshIcon from '../../assets/icons/refresh-cw.svg';
 import xIcon from '../../assets/icons/x.svg';
@@ -148,9 +149,10 @@ export function FavoritesOptions() {
   const myTurnCount = useMemo(() => favorites.filter(item => item.myTurn).length, [ favorites ]);
   const totalCount = favorites.length;
 
-  const handleToggleMyTurn = async (item: IFavoriteTopic) => {
+  const handleSetMyTurn = async (item: IFavoriteTopic, myTurn: boolean) => {
+    if (item.myTurn === myTurn) return;
     const next = favorites.map(fav => fav.id === item.id
-      ? { ...fav, myTurn: !fav.myTurn, updatedAt: Date.now() }
+      ? { ...fav, myTurn, updatedAt: Date.now() }
       : fav);
     setFavorites(next);
     await persist(next);
@@ -186,15 +188,7 @@ export function FavoritesOptions() {
     const isNew = hasNewPosts(item);
 
     return (
-      <li className={ `favoritesOptionsItem ${ stale ? 'stale' : '' }` } key={ item.id }>
-        <label className="favoritesOptionsTurn" title="Мой ход">
-          <input
-            type="checkbox"
-            checked={ item.myTurn }
-            onChange={ () => handleToggleMyTurn(item) }
-          />
-        </label>
-
+      <li className={ `favoritesOptionsItem ${ stale ? 'stale' : '' } ${ item.myTurn ? 'is-myTurn' : '' }` } key={ item.id }>
         <div className="favoritesOptionsBody">
           <div className="favoritesOptionsTitleRow">
             <a
@@ -242,25 +236,31 @@ export function FavoritesOptions() {
           </div>
         </div>
 
-        { showCloudControls && (
-          <CloudSyncButton
-            location={ locations[item.id] || 'local' }
-            onToggle={ async () => {
-              const current = locations[item.id] || 'local';
-              const result = await setItemCloudPinned('favoriteTopics', item.id, current !== 'localPinned');
-              setLocations(prev => ({ ...prev, [item.id]: result.location }));
-              setError(result.error || null);
-            } }
+        <div className="favoritesOptionsActions">
+          { showCloudControls && (
+            <CloudSyncButton
+              location={ locations[item.id] || 'local' }
+              onToggle={ async () => {
+                const current = locations[item.id] || 'local';
+                const result = await setItemCloudPinned('favoriteTopics', item.id, current !== 'localPinned');
+                setLocations(prev => ({ ...prev, [item.id]: result.location }));
+                setError(result.error || null);
+              } }
+            />
+          ) }
+          <TurnSwitch
+            myTurn={ item.myTurn }
+            onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
           />
-        ) }
-        <button
-          className="button small icon-only favoritesOptionsRemove"
-          title="Убрать из избранного"
-          aria-label="Убрать из избранного"
-          onClick={ () => handleRemove(item) }
-        >
-          <MaskIcon src={ xIcon } />
-        </button>
+          <button
+            className="button small icon-only favoritesOptionsRemove"
+            title="Убрать из избранного"
+            aria-label="Убрать из избранного"
+            onClick={ () => handleRemove(item) }
+          >
+            <MaskIcon src={ xIcon } />
+          </button>
+        </div>
       </li>
     );
   };

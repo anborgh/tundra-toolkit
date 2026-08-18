@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { decodeEntities, filterFavoritesByAllowedHost, isAllowedBoardHost, buildHttpsForumApiUrl, assertHttpsResponse } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
+import { TurnSwitch } from '../../components/TurnSwitch';
 import refreshIcon from '../../assets/icons/refresh-cw.svg';
 import plusIcon from '../../assets/icons/plus.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
-import featherIcon from '../../assets/icons/feather.svg';
-import hourglassIcon from '../../assets/icons/hourglass.svg';
 import { usePopupToast } from '../popupToast';
 
 import '../../components/icon.css';
@@ -260,9 +259,10 @@ export function Favorites() {
     }
   };
 
-  const handleToggleMyTurn = async (item: IFavoriteTopic) => {
+  const handleSetMyTurn = async (item: IFavoriteTopic, myTurn: boolean) => {
+    if (item.myTurn === myTurn) return;
     const next = favorites.map(fav => fav.id === item.id
-      ? { ...fav, myTurn: !fav.myTurn, updatedAt: Date.now() }
+      ? { ...fav, myTurn, updatedAt: Date.now() }
       : fav);
     setFavorites(next);
     await persist(next);
@@ -314,23 +314,8 @@ export function Favorites() {
     const isNew = hasNewPosts(item);
     const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }&action=${isNew ? 'new' : 'last'}`;
 
-    const turnLabel = item.myTurn
-      ? 'Сейчас ваш ход. Нажмите, чтобы отметить: жду хода соигрока'
-      : 'Ждёте хода соигрока. Нажмите, чтобы отметить: следующий ход мой';
-
     return (
       <li class={ `favoriteItem ${ stale ? 'stale' : '' } ${ item.myTurn ? 'is-myTurn' : '' }` } key={ item.id }>
-        <button
-          type="button"
-          class="favoriteTurnCue"
-          aria-pressed={ item.myTurn ? 'true' : 'false' }
-          aria-label={ turnLabel }
-          title={ turnLabel }
-          onClick={ () => handleToggleMyTurn(item) }
-        >
-          <MaskIcon src={ item.myTurn ? featherIcon : hourglassIcon } />
-        </button>
-
         <div class="favoriteBody">
           <div class="favoriteTitleRow">
             <a
@@ -381,14 +366,20 @@ export function Favorites() {
           </div>
         </div>
 
-        <button
-          class="button small icon-only favoriteRemove"
-          title="Убрать из списка эпизодов"
-          aria-label="Убрать из списка эпизодов"
-          onClick={ () => handleRemove(item) }
-        >
-          <MaskIcon src={ xIcon } />
-        </button>
+        <div class="favoriteActions">
+          <TurnSwitch
+            myTurn={ item.myTurn }
+            onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
+          />
+          <button
+            class="button small icon-only favoriteRemove"
+            title="Убрать из списка эпизодов"
+            aria-label="Убрать из списка эпизодов"
+            onClick={ () => handleRemove(item) }
+          >
+            <MaskIcon src={ xIcon } />
+          </button>
+        </div>
       </li>
     );
   };
