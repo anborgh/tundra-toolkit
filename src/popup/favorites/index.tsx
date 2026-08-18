@@ -7,6 +7,8 @@ import plusIcon from '../../assets/icons/plus.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import penLineIcon from '../../assets/icons/pen-line.svg';
+import hourglassIcon from '../../assets/icons/hourglass.svg';
 import { usePopupToast } from '../popupToast';
 
 import '../../components/icon.css';
@@ -326,8 +328,7 @@ export function Favorites() {
           title={ turnLabel }
           onClick={ () => handleToggleMyTurn(item) }
         >
-          <span class="favoriteTurnCueWick" aria-hidden="true" />
-          <span class="favoriteTurnCueWord">{ item.myTurn ? 'ход' : 'жду' }</span>
+          <MaskIcon src={ item.myTurn ? penLineIcon : hourglassIcon } />
         </button>
 
         <div class="favoriteBody">
