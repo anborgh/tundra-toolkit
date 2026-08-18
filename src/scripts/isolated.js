@@ -515,7 +515,10 @@ const processForumInit = async (data) => {
     getPostAppearanceApi().apply(DEFAULT_POST_APPEARANCE);
   }
 
-  if (!bridge.isAllowedBoardHost(boardUrl)) return;
+  if (!bridge.isAllowedBoardHost(boardUrl)) {
+    globalThis.__TT_FAVORITES_TURN_SWITCH__?.teardown?.();
+    return;
+  }
 
   isoSafeStorageSet({
     forumData: {
@@ -525,7 +528,17 @@ const processForumInit = async (data) => {
     },
   });
 
-  if (!isTrusted) return;
+  if (!isTrusted) {
+    globalThis.__TT_FAVORITES_TURN_SWITCH__?.teardown?.();
+    return;
+  }
+
+  if (topicID) {
+    globalThis.__TT_FAVORITES_TURN_SWITCH__?.sync?.({
+      boardUrl,
+      topicID: `${ topicID }`,
+    });
+  }
 
   if (topicID) {
     isoSafeStorageGet(['favoriteTopics']).then(({ favoriteTopics = [] }) => {
@@ -789,6 +802,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     ttPost({ type: 'tundra_toolkit_controls_visibility', visible: false });
     ttPost({ type: 'tundra_toolkit_disable_unsafe' });
     getPostAppearanceApi()?.apply(DEFAULT_POST_APPEARANCE);
+    globalThis.__TT_FAVORITES_TURN_SWITCH__?.teardown?.();
 
     sendResponse({ success: true, isTrusted: false, reload: true });
 

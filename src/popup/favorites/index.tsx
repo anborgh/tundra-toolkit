@@ -7,7 +7,7 @@ import plusIcon from '../../assets/icons/plus.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
-import penLineIcon from '../../assets/icons/pen-line.svg';
+import featherIcon from '../../assets/icons/feather.svg';
 import hourglassIcon from '../../assets/icons/hourglass.svg';
 import { usePopupToast } from '../popupToast';
 
@@ -328,7 +328,7 @@ export function Favorites() {
           title={ turnLabel }
           onClick={ () => handleToggleMyTurn(item) }
         >
-          <MaskIcon src={ item.myTurn ? penLineIcon : hourglassIcon } />
+          <MaskIcon src={ item.myTurn ? featherIcon : hourglassIcon } />
         </button>
 
         <div class="favoriteBody">

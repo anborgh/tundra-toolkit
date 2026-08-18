@@ -56,7 +56,8 @@
         "scripts/ttBridgeChannelIsolated.js",
         "scripts/boardUtils.js",
         "scripts/safeStorage.js",
-        "scripts/isolated.js"
+        "scripts/isolated.js",
+        "scripts/favoritesTurnSwitch.js"
       ],
       "run_at": "document_end",
       "world": "ISOLATED"
