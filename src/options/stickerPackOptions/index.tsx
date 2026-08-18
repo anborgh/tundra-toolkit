@@ -10,7 +10,7 @@ import {
 } from '../../utils/storage';
 
 import StickerPack from './stickerPack';
-import { nextCollectionId } from '../../components/ItemEditor';
+import { nextCollectionId, StorageSavingStatus } from '../../components/ItemEditor';
 
 const STORAGE_KEY = 'stickerPack';
 
@@ -25,6 +25,7 @@ export default function () {
   const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
   const [ reorderMode, setReorderMode ] = useState(false);
   const [ editingId, setEditingId ] = useState<number | null>(null);
+  const [ saving, setSaving ] = useState(false);
 
   const refreshLocations = () => {
     getCollectionLocations('stickerPack')
@@ -45,18 +46,27 @@ export default function () {
     setError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
   };
 
-  const updateStickerPack = async (pack: IStickerPack) => {
-    const newData = [ ...data ];
-    const index = newData.findIndex(item => item.id === pack.id);
-    newData[ index ] = { ...pack, updatedAt: Date.now() };
+  const writePacks = async (newData: IStickerPack[]) => {
     setError(null);
+    setSaving(true);
     try {
       const result = await safeStorageSet({ stickerPack: newData });
       handleSaveResult(result);
       setData(newData);
+      return result;
     } catch (e) {
       handleSaveError();
+      throw e;
+    } finally {
+      setSaving(false);
     }
+  };
+
+  const updateStickerPack = async (pack: IStickerPack) => {
+    const newData = [ ...data ];
+    const index = newData.findIndex(item => item.id === pack.id);
+    newData[ index ] = { ...pack, updatedAt: Date.now() };
+    await writePacks(newData);
   }
 
   const addStickerPack = async () => {
@@ -68,16 +78,13 @@ export default function () {
       updatedAt: Date.now(),
     } ];
 
-    setError(null);
     try {
-      const result = await safeStorageSet({ stickerPack: newData })
-      handleSaveResult(result);
-      setData(newData);
-      setEditingId(newIndex);
-      ref.current?.scrollIntoView();
-    } catch (e) {
-      handleSaveError();
+      await writePacks(newData);
+    } catch {
+      return;
     }
+    setEditingId(newIndex);
+    ref.current?.scrollIntoView();
   }
 
   const removeStickerPack = async (packId: number) => {
@@ -86,27 +93,12 @@ export default function () {
     if (index < 0) return;
 
     newData.splice(index, 1);
-
-    setError(null);
-    try {
-      const result = await safeStorageSet({ stickerPack: newData });
-      handleSaveResult(result);
-      setData(newData);
-      if (editingId === packId) setEditingId(null);
-    } catch (e) {
-      handleSaveError();
-    }
+    await writePacks(newData);
+    if (editingId === packId) setEditingId(null);
   }
 
   const savePackOrder = async (newData: IStickerPack[]) => {
-    setError(null);
-    try {
-      const result = await safeStorageSet({ stickerPack: newData });
-      handleSaveResult(result);
-      setData(newData);
-    } catch (e) {
-      handleSaveError();
-    }
+    await writePacks(newData);
   }
 
   const handlePackDragStart = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
@@ -197,10 +189,12 @@ export default function () {
           </h6>
         </div>
         <div className="stickerPackOptionsActions">
+          <StorageSavingStatus saving={ saving } />
           { data.length > 1 && (
             <button
               className={ `button small${ reorderMode ? ' success' : '' }` }
               title={ reorderMode ? 'Завершить изменение порядка' : 'Изменить порядок стикерпаков' }
+              disabled={ saving }
               onClick={ () => {
                 setEditingId(null);
                 setReorderMode(prev => !prev);
@@ -210,7 +204,14 @@ export default function () {
             </button>
           ) }
           { !reorderMode && (
-            <button className="button small primary" title="Добавить стикерпак" onClick={ addStickerPack }>Добавить</button>
+            <button
+              className="button small primary"
+              title="Добавить стикерпак"
+              disabled={ saving }
+              onClick={ addStickerPack }
+            >
+              Добавить
+            </button>
           ) }
         </div>
       </div>

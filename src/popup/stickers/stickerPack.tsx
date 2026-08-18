@@ -19,8 +19,8 @@ type PackProps = {
   onChange: (newActiveTab: number) => void;
   onEdit: (packId: number) => void;
   onCancelEdit: () => void;
-  onSave: (pack: IStickerPack) => void;
-  onRemove: (packId: number) => void;
+  onSave: (pack: IStickerPack) => void | Promise<void>;
+  onRemove: (packId: number) => void | Promise<void>;
   onStickerUsed?: (src: string) => void;
   localOnly?: boolean;
 };

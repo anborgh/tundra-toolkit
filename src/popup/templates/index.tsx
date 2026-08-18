@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getStorageFallbacks,
   isStorageItemLocal,
@@ -58,6 +58,8 @@ export function Templates() {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [fallbacks, setFallbacks] = useState<StorageFallbackMap>({});
+  const [saving, setSaving] = useState(false);
+  const skipPersist = useRef(true);
 
   const refreshFallbacks = () => {
     getStorageFallbacks()
@@ -69,6 +71,9 @@ export function Templates() {
 
   const statusView = useMemo(() => {
     if (error) return null;
+    if (saving) {
+      return { icon: loaderCircleIcon, text: 'Сохраняем…', tone: 'muted' as const, spin: true };
+    }
     if (info) {
       return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
     }
@@ -76,7 +81,17 @@ export function Templates() {
       return { icon: loaderCircleIcon, text: 'В процессе…', tone: 'muted' as const, spin: true };
     }
     return null;
-  }, [error, info, busy]);
+  }, [error, info, busy, saving]);
+
+  const persistTemplates = async (next: ITemplate[]) => {
+    const result = await safeStorageSet({ [ STORAGE_KEY ]: next });
+    refreshFallbacks();
+    setError(null);
+    if (result.fallback) {
+      setInfo('В Chrome Sync не хватило места. Часть шаблонов или все они остались только в этом браузере.');
+    }
+    return result;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -98,20 +113,30 @@ export function Templates() {
 
   useEffect(() => {
     if (!loaded) return;
-    safeStorageSet({ [ STORAGE_KEY ]: templates })
+    if (skipPersist.current) {
+      skipPersist.current = false;
+      return;
+    }
+
+    let alive = true;
+    setSaving(true);
+    persistTemplates(templates)
       .then(result => {
-        refreshFallbacks();
-        setError(null);
-        if (result.fallback) {
-          setInfo('В Chrome Sync не хватило места. Часть шаблонов или все они остались только в этом браузере.');
-        } else {
-          setInfo(null);
-        }
+        if (!alive) return;
+        if (!result.fallback) setInfo(null);
       })
       .catch(() => {
+        if (!alive) return;
         setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
         showError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      })
+      .finally(() => {
+        if (alive) setSaving(false);
       });
+
+    return () => {
+      alive = false;
+    };
   }, [templates, loaded]);
 
   useEffect(() => {
@@ -171,20 +196,47 @@ export function Templates() {
     setDraft({ name: '', content: '' });
   };
 
-  const saveEdit = (templateId: number) => {
-    setTemplates(prev => prev.map(item => item.id === templateId ? {
+  const saveEdit = async (templateId: number) => {
+    const next = templates.map(item => item.id === templateId ? {
       ...item,
       name: draft.name.trim(),
       content: draft.content,
       updatedAt: Date.now(),
-    } : item));
-    setEditingId(null);
-    setInfo('Сохранено');
+    } : item);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      const result = await persistTemplates(next);
+      setTemplates(next);
+      setEditingId(null);
+      setDraft({ name: '', content: '' });
+      if (!result.fallback) setInfo('Сохранено');
+    } catch (e) {
+      skipPersist.current = false;
+      setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      showError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteTemplate = (templateId: number) => {
-    setTemplates(prev => prev.filter(item => item.id !== templateId));
-    if (editingId === templateId) cancelEdit();
+  const deleteTemplate = async (templateId: number) => {
+    const next = templates.filter(item => item.id !== templateId);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistTemplates(next);
+      setTemplates(next);
+      if (editingId === templateId) cancelEdit();
+    } catch (e) {
+      skipPersist.current = false;
+      setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      showError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeTemplate = (templateId: number) => {
@@ -270,13 +322,13 @@ export function Templates() {
               />
             </span>
           ) }
-          <button class="button small" onClick={ addEmptyTemplate } title="Добавить пустой шаблон">
+          <button class="button small" onClick={ addEmptyTemplate } disabled={ saving } title="Добавить пустой шаблон">
             Добавить пустой
           </button>
           <button
             class="button small primary"
             onClick={ handleSaveFromForm }
-            disabled={ busy || canUse === false }
+            disabled={ busy || saving || canUse === false }
             title={ canUse === false ? 'Сначала откройте страницу с формой ответа' : 'Сохранить текст из формы ответа' }
           >
             Сохранить из формы
@@ -328,7 +380,7 @@ export function Templates() {
                 <div class="templateCardActions">
                   <button
                     class="button small success"
-                    disabled={ busy || canUse === false || template.content.trim() === '' }
+                    disabled={ busy || saving || canUse === false || template.content.trim() === '' }
                     onClick={ () => handleInsert(template) }
                   >
                     Вставить

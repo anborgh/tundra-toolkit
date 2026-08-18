@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getCollectionLocations,
   ItemLocation,
@@ -15,6 +15,7 @@ import {
   TEMPLATE_REMOVE_CONFIRM,
   nextCollectionId,
   previewText,
+  StorageSavingStatus,
 } from '../../components/ItemEditor';
 
 import './style.css';
@@ -34,6 +35,8 @@ export default function TemplateOptions() {
   const [ error, setError ] = useState<string | null>(null);
   const [ editingId, setEditingId ] = useState<number | null>(null);
   const [ draft, setDraft ] = useState<TemplateDraft>({ name: '', content: '' });
+  const [ saving, setSaving ] = useState(false);
+  const skipPersist = useRef(true);
 
   const nextId = useMemo(() => nextCollectionId(templates), [ templates ]);
 
@@ -41,6 +44,11 @@ export default function TemplateOptions() {
     getCollectionLocations('templates')
       .then(setLocations)
       .catch(() => setLocations({}));
+  };
+
+  const persistTemplates = async (next: ITemplate[]) => {
+    await safeStorageSet({ [ STORAGE_KEY ]: next });
+    refreshLocations();
   };
 
   useEffect(() => {
@@ -60,9 +68,25 @@ export default function TemplateOptions() {
 
   useEffect(() => {
     if (!loaded) return;
-    safeStorageSet({ [ STORAGE_KEY ]: templates })
-      .then(() => refreshLocations())
-      .catch(() => {});
+    if (skipPersist.current) {
+      skipPersist.current = false;
+      return;
+    }
+
+    let alive = true;
+    setSaving(true);
+    persistTemplates(templates)
+      .catch(() => {
+        if (!alive) return;
+        setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      })
+      .finally(() => {
+        if (alive) setSaving(false);
+      });
+
+    return () => {
+      alive = false;
+    };
   }, [ templates, loaded ]);
 
   useEffect(() => {
@@ -107,20 +131,44 @@ export default function TemplateOptions() {
     setError(null);
   };
 
-  const saveEdit = (templateId: number) => {
-    setTemplates(prev => prev.map(item => item.id === templateId ? {
+  const saveEdit = async (templateId: number) => {
+    const next = templates.map(item => item.id === templateId ? {
       ...item,
       name: draft.name.trim(),
       content: draft.content,
       updatedAt: Date.now(),
-    } : item));
-    cancelEdit();
-    setError(null);
+    } : item);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistTemplates(next);
+      setTemplates(next);
+      cancelEdit();
+      setError(null);
+    } catch (e) {
+      skipPersist.current = false;
+      setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteTemplate = (templateId: number) => {
-    setTemplates(prev => prev.filter(item => item.id !== templateId));
-    if (editingId === templateId) cancelEdit();
+  const deleteTemplate = async (templateId: number) => {
+    const next = templates.filter(item => item.id !== templateId);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistTemplates(next);
+      setTemplates(next);
+      if (editingId === templateId) cancelEdit();
+    } catch (e) {
+      skipPersist.current = false;
+      setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeTemplate = (templateId: number) => {
@@ -165,9 +213,10 @@ export default function TemplateOptions() {
           <h6>Редактируйте названия и содержимое черновиков и шаблонов</h6>
         </div>
         <div className="templateOptionsActions">
-          <button className="button small primary" onClick={ addTemplate }>Добавить</button>
+          <StorageSavingStatus saving={ saving } />
+          <button className="button small primary" disabled={ saving } onClick={ addTemplate }>Добавить</button>
           { !!templates.length && (
-            <button className="button small clear" onClick={ clearTemplates }>Очистить все</button>
+            <button className="button small clear" disabled={ saving } onClick={ clearTemplates }>Очистить все</button>
           ) }
         </div>
       </div>

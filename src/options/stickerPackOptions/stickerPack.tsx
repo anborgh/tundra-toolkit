@@ -22,8 +22,8 @@ type Props = {
   editing: boolean;
   onEdit: () => void;
   onCancelEdit: () => void;
-  onChange: (pack: IStickerPack) => void;
-  onRemove: (packId: number) => void;
+  onChange: (pack: IStickerPack) => void | Promise<void>;
+  onRemove: (packId: number) => void | Promise<void>;
   onInvalid?: (message: string) => void;
   location?: ItemLocation;
   onCloudToggle?: () => void;
@@ -50,10 +50,10 @@ export default function ({
   const [ textItems, setTextItems ] = useState((pack.items || []).join('\n'));
   const visibleStickers = useBatchedItems(items, !editing);
 
-  const savePack = () => {
+  const savePack = async () => {
     const clearedItems = textItems.split('\n').filter(item => checkImageURL(item));
 
-    onChange({
+    await onChange({
       id: pack.id,
       name: name.trim(),
       items: clearedItems,

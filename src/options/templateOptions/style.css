@@ -23,6 +23,7 @@
 .templateOptionsActions {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .templateOptionsList {
@@ -72,6 +73,7 @@
 .templateOptionsFooter {
   margin-top: 8px;
   display: flex;
+  justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getStorageFallbacks,
   isStorageItemLocal,
@@ -34,9 +34,19 @@ export function Stickers() {
   const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
 
   const [ editPackId, setEditPackId ] = useState<number | null>(null);
+  const [ saving, setSaving ] = useState(false);
+  const skipPersist = useRef(true);
 
   const statusView = useMemo(() => {
     if (error) return null;
+    if (saving) {
+      return {
+        icon: loaderCircleIcon,
+        text: 'Сохраняем…',
+        tone: 'muted' as const,
+        spin: true,
+      };
+    }
     if (warning) {
       return {
         icon: circleCheckIcon,
@@ -54,7 +64,7 @@ export function Stickers() {
       };
     }
     return null;
-  }, [ error, warning, loading ]);
+  }, [ error, warning, loading, saving ]);
 
   const refreshFallbacks = () => {
     getStorageFallbacks()
@@ -80,6 +90,17 @@ export function Stickers() {
     await insertSticker(src, { onUnavailable: showError });
   };
 
+  const persistPacks = async (next: IStickerPack[]) => {
+    const result = await safeStorageSet({ stickerPack: next });
+    refreshFallbacks();
+    if (result.fallback) {
+      setWarning('В Chrome Sync не хватило места. Часть стикеров или все они остались только в этом браузере.');
+    } else {
+      setWarning(null);
+    }
+    return result;
+  };
+
   const addPack = () => {
     const newIndex = nextCollectionId(data);
 
@@ -94,16 +115,40 @@ export function Stickers() {
     setEditPackId(newIndex);
   };
 
-  const removePack = (packId: number) => {
-    setData(data.filter(item => item.id !== packId));
-    if (editPackId === packId) setEditPackId(null);
+  const removePack = async (packId: number) => {
+    const next = data.filter(item => item.id !== packId);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistPacks(next);
+      setData(next);
+      if (editPackId === packId) setEditPackId(null);
+    } catch (e) {
+      skipPersist.current = false;
+      showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleSavePack = (nextPack: IStickerPack) => {
-    setData(data.map(item => item.id === nextPack.id
+  const handleSavePack = async (nextPack: IStickerPack) => {
+    const next = data.map(item => item.id === nextPack.id
       ? { ...nextPack, updatedAt: Date.now() }
-      : item));
-    setEditPackId(null);
+      : item);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistPacks(next);
+      setData(next);
+      setEditPackId(null);
+    } catch (e) {
+      skipPersist.current = false;
+      showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
   useEffect(() => {
@@ -136,23 +181,25 @@ export function Stickers() {
 
   useEffect(() => {
     if (!loaded) return;
-
-    const updateData = async () => {
-      try {
-        const result = await safeStorageSet({ stickerPack: data });
-        refreshFallbacks();
-        if (result.fallback) {
-          setWarning('В Chrome Sync не хватило места. Часть стикеров или все они остались только в этом браузере.');
-        } else {
-          setWarning(null);
-        }
-      } catch (e) {
-        showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
-      }
+    if (skipPersist.current) {
+      skipPersist.current = false;
+      return;
     }
 
-    updateData();
+    let alive = true;
+    setSaving(true);
+    persistPacks(data)
+      .catch(() => {
+        if (!alive) return;
+        showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
+      })
+      .finally(() => {
+        if (alive) setSaving(false);
+      });
 
+    return () => {
+      alive = false;
+    };
   }, [ data, loaded ]);
 
   useEffect(() => {
@@ -233,7 +280,7 @@ export function Stickers() {
               />
             </span>
           ) }
-          <button class="button small" onClick={ addPack } title="Новый стикерпак">
+          <button class="button small" onClick={ addPack } disabled={ saving } title="Новый стикерпак">
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               <MaskIcon src={ plusIcon } />
               Новый стикерпак

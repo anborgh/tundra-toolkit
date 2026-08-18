@@ -6,8 +6,8 @@ type ListProps = {
   editingId: number | null;
   onEdit: (packId: number) => void;
   onCancelEdit: () => void;
-  onSave: (pack: IStickerPack) => void;
-  onRemove: (packId: number) => void;
+  onSave: (pack: IStickerPack) => void | Promise<void>;
+  onRemove: (packId: number) => void | Promise<void>;
   onStickerUsed?: (src: string) => void;
   localIds?: number[];
 };

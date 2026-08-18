@@ -29,6 +29,21 @@
   flex-wrap: wrap;
 }
 
+.itemEditor[aria-busy="true"] input,
+.itemEditor[aria-busy="true"] textarea {
+  opacity: 0.65;
+}
+
+.storageSaveStatus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--popup-muted, var(--tt-muted));
+}
+
 .stickerPack > .itemEditor {
   padding: 12px;
 }
