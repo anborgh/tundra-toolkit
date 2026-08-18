@@ -209,8 +209,8 @@ export default function TemplateOptions() {
     <section className="templateOptions">
       <div className="templateOptionsHeader">
         <div>
-          <h3>Черновики</h3>
-          <h6>Редактируйте названия и содержимое черновиков и шаблонов</h6>
+          <h2>Черновики</h2>
+          <p className="optionsSectionLead">Редактируйте названия и содержимое черновиков и шаблонов</p>
         </div>
         <div className="templateOptionsActions">
           <StorageSavingStatus saving={ saving } />
@@ -222,7 +222,7 @@ export default function TemplateOptions() {
       </div>
 
       { notice && (
-        <div className="text-error" style={{ marginBottom: 8 }}>
+        <div className="text-error optionsNotice">
           { notice }
         </div>
       ) }
@@ -256,7 +256,7 @@ export default function TemplateOptions() {
               ) : (
                 <>
                   <div className="templateOptionsViewHeader">
-                    <h5>{ template.name }</h5>
+                    <h3>{ template.name }</h3>
                     <div className="templateOptionsMeta">
                       <CloudSyncButton
                         location={ location }

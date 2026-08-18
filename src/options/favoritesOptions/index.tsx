@@ -88,7 +88,7 @@ export function FavoritesOptions() {
     const safeItems = filterFavoritesByAllowedHost(items);
     const result = await safeStorageSet({ [ STORAGE_KEY ]: safeItems });
     if (result.fallback) {
-      setWarning('В Chrome Sync не хватило места. Избранное осталось только в этом браузере.');
+      setWarning('В Chrome Sync не хватило места. Эпизоды остались только в этом браузере.');
     } else {
       setWarning(null);
     }
@@ -112,7 +112,7 @@ export function FavoritesOptions() {
         setInfo('Список обновлён');
       }
     } catch (e) {
-      setError('Не удалось обновить избранное');
+      setError('Не удалось обновить эпизоды');
     } finally {
       setRefreshing(false);
     }
@@ -159,7 +159,7 @@ export function FavoritesOptions() {
   };
 
   const handleRemove = async (item: IFavoriteTopic) => {
-    const confirmed = confirm(`Убрать «${ decodeEntities(item.topicName) }» из избранного?`);
+    const confirmed = confirm(`Убрать «${ decodeEntities(item.topicName) }» из списка эпизодов?`);
     if (!confirmed) return;
 
     const next = favorites.filter(fav => fav.id !== item.id);
@@ -205,7 +205,7 @@ export function FavoritesOptions() {
                 title="Есть новые ответы. Нажмите, чтобы отметить как просмотренные"
                 onClick={ () => handleMarkSeen(item) }
               >
-                new
+                новое
               </button>
             ) }
           </div>
@@ -254,8 +254,8 @@ export function FavoritesOptions() {
           />
           <button
             className="button small icon-only favoritesOptionsRemove"
-            title="Убрать из избранного"
-            aria-label="Убрать из избранного"
+            title="Убрать из списка эпизодов"
+            aria-label="Убрать из списка эпизодов"
             onClick={ () => handleRemove(item) }
           >
             <MaskIcon src={ xIcon } />
@@ -269,8 +269,8 @@ export function FavoritesOptions() {
     <section className="favoritesOptions">
       <div className="favoritesOptionsHeader">
         <div>
-          <h3>Избранное</h3>
-          <h6>Мой ход { myTurnCount }/{ totalCount } · отслеживание новых ответов</h6>
+          <h2>Эпизоды</h2>
+          <p className="optionsSectionLead">Ваш ход { myTurnCount }/{ totalCount } · отслеживание новых ответов</p>
         </div>
         <div className="favoritesOptionsHeaderActions">
           <div className="favoritesOptionsViewToggle" role="group" aria-label="Вид списка">

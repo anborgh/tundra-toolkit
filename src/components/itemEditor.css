@@ -4,6 +4,12 @@
   gap: 8px;
 }
 
+.itemEditorField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .itemEditor input,
 .itemEditor textarea {
   width: 100%;

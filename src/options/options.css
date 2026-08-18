@@ -5,6 +5,10 @@ body {
     color: var(--tt-text);
 }
 
+.wrapper {
+    position: relative;
+}
+
 header {
     background: var(--tt-frost);
     color: var(--tt-on-frost);
@@ -45,7 +49,7 @@ header a {
 }
 
 header h1 span {
-    opacity: .65;
+    color: color-mix(in oklab, var(--tt-on-frost) 78%, var(--tt-frost));
     font-size: 1rem;
     font-family: var(--tt-font-body);
     font-weight: 500;
@@ -66,6 +70,10 @@ main {
     max-width: var(--width);
     margin: auto;
     padding: 24px 16px;
+}
+
+#options-main:focus {
+    outline: none;
 }
 
 .optionsLayout {
@@ -95,6 +103,7 @@ main {
     width: 100%;
     justify-content: flex-start;
     text-align: left;
+    text-decoration: none;
     color: var(--tt-text);
     border-radius: 0;
     border: none;
@@ -135,8 +144,22 @@ main {
     letter-spacing: -0.1em;
 }
 
-.optionsContent > section {
-    margin-bottom: 0;
+.optionsContent h2 {
+    margin: 0;
+    font-family: var(--tt-font-display);
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.optionsSectionLead {
+    margin: 4px 0 0;
+    color: var(--tt-muted);
+    font-size: 0.95rem;
+    font-weight: 400;
+}
+
+.optionsNotice {
+    margin-bottom: 8px;
 }
 
 .optionsSectionCard {
@@ -186,6 +209,7 @@ main {
 .storageUsageMeta {
     margin-top: 8px;
     font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
 }
 
 .storageLocalNotice {
@@ -196,7 +220,7 @@ main {
     padding: 10px 12px;
     border: 1px solid var(--tt-earth);
     border-left: 3px solid var(--tt-earth);
-    background: rgba(124, 82, 51, 0.1);
+    background: color-mix(in oklab, var(--tt-earth) 12%, transparent);
     color: var(--tt-text);
     font-size: 0.9rem;
     line-height: 1.4;
@@ -223,12 +247,21 @@ main {
     color: var(--tt-text);
 }
 
+a.optionsGuideLink {
+    display: inline-block;
+}
+
 .optionsGuideLink.active {
     color: var(--tt-text);
     font-weight: 600;
 }
 
-.optionsGuide h3 {
+.optionsGuideLink:focus-visible {
+    outline: 2px solid var(--tt-accent);
+    outline-offset: 2px;
+}
+
+.optionsGuide h2 {
     margin-bottom: 8px;
     font-family: var(--tt-font-display);
 }
@@ -244,7 +277,7 @@ main {
     margin: 12px 0 4px;
 }
 
-.optionsGuideToc button {
+.optionsGuideToc a {
     border: 0;
     background: transparent;
     padding: 0;
@@ -255,8 +288,13 @@ main {
     cursor: pointer;
 }
 
-.optionsGuideToc button:hover {
+.optionsGuideToc a:hover {
     color: var(--tt-text);
+}
+
+.optionsGuideToc a:focus-visible {
+    outline: 2px solid var(--tt-accent);
+    outline-offset: 2px;
 }
 
 .optionsGuideBlock {
@@ -269,9 +307,11 @@ main {
     scroll-margin-top: 12px;
 }
 
-.optionsGuideBlock h5 {
+.optionsGuideBlock h3 {
     margin: 0 0 8px;
     font-family: var(--tt-font-display);
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .optionsGuideBlock p,
@@ -317,10 +357,10 @@ main {
 .optionsGuideWarning {
     border-color: var(--tt-earth);
     border-left-color: var(--tt-earth);
-    background: rgba(124, 82, 51, 0.1);
+    background: color-mix(in oklab, var(--tt-earth) 12%, transparent);
 }
 
-.optionsGuideWarning h5 {
+.optionsGuideWarning h3 {
     color: var(--tt-earth);
 }
 
@@ -536,7 +576,8 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .storageUsageFill {
+    .storageUsageFill,
+    .conflictVersion {
         transition: none;
     }
 }

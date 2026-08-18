@@ -68,7 +68,7 @@ h5 {
   gap: 6px;
   padding: 6px 8px;
   background: var(--tt-frost);
-  color: var(--tt-night);
+  color: var(--tt-on-frost);
   border-bottom: var(--tt-border-width) solid var(--tt-earth);
   position: relative;
   flex: 0 0 auto;
@@ -124,18 +124,19 @@ h5 {
   position: absolute;
   top: -3px;
   right: -3px;
-  min-width: 14px;
-  height: 14px;
-  padding: 0 3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: 0;
   background: var(--tt-ember);
   color: var(--tt-bone);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  line-height: 14px;
+  line-height: 16px;
   text-align: center;
   pointer-events: none;
   border: 1px solid var(--tt-night);
+  font-variant-numeric: tabular-nums;
 }
 
 .popupTabs .button:hover {
@@ -196,6 +197,7 @@ h5 {
   box-sizing: border-box;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Unified tab panel header — actions always top-right */
@@ -211,8 +213,12 @@ h5 {
   min-width: 0;
 }
 
+.tabPanelHeader h2,
 .tabPanelHeader h4 {
   margin: 0;
+  font-family: var(--tt-font-display);
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .tabPanelHeader p {
@@ -303,6 +309,13 @@ h5 {
   min-width: 0;
 }
 
+.styleControl h3 {
+  margin: 0;
+  font-family: var(--tt-font-display);
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* Sharp switch — no pills */
 .styleSwitch {
   position: relative;
@@ -387,6 +400,7 @@ h5 {
   min-width: 58px;
   color: var(--popup-text);
   background: transparent;
+  font-variant-numeric: tabular-nums;
 }
 
 .paragraphSpacingValue {
@@ -397,16 +411,9 @@ h5 {
   cursor: pointer;
 }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+.fontScaleValue:focus-visible {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 2px;
 }
 
 .templatesTab,
@@ -523,9 +530,16 @@ h5 {
   gap: 8px;
 }
 
+.templateHeader h3,
 .templateHeader h5 {
   margin: 0;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--tt-font-display);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .templatePreview {
@@ -551,15 +565,15 @@ h5 {
 }
 
 .tag.success {
-  background: rgba(47, 107, 79, 0.12);
+  background: color-mix(in oklab, var(--tt-success) 12%, transparent);
   color: var(--tt-success);
-  border: 1px solid rgba(47, 107, 79, 0.25);
+  border: 1px solid color-mix(in oklab, var(--tt-success) 25%, transparent);
 }
 
 .tag.error {
-  background: rgba(161, 40, 48, 0.12);
+  background: color-mix(in oklab, var(--tt-danger) 12%, transparent);
   color: var(--tt-danger);
-  border: 1px solid rgba(161, 40, 48, 0.25);
+  border: 1px solid color-mix(in oklab, var(--tt-danger) 25%, transparent);
 }
 
 

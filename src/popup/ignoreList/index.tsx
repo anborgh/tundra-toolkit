@@ -320,7 +320,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
             <a
               href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               class="ignoreTitle"
               title={ user.userName }
             >
@@ -352,7 +352,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
               <a
                 href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 class="ignoreTitle"
                 title={ title }
               >
@@ -381,6 +381,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
   return (
     <div class="ignoreTab">
+      <h2 class="sr-only">Игнор-лист</h2>
       <div class="ignoreHeader">
         <div class="ignoreHeaderMeta">
           { context ? (
@@ -446,7 +447,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
       { state === 'ready' && users.length > 0 && (
         <div class="ignoreSection">
-          <h5 class="ignoreSectionTitle">Пользователи</h5>
+          <h3 class="ignoreSectionTitle">Пользователи</h3>
           { showForumGroups ? (
             (board?.forums || []).filter(forum => (forum.users || []).length > 0).map(forum => (
               <div class="ignoreForumGroup" key={ forum.forumID }>
@@ -455,7 +456,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
                     <a
                       href={ `https://${ boardUrl }/viewforum.php?id=${ forum.forumID }` }
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                     >
                       { forum.forumName }
                     </a>
@@ -480,7 +481,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
       { state === 'ready' && topics.length > 0 && (
         <div class="ignoreSection">
-          <h5 class="ignoreSectionTitle">Темы</h5>
+          <h3 class="ignoreSectionTitle">Темы</h3>
           <ul class="ignoreList">
             { topics.map(renderTopicItem) }
           </ul>

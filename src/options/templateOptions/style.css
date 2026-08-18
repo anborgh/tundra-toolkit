@@ -11,13 +11,8 @@
   gap: 12px;
 }
 
-.templateOptionsHeader h3 {
+.templateOptionsHeader h2 {
   margin: 0;
-}
-
-.templateOptionsHeader h6 {
-  margin: 4px 0 0;
-  color: var(--tt-muted);
 }
 
 .templateOptionsActions {
@@ -47,9 +42,16 @@
   gap: 12px;
 }
 
+.templateOptionsViewHeader h3,
 .templateOptionsViewHeader h5 {
   margin: 0;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--tt-font-display);
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 .templateOptionsPreview {

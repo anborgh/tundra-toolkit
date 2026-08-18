@@ -102,7 +102,7 @@
           --tt-focus: var(--tt-frost);
           --tt-link: var(--tt-frost);
           --tt-overlay: var(--tt-night);
-          --tt-on-frost: var(--tt-bg);
+          --tt-on-frost: var(--tt-bone);
           --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
           --tt-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
           --tt-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -140,7 +140,7 @@
             --tt-focus: var(--tt-frost);
             --tt-link: var(--tt-frost);
             --tt-overlay: var(--tt-night);
-            --tt-on-frost: var(--tt-bg);
+            --tt-on-frost: var(--tt-bone);
           }
         }
 
@@ -477,7 +477,7 @@
           border-radius: 0;
           background: var(--tt-success);
           border: 1px solid var(--tt-success);
-          color: var(--tt-text);
+          color: var(--tt-on-frost);
           font-weight: 600;
           font-family: inherit;
           cursor: pointer;

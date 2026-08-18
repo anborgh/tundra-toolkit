@@ -106,6 +106,29 @@ export default function ({
     });
   };
 
+  const moveSticker = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const next = [ ...items ];
+    const [ moved ] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    onChange({
+      id: pack.id,
+      name: pack.name,
+      items: next,
+    });
+  };
+
+  const handleStickerKeyDown = (event: { key: string; preventDefault: () => void }, index: number) => {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      moveSticker(index, -1);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      moveSticker(index, 1);
+    }
+  };
+
   useEffect(() => {
     setName(pack.name || 'UNKNOWN');
     setItems(pack.items || []);
@@ -132,6 +155,7 @@ export default function ({
             onRemove={ () => onRemove(pack.id) }
             onInvalid={ onInvalid }
             removeConfirm={ PACK_REMOVE_CONFIRM }
+            bodySpellCheck={ false }
           />
         </div>
       </div>
@@ -143,18 +167,24 @@ export default function ({
       <div className="stickerListHeader">
         <div className="stickerListTitle">
           { reorderMode && (
-            <span className="stickerListDragHandle" title="Перетащите стикерпак выше или ниже">
+            <span className="stickerListDragHandle" title="Перетащите стикерпак или используйте стрелки вверх и вниз">
               <MaskIcon src={ gripVerticalIcon } />
             </span>
           ) }
-          <h4>{ name }</h4>
+          <h3>{ name }</h3>
           { onCloudToggle && (
             <CloudSyncButton location={ location } onToggle={ onCloudToggle } />
           ) }
         </div>
         { !reorderMode && (
           <div className="actions">
-            <button className="button small icon-only" onClick={ onEdit } title="Редактировать стикерпак">
+            <button
+              type="button"
+              className="button small icon-only"
+              onClick={ onEdit }
+              title="Редактировать стикерпак"
+              aria-label="Редактировать стикерпак"
+            >
               <MaskIcon src={ pencilIcon } />
             </button>
           </div>
@@ -168,12 +198,15 @@ export default function ({
               onDragEnter={ handleDragEnter }
               onDragLeave={ handleDragLeave }
               onDragEnd={ drop }
+              onKeyDown={ (event) => handleStickerKeyDown(event, index) }
               draggable
+              tabIndex={ 0 }
               className="stickerItem"
               key={ sticker }
               data-index={ index }
+              aria-label={ `Стикер ${ index + 1 } из ${ items.length }. Стрелки влево и вправо меняют порядок` }
             >
-              <img src={ sticker }/>
+              <img src={ sticker } alt="" />
             </div>
           )) }
         </div>

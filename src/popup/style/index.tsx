@@ -39,7 +39,7 @@ export function StyleTab({
     <div class="styleTab">
       <div class="styleTabHeader tabPanelHeader">
         <div>
-          <h4>Стиль</h4>
+          <h2>Стиль</h2>
           <p class="text-secondary">Настройки сохраняются отдельно для каждого форума.</p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export function StyleTab({
 
       <div class="styleControl">
         <div>
-          <h5>SFW-стиль</h5>
+          <h3>SFW-стиль</h3>
           <p class="text-secondary">Заменить оформление форума на нейтральное.</p>
         </div>
         <label class="styleSwitch">
@@ -69,10 +69,10 @@ export function StyleTab({
 
       <div class="styleControl">
         <div>
-          <h5>Размер шрифта постов</h5>
+          <h3>Размер шрифта постов</h3>
           <p class="text-secondary">Если форум сам задаёт размер шрифта, текст в некоторых элементах может не измениться.</p>
         </div>
-        <div class="fontScaleControl" aria-label="Размер шрифта постов">
+        <div class="fontScaleControl" role="group" aria-label="Размер шрифта постов">
           <button
             class="button small"
             type="button"
@@ -88,6 +88,7 @@ export function StyleTab({
             disabled={ controlsDisabled || fontScale === 100 }
             onClick={ () => onFontScaleChange(100) }
             title="Вернуть 100%"
+            aria-label="Вернуть 100%"
           >
             { fontScale }%
           </button>
@@ -105,7 +106,7 @@ export function StyleTab({
 
       <div class="styleControl">
         <div>
-          <h5>Красная строка</h5>
+          <h3>Красная строка</h3>
           <p class="text-secondary">
             { sectionAvailable
               ? 'Настраивается отдельно для каждого раздела форума.'
@@ -127,10 +128,10 @@ export function StyleTab({
       { firstLineIndent && (
         <div class="styleControl">
           <div>
-            <h5>Отступ между абзацами</h5>
+            <h3>Отступ между абзацами</h3>
             <p class="text-secondary">Расстояние между соседними абзацами поста.</p>
           </div>
-          <div class="fontScaleControl" aria-label="Отступ между абзацами">
+          <div class="fontScaleControl" role="group" aria-label="Отступ между абзацами">
             <button
               class="button small"
               type="button"
@@ -150,6 +151,7 @@ export function StyleTab({
               disabled={ controlsDisabled || paragraphSpacing === null }
               onClick={ () => onParagraphSpacingChange(null) }
               title="Вернуть «Авто»"
+              aria-label="Вернуть «Авто»"
             >
               { paragraphSpacing === null ? 'Авто' : `${ paragraphSpacing }em` }
             </button>

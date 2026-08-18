@@ -321,7 +321,7 @@ export function Favorites() {
             <a
               href={ topicUrl }
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               class="favoriteTitle"
               title={ decodeEntities(item.topicName) }
               onClick={ () => { if (isNew) handleMarkSeen(item); } }
@@ -329,15 +329,14 @@ export function Favorites() {
               { decodeEntities(item.topicName) }
             </a>
             { isNew && !stale && (
-              <span
+              <button
+                type="button"
                 class="favoriteNewBadge"
-                role="button"
-                tabIndex={ 0 }
                 title="Есть новые ответы. Нажмите, чтобы отметить как просмотренные"
                 onClick={ () => handleMarkSeen(item) }
               >
-                new
-              </span>
+                новое
+              </button>
             ) }
           </div>
           <div class="favoriteMeta">
@@ -386,6 +385,7 @@ export function Favorites() {
 
   return (
     <div class="favoritesTab">
+      <h2 class="sr-only">Эпизоды</h2>
       <div class="favoritesHeader">
         <div class="favoritesActions">
           { statusView && (
@@ -415,13 +415,13 @@ export function Favorites() {
             disabled={ !activeTopic || activeAlreadyAdded || adding }
             title={ !activeTopic
               ? 'Кнопка работает только на странице темы'
-              : (activeAlreadyAdded ? 'Эта тема уже в избранном' : 'Добавить открытую тему в «Эпизоды»')
+              : (activeAlreadyAdded ? 'Эта тема уже в эпизодах' : 'Добавить открытую тему в «Эпизоды»')
             }
             onClick={ handleAddActive }
           >
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <span class="buttonLabel">
               { !activeAlreadyAdded && <MaskIcon src={ plusIcon } /> }
-              { activeAlreadyAdded ? 'Уже в избранном' : 'Текущая тема' }
+              { activeAlreadyAdded ? 'Уже в эпизодах' : 'Текущая тема' }
             </span>
           </button>
         </div>
@@ -435,7 +435,7 @@ export function Favorites() {
 
       { updatedItems.length > 0 && (
         <div class="favoritesSection favoritesSectionUpdated">
-          <h5 class="favoritesSectionTitle">Обновлённые</h5>
+          <h3 class="favoritesSectionTitle">Обновлённые</h3>
           <ul class="favoritesList">
             { updatedItems.map(renderItem) }
           </ul>
@@ -444,7 +444,7 @@ export function Favorites() {
 
       { favorites.length > 0 && (
         <div class="favoritesSection">
-          <h5 class="favoritesSectionTitle">Мой ход { myTurnCount }/{ totalCount }</h5>
+          <h3 class="favoritesSectionTitle">Ваш ход { myTurnCount }/{ totalCount }</h3>
           { myTurnItems.length > 0 && (
             <ul class="favoritesList">
               { myTurnItems.map(renderItem) }
@@ -456,7 +456,7 @@ export function Favorites() {
       { restItems.length > 0 && (
         <div class="favoritesSection">
           { (myTurnCount > 0 || updatedItems.length > 0) && (
-            <h5 class="favoritesSectionTitle">Жду ответа</h5>
+            <h3 class="favoritesSectionTitle">Жду ответа</h3>
           ) }
           <ul class="favoritesList">
             { restItems.map(renderItem) }

@@ -307,6 +307,7 @@ export function Templates() {
 
   return (
     <div class="templatesTab">
+      <h2 class="sr-only">Черновики</h2>
       <div class="templatesHeader">
         <div class="templatesActions">
           { statusView && (
@@ -366,7 +367,7 @@ export function Templates() {
             ) : (
               <div class="templateView">
                 <div class="templateHeader">
-                  <h5>{ template.name }</h5>
+                  <h3>{ template.name }</h3>
                   { isStorageItemLocal(fallbacks, STORAGE_KEY, template.id) && (
                     <span
                       className="storageLocalBadge"

@@ -169,10 +169,10 @@ export function BlackListOptions() {
     <section className="blackListOptions">
       <div className="blackListOptionsHeader">
         <div>
-          <h3>Чёрный список</h3>
-          <h6>
+          <h2>Чёрный список</h2>
+          <p className="optionsSectionLead">
             Пользователи { usersCount } · темы { topicsCount }
-          </h6>
+          </p>
         </div>
         <div className="blackListOptionsHeaderActions">
           { statusView && (
@@ -192,7 +192,7 @@ export function BlackListOptions() {
       </div>
 
       { error && (
-        <div className="text-error" style={{ marginBottom: 8 }}>
+        <div className="text-error optionsNotice">
           { error }
         </div>
       ) }
@@ -205,7 +205,7 @@ export function BlackListOptions() {
 
       { data.length > 0 && (
         <div className="blackListOptionsSection">
-          <h5 className="blackListOptionsSectionTitle">Пользователи</h5>
+          <h3 className="blackListOptionsSectionTitle">Пользователи</h3>
           { data.map(({ boardID, boardName, boardUrl, forums }) => (
             <div className="blackListOptionsBoard" key={ boardID }>
               <a
@@ -269,7 +269,7 @@ export function BlackListOptions() {
 
       { topicsData.length > 0 && (
         <div className="blackListOptionsSection">
-          <h5 className="blackListOptionsSectionTitle">Темы</h5>
+          <h3 className="blackListOptionsSectionTitle">Темы</h3>
           { topicsData.map(({ boardID, boardName, boardUrl, topics }) => (
             <div className="blackListOptionsBoard" key={ `topic-${ boardID }` }>
               <div className="blackListOptionsForumHeader">

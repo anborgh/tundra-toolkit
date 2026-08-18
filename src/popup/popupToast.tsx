@@ -44,7 +44,7 @@ export function PopupToastBar() {
   if (!text) return null;
 
   return (
-    <div class="popupToast" role="alert" aria-live="assertive">
+    <div class="popupToast" role="status" aria-live="polite">
       <MaskIcon src={ circleAlertIcon } />
       <span class="popupToastText">{ text }</span>
       <button

@@ -446,10 +446,12 @@ export function App() {
       <button
         key={ tabId }
         class={ `button small tabButton ${ activeTab === tabId ? 'primary' : '' }` }
+        type="button"
         onClick={ () => handleTabClick(tabId) }
         disabled={ disabled }
         title={ disabled ? disabledTitle : label }
         aria-label={ label }
+        aria-current={ activeTab === tabId ? 'page' : undefined }
       >
         <MaskIcon src={ icon } />
         { showBadge && renderTabBadge() }
@@ -461,10 +463,12 @@ export function App() {
 
   return (
     <div class="popupWrapper">
-      <div class="popupTabs">
+      <h1 class="sr-only" translate={ false }>Tundra Toolkit</h1>
+      <nav class="popupTabs" aria-label="Разделы">
         <div class="popupTabsMain">
           { (Object.keys(TAB_META) as ContentTabId[]).map(renderTabButton) }
           <button
+            type="button"
             class="button small tabButton"
             onClick={ () => handleTabClick('postCounter') }
             disabled={ !hasForum || availability !== 'available' }
@@ -483,6 +487,7 @@ export function App() {
         <div class="popupTabsActions">
           { hasForum && (
             <button
+              type="button"
               class={ `button small tabButton forumPowerToggle ${ isTrusted ? 'active' : 'muted' }` }
               onClick={ handleToggleForumPower }
               disabled={ forumPowerBusy || !boardHost }
@@ -494,6 +499,7 @@ export function App() {
             </button>
           ) }
           <button
+            type="button"
             class="button small controlsSettings tabButton"
             onClick={ handleOpenOptions }
             title="Настройки"
@@ -502,9 +508,9 @@ export function App() {
             <MaskIcon src={ settingsIcon } />
           </button>
         </div>
-      </div>
+      </nav>
 
-      <div class="popupTabContent">
+      <main class="popupTabContent">
         { activeTab === 'templates' && <Templates /> }
         { activeTab === 'stickers' && <Stickers /> }
         { activeTab === 'ignore' && (
@@ -537,7 +543,7 @@ export function App() {
             }) }
           />
         ) }
-      </div>
+      </main>
       <PopupToastBar />
     </div>
   );

@@ -82,8 +82,7 @@ export function Stickers() {
       .catch(() => {});
   };
 
-  const handleRecentStickerClick = async (event) => {
-    const src = event?.target?.src;
+  const handleRecentStickerClick = async (src: string) => {
     if (!src) return;
 
     handleStickerUsed(src);
@@ -237,11 +236,11 @@ export function Stickers() {
 
     if (!data.length) {
       return (
-        <div class="stickerList_empty" onClick={ addPack }>
+        <button type="button" class="stickerList_empty" onClick={ addPack }>
           <div class="stickerList_emptyIcon" />
           <div class="stickerList_emptyTitle">Список пуст</div>
           <div class="text-secondary">Нажмите, чтобы добавить первый стикерпак</div>
-        </div>
+        </button>
       );
     }
 
@@ -265,6 +264,7 @@ export function Stickers() {
 
   return (
     <div class="stickerTab">
+      <h2 class="sr-only">Стикеры</h2>
       <div class="stickerHeader">
         <div class="stickerActions">
           { statusView && (
@@ -280,8 +280,8 @@ export function Stickers() {
               />
             </span>
           ) }
-          <button class="button small" onClick={ addPack } disabled={ saving } title="Новый стикерпак">
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <button type="button" class="button small" onClick={ addPack } disabled={ saving } title="Новый стикерпак">
+            <span class="buttonLabel">
               <MaskIcon src={ plusIcon } />
               Новый стикерпак
             </span>
@@ -293,9 +293,9 @@ export function Stickers() {
         <div class="recentStickers">
           <div class="recentStickersList">
             { recentStickers.map(sticker => (
-              <div class="stickerItem" key={ sticker }>
-                <img src={ sticker } onClick={ handleRecentStickerClick } />
-              </div>
+              <button type="button" class="stickerItem" key={ sticker } onClick={ () => handleRecentStickerClick(sticker) } aria-label="Вставить стикер">
+                <img src={ sticker } alt="" />
+              </button>
             )) }
           </div>
         </div>

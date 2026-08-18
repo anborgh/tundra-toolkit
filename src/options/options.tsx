@@ -20,6 +20,7 @@ import './options.css';
 
 const getSectionFromHash = (): SettingsSection => {
 	const hash = window.location.hash.replace('#', '');
+	if (hash.startsWith('guide')) return 'guide';
 	return isSettingsSection(hash) ? hash : DEFAULT_SETTINGS_SECTION;
 };
 
@@ -115,7 +116,7 @@ export function App() {
 		{ id: 'stickers', label: 'Стикеры' },
 		{ id: 'templates', label: 'Черновики' },
 		{ id: 'blackList', label: 'Чёрный список' },
-		{ id: 'favorites', label: 'Избранное' },
+		{ id: 'favorites', label: 'Эпизоды' },
 	];
 
 	const renderSection = () => {
@@ -123,7 +124,7 @@ export function App() {
 			case 'guide':
 				return (
 					<section className="optionsGuide">
-						<h3>Инструкция по расширению</h3>
+						<h2>Инструкция по расширению</h2>
 						<p className="text-secondary">
 							Tundra Toolkit — расширение для форумных ролевых игр на MyBB/RusFF.
 							Оно добавляет в браузер привычные инструменты: стикеры, черновики, личный игнор,
@@ -149,18 +150,14 @@ export function App() {
 								[ 'guide-sync', 'Хранение' ],
 								[ 'guide-faq', 'Частые вопросы' ],
 							].map(([ id, label ]) => (
-								<button
-									key={ id }
-									type="button"
-									onClick={ () => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
-								>
+								<a key={ id } href={ `#${ id }` }>
 									{ label }
-								</button>
+								</a>
 							)) }
 						</nav>
 
 						<div className="optionsGuideBlock" id="guide-start">
-							<h5>Быстрый старт</h5>
+							<h3>Быстрый старт</h3>
 							<ol>
 								<li>Откройте нужный форум MyBB/RusFF и нажмите на значок Tundra Toolkit.</li>
 								<li>Нажмите кнопку питания в правой части окна расширения и дождитесь, пока вкладки станут доступны.</li>
@@ -173,24 +170,24 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-episodes">
-							<h5>Эпизоды</h5>
+							<h3>Эпизоды</h3>
 							<p>
 								На вкладке «Эпизоды» собраны активные темы с разных форумов. Здесь видны новые ответы,
 								а эпизоды, в которых сейчас ваш ход, можно отметить отдельно.
 							</p>
 							<ul>
-								<li>Откройте тему и нажмите «Текущая тема». Если тема уже добавлена, на кнопке будет надпись «Уже в избранном».</li>
+								<li>Откройте тему и нажмите «Текущая тема». Если тема уже добавлена, на кнопке будет надпись «Уже в эпизодах».</li>
 								<li>Нажмите значок слева от темы, чтобы отметить или снять свой ход: перо — ваш ход, песочные часы — ждёте ответа. Tundra Toolkit не определяет очередь сам — отметку нужно ставить и снимать вручную.</li>
-								<li>«Обновлённые» — темы с новыми ответами. «Мой ход» — темы, которые вы отметили вручную. «Жду ответа» — остальные активные эпизоды.</li>
-								<li>Чтобы отметить новые ответы как просмотренные, откройте тему или нажмите метку «new».</li>
-								<li>Чем больше эпизодов в списке, тем реже расширение проверяет каждый из них. Обновлять список вручную можно не чаще чем раз в 1 мин.</li>
+								<li>«Обновлённые» — темы с новыми ответами. «Ваш ход» — темы, которые вы отметили вручную. «Жду ответа» — остальные активные эпизоды.</li>
+								<li>Чтобы отметить новые ответы как просмотренные, откройте тему или нажмите метку «новое».</li>
+								<li>Чем больше эпизодов в списке, тем реже расширение проверяет каждый из них. Обновлять список вручную можно не чаще чем раз в 1 мин.</li>
 								<li>Если вы вышли из аккаунта или форум временно недоступен, тема останется в списке с пометкой «не обновляется».</li>
-								<li>Полный список и группировка по форуму или дате последнего ответа — в разделе «Настройки» → «Избранное».</li>
+								<li>Полный список и группировка по форуму или дате последнего ответа — в разделе «Настройки» → «Эпизоды».</li>
 							</ul>
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-stickers">
-							<h5>Стикеры</h5>
+							<h3>Стикеры</h3>
 							<p>
 								Tundra Toolkit хранит ссылки на картинки, а не сами файлы. Нажмите на стикер,
 								и в форму ответа вставится BBCode.
@@ -205,7 +202,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-drafts">
-							<h5>Черновики и шаблоны</h5>
+							<h3>Черновики и шаблоны</h3>
 							<p>
 								На вкладке «Черновики» черновик — это текст из формы ответа, а шаблон — текст,
 								который удобно использовать несколько раз. Они хранятся в одном списке.
@@ -219,7 +216,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-ignore">
-							<h5>Игнор-лист</h5>
+							<h3>Игнор-лист</h3>
 							<p>
 								Игнор в Tundra Toolkit не блокирует пользователя на форуме. Он скрывает выбранные
 								посты и темы, а также цитаты, если удаётся распознать их автора. Изменения видны только вам.
@@ -234,7 +231,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-counter">
-							<h5>Счётчик постов</h5>
+							<h3>Счётчик постов</h3>
 							<p>
 								Счётчик поможет подвести итоги эпизода, события или игрового периода.
 								Запустите его из окна расширения на форуме, где включён Tundra Toolkit.
@@ -248,7 +245,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-style">
-							<h5>Стиль</h5>
+							<h3>Стиль</h3>
 							<p>
 								На вкладке «Стиль» можно упростить оформление форума, изменить размер текста,
 								настроить красную строку и интервалы между абзацами. Настройки сохраняются
@@ -262,7 +259,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-settings">
-							<h5>Настройки</h5>
+							<h3>Настройки</h3>
 							<p>
 								Шестерёнка в окне расширения открывает настройки в отдельной вкладке.
 								Индикатор «Память Chrome» слева показывает, сколько места занято в Chrome Sync.
@@ -271,12 +268,12 @@ export function App() {
 								<li>«Стикеры» — добавлять, редактировать, удалять и менять порядок стикерпаков и картинок.</li>
 								<li>«Черновики» — редактировать названия и содержимое черновиков и шаблонов.</li>
 								<li>«Чёрный список» — удалять пользователей и темы из игнора.</li>
-								<li>«Избранное» — группировать эпизоды по форуму или дате последнего ответа и удалять ненужные.</li>
+								<li>«Эпизоды» — группировать эпизоды по форуму или дате последнего ответа и удалять ненужные.</li>
 							</ul>
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-sync">
-							<h5>Где хранятся данные</h5>
+							<h3>Где хранятся данные</h3>
 							<p>
 								Tundra Toolkit сохраняет данные в текущем браузере. Если в Chrome Sync хватает места,
 								часть из них может синхронизироваться с другими устройствами с тем же профилем Chrome.
@@ -297,7 +294,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock optionsGuideWarning">
-							<h5>Безопасность и приватность</h5>
+							<h3>Безопасность и приватность</h3>
 							<ul>
 								<li>Включайте Tundra Toolkit только на форумах, которым доверяете.</li>
 								<li>Не храните в черновиках пароли, токены доступа, резервные коды, платёжные и паспортные данные или приватные переписки.</li>
@@ -308,12 +305,12 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-faq">
-							<h5>Частые вопросы</h5>
+							<h3>Частые вопросы</h3>
 							<dl className="optionsGuideFaq">
 								<dt>Почему часть вкладок недоступна?</dt>
 								<dd>Некоторые вкладки доступны только на страницах форума. Откройте форум MyBB/RusFF и включите Tundra Toolkit кнопкой питания.</dd>
 								<dt>Почему кнопка «Текущая тема» не нажимается?</dt>
-								<dd>Кнопка работает только на странице темы. Если тема уже добавлена, на кнопке будет написано «Уже в избранном».</dd>
+								<dd>Кнопка работает только на странице темы. Если тема уже добавлена, на кнопке будет написано «Уже в эпизодах».</dd>
 								<dt>Почему эпизод помечен «не обновляется»?</dt>
 								<dd>Так бывает, если вы вышли из аккаунта на форуме или сам форум временно недоступен. Откройте форум, войдите в аккаунт и попробуйте обновить список позже.</dd>
 								<dt>Почему стикер не вставился в сообщение?</dt>
@@ -334,7 +331,7 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock">
-							<h5>Если нужна помощь</h5>
+							<h3>Если нужна помощь</h3>
 							<p>
 								Если что-то не работает, напишите разработчику и укажите ссылку на форум или страницу,
 								что вы сделали, что произошло и что ожидали увидеть, а также скриншот окна расширения
@@ -360,29 +357,43 @@ export function App() {
 
 	return (
 		<div class="wrapper">
+			<a
+				className="skipLink"
+				href="#options-main"
+				onClick={ (event) => {
+					event.preventDefault();
+					const main = document.getElementById('options-main');
+					main?.focus();
+					main?.scrollIntoView({ block: 'start' });
+				} }
+			>
+				К содержимому
+			</a>
 			<header>
 				<div className="main">
 					<div className="logo">
-						<img src='./icon512.png' alt="" />
+						<img src='./icon512.png' alt="" width={ 72 } height={ 72 } />
 					</div>
 					<div>
-						<h1>Tundra Toolkit <span>v3.2</span></h1>
+						<h1 translate={ false }>Tundra Toolkit <span>v3.2</span></h1>
 						<div className="headerMeta">Привычные инструменты — на любом поддерживаемом форуме MyBB/RusFF. От <a href="https://t.me/hvscripts" target="_blank" rel="noreferrer">Человека-Шамана</a>.</div>
 					</div>
 				</div>
 			</header>
-			<main>
+			<main id="options-main" tabIndex={ -1 }>
 				<div className="optionsLayout">
 					<aside className="optionsSidebar">
 						<nav className="optionsNav">
 							{ sections.map(section => {
 								const localOnly = isSectionLocal(section.id, storageFallbacks);
 								return (
-									<button
-										key={ section.id }
-										className={ `button outline optionsNavItem ${ activeSection === section.id ? 'active' : '' }` }
-										onClick={ () => selectSection(section.id) }
-									>
+								<a
+									key={ section.id }
+									href={ `#${ section.id }` }
+									className={ `button outline optionsNavItem ${ activeSection === section.id ? 'active' : '' }` }
+									aria-current={ activeSection === section.id ? 'page' : undefined }
+									onClick={ () => selectSection(section.id) }
+								>
 										<span className="optionsNavItemLabel">{ section.label }</span>
 										{ localOnly && (
 											<span
@@ -392,7 +403,7 @@ export function App() {
 												локально
 											</span>
 										) }
-									</button>
+									</a>
 								);
 							}) }
 						</nav>
@@ -416,18 +427,19 @@ export function App() {
 									</div>
 									<div className="storageUsageMeta text-secondary">
 										{ syncBytesInUse === null
-											? 'Загрузка...'
-											: `${ (syncBytesInUse / 1024).toFixed(1) } KB из ${ (syncQuotaBytes / 1024).toFixed(0) } KB (${ syncUsagePercent }%)` }
+											? 'Загрузка…'
+											: `${ (syncBytesInUse / 1024).toFixed(1) }\u00a0КБ из ${ (syncQuotaBytes / 1024).toFixed(0) }\u00a0КБ (${ syncUsagePercent }%)` }
 									</div>
 								</>
 							) }
 						</div>
-						<button
+						<a
+							href="#guide"
 							className={ `optionsGuideLink ${ activeSection === 'guide' ? 'active' : '' }` }
 							onClick={ () => selectSection('guide') }
 						>
 							Инструкция по расширению
-						</button>
+						</a>
 					</aside>
 					<div className="optionsContent">
 						{ activeSectionIsLocal && activeSection !== 'stickers' && activeSection !== 'templates' && (

@@ -52,8 +52,7 @@ export function StickerPack({
     onEdit(pack.id);
   };
 
-  const handleStickerClick = async (event) => {
-    const src = event?.target?.src;
+  const handleStickerClick = async (src: string) => {
     if (!src) return;
 
     onStickerUsed?.(src);
@@ -93,6 +92,7 @@ export function StickerPack({
           onRemove={ () => onRemove(pack.id) }
           onInvalid={ showError }
           removeConfirm={ PACK_REMOVE_CONFIRM }
+          bodySpellCheck={ false }
         />
       </div>
     );
@@ -101,26 +101,38 @@ export function StickerPack({
   return (
     <div class="stickerPack">
       <div class="stickerPackHeader">
-        { titleImg && (
-          <div
-            className="stickerPackTitleIcon"
-            style={ `--bg-image: url(${ titleImg });` }
-            onClick={ handleTitleClick }
-          ></div>
-        ) }
-        <div class="stickerPackTitle" onClick={ handleTitleClick }>
-          <div class="stickerPackTitleText">{ pack.name }</div>
-          { localOnly && (
+        <button
+          type="button"
+          class="stickerPackToggle"
+          onClick={ handleTitleClick }
+          aria-expanded={ opened }
+        >
+          { titleImg && (
             <span
-              className="storageLocalBadge"
-              title="Сохранено только в этом браузере"
-            >
-              локально
-            </span>
+              className="stickerPackTitleIcon"
+              style={ `--bg-image: url(${ titleImg });` }
+            />
           ) }
-        </div>
+          <span class="stickerPackTitle">
+            <span class="stickerPackTitleText">{ pack.name }</span>
+            { localOnly && (
+              <span
+                className="storageLocalBadge"
+                title="Сохранено только в этом браузере"
+              >
+                локально
+              </span>
+            ) }
+          </span>
+        </button>
         <div className="stickerPackTitleActions">
-          <button className="button small icon-only" onClick={ handleEditPack } title="Редактировать стикерпак">
+          <button
+            type="button"
+            className="button small icon-only"
+            onClick={ handleEditPack }
+            title="Редактировать стикерпак"
+            aria-label="Редактировать стикерпак"
+          >
             <MaskIcon src={ EditIcon } />
           </button>
         </div>
@@ -128,9 +140,15 @@ export function StickerPack({
       { opened && (
         <div class="stickerPackContent">
           { visibleStickers.map(sticker => (
-            <div class="stickerItem" key={ sticker }>
-              <img src={ sticker } onClick={ handleStickerClick } />
-            </div>
+            <button
+              type="button"
+              class="stickerItem"
+              key={ sticker }
+              onClick={ () => handleStickerClick(sticker) }
+              aria-label="Вставить стикер"
+            >
+              <img src={ sticker } alt="" />
+            </button>
           )) }
         </div>
       ) }

@@ -87,7 +87,7 @@
       --tt-muted: color-mix(in oklab, var(--tt-fg) 58%, var(--tt-frost));
       --tt-border: color-mix(in oklab, var(--tt-frost) 28%, var(--tt-bg));
       --tt-card: color-mix(in oklab, var(--tt-frost) 12%, var(--tt-bg));
-      --tt-on-frost: var(--tt-bg);
+      --tt-on-frost: var(--tt-bone);
       --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
       --tt-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
 

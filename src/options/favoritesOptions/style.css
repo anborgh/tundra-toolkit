@@ -12,13 +12,14 @@
   flex-wrap: wrap;
 }
 
-.favoritesOptionsHeader h3 {
+.favoritesOptionsHeader h2 {
   margin: 0;
 }
 
-.favoritesOptionsHeader h6 {
+.favoritesOptionsHeader .optionsSectionLead {
   margin: 4px 0 0;
   color: var(--tt-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .favoritesOptionsHeaderActions {
@@ -102,7 +103,12 @@
 }
 
 .favoritesOptionsItem.stale {
-  opacity: 0.75;
+  border-style: dashed;
+}
+
+.favoritesOptionsItem.stale .favoritesOptionsTitleRow a,
+.favoritesOptionsItem.stale .favoritesOptionsMeta {
+  color: var(--tt-muted);
 }
 
 .favoritesOptionsActions {
@@ -141,13 +147,25 @@
   flex: 0 0 auto;
   padding: 1px 6px;
   border-radius: 0;
-  border: 1px solid rgba(47, 107, 79, 0.4);
-  background: rgba(47, 107, 79, 0.12);
+  border: 1px solid color-mix(in oklab, var(--tt-success) 40%, transparent);
+  background: color-mix(in oklab, var(--tt-success) 14%, transparent);
   color: var(--tt-success);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
   cursor: pointer;
+  font-family: inherit;
+  line-height: 1.3;
+}
+
+.favoritesOptionsNewBadge:hover {
+  background: color-mix(in oklab, var(--tt-success) 22%, transparent);
+}
+
+.favoritesOptionsNewBadge:focus-visible {
+  outline: 2px solid var(--tt-accent);
+  outline-offset: 2px;
 }
 
 .favoritesOptionsMeta {
@@ -162,8 +180,8 @@
 .favoritesOptionsStale {
   padding: 1px 6px;
   border-radius: 0;
-  border: 1px solid rgba(161, 40, 48, 0.35);
-  background: rgba(161, 40, 48, 0.12);
+  border: 1px solid color-mix(in oklab, var(--tt-danger) 35%, transparent);
+  background: color-mix(in oklab, var(--tt-danger) 12%, transparent);
   color: var(--tt-danger);
   font-size: 10px;
   font-weight: 600;

@@ -101,6 +101,26 @@ export default function () {
     await writePacks(newData);
   }
 
+  const movePack = async (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= data.length) return;
+    const next = [ ...data ];
+    const [ moved ] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    await savePackOrder(next);
+  }
+
+  const handlePackKeyDown = (event: JSX.TargetedKeyboardEvent<HTMLDivElement>, index: number) => {
+    if (!reorderMode) return;
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      movePack(index, -1);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      movePack(index, 1);
+    }
+  }
+
   const handlePackDragStart = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
     dragItem.current = event.currentTarget.dataset.index ?? null;
     event.currentTarget.classList.add('moving');
@@ -181,12 +201,12 @@ export default function () {
     <section className="stickerPackOptions">
       <div className="stickerPackOptionsHeader">
         <div>
-          <h3>Стикеры</h3>
-          <h6>
+          <h2>Стикеры</h2>
+          <p className="optionsSectionLead">
             { reorderMode
-              ? 'Перетащите стикерпаки выше или ниже'
-              : 'Перетащите стикеры на нужные места' }
-          </h6>
+              ? 'Перетащите стикерпаки или переместите стрелками вверх и вниз'
+              : 'Перетащите стикеры или переместите стрелками влево и вправо' }
+          </p>
         </div>
         <div className="stickerPackOptionsActions">
           <StorageSavingStatus saving={ saving } />
@@ -217,12 +237,12 @@ export default function () {
       </div>
       <div>
         { warning && (
-          <div className="text-secondary" style={{ marginBottom: 8 }}>
+          <div className="text-secondary optionsNotice">
             { warning }
           </div>
         ) }
         { error && (
-          <div className="text-error" style={{ marginBottom: 8 }}>
+          <div className="text-error optionsNotice">
             { error }
           </div>
         ) }
@@ -232,6 +252,11 @@ export default function () {
             className={ reorderMode ? 'stickerPackReorderItem' : undefined }
             draggable={ reorderMode }
             data-index={ index }
+            tabIndex={ reorderMode ? 0 : undefined }
+            aria-label={ reorderMode
+              ? `${ pack.name }, ${ index + 1 } из ${ data.length }. Стрелки вверх и вниз меняют порядок`
+              : undefined }
+            onKeyDown={ reorderMode ? (event) => handlePackKeyDown(event, index) : undefined }
             onDragStart={ reorderMode ? handlePackDragStart : undefined }
             onDragEnter={ reorderMode ? handlePackDragEnter : undefined }
             onDragLeave={ reorderMode ? handlePackDragLeave : undefined }
