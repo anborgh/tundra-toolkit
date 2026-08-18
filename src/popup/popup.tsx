@@ -26,6 +26,7 @@ import {
   formatUnreadCount,
 } from '../utils';
 import { safeStorageGet, safeStorageSet } from '../utils/storage';
+import { PopupToastBar, PopupToastProvider, usePopupToast } from './popupToast';
 
 import '../chota.min.css';
 import '../common.css';
@@ -94,6 +95,7 @@ const controlsScopeKey = (boardId?: string | null, boardHost?: string | null) =>
 };
 
 export function App() {
+  const { showError, clearToast } = usePopupToast();
   const [ activeTab, setActiveTab ] = useState<ContentTabId>('stickers');
   const [ availability, setAvailability ] = useState<'unknown' | 'available' | 'blocked' | 'unavailable'>('unknown');
   const [ hasForum, setHasForum ] = useState(false);
@@ -207,6 +209,7 @@ export function App() {
     } catch (e) {
       setAvailability('unavailable');
       setHasForum(false);
+      showError('Не удалось получить данные страницы');
     }
   };
 
@@ -235,6 +238,7 @@ export function App() {
       && availability !== 'unknown'
       && (!hasForum || availability !== 'available')
     ) {
+      clearToast();
       setActiveTab('stickers');
     }
   }, [ activeTab, availability, hasForum ]);
@@ -270,7 +274,7 @@ export function App() {
         visible: nextVisible,
       });
     } catch (e) {
-      // ignore popup errors; user can retry
+      showError('Не удалось переключить кнопки на странице');
     } finally {
       setToggling(false);
     }
@@ -291,7 +295,7 @@ export function App() {
         enabled: nextEnabled,
       });
     } catch (e) {
-      // ignore popup errors; user can retry
+      showError('Не удалось переключить SFW-стиль');
     } finally {
       setStyleToggling(false);
     }
@@ -333,7 +337,7 @@ export function App() {
         settings: nextSettings,
       });
     } catch (e) {
-      // Keep the optimistic state; the user can retry.
+      showError('Не удалось сохранить настройки стиля');
     } finally {
       setPostAppearanceToggling(false);
     }
@@ -380,7 +384,7 @@ export function App() {
 
       await loadContext();
     } catch (e) {
-      // user can retry
+      showError('Не удалось переключить Tundra Toolkit на этом форуме');
     } finally {
       setForumPowerBusy(false);
     }
@@ -395,7 +399,7 @@ export function App() {
         window.setTimeout(() => window.close(), 150);
       }
     } catch (e) {
-      // ignore
+      showError('Не удалось открыть счётчик постов');
     }
   };
 
@@ -405,6 +409,7 @@ export function App() {
       return;
     }
     if (tabId === 'ignore' && (!hasForum || availability !== 'available')) return;
+    if (tabId !== activeTab) clearToast();
     setActiveTab(tabId);
     chrome.storage.local.set({ [ACTIVE_TAB_KEY]: tabId }).catch(() => {
       // The selected tab still works for the current popup instance.
@@ -434,8 +439,8 @@ export function App() {
     const forumOnly = tabId === 'ignore' || tabId === 'style';
     const disabled = forumOnly && (!hasForum || availability !== 'available');
     const disabledTitle = !hasForum
-      ? 'Доступно только на форуме'
-      : 'Сначала включите расширение на форуме';
+      ? 'Доступно только на форуме MyBB/RusFF'
+      : 'Сначала включите Tundra Toolkit на этом форуме';
 
     return (
       <button
@@ -464,9 +469,9 @@ export function App() {
             onClick={ () => handleTabClick('postCounter') }
             disabled={ !hasForum || availability !== 'available' }
             title={ !hasForum
-              ? 'Доступно только на форуме'
+              ? 'Доступно только на форуме MyBB/RusFF'
               : availability !== 'available'
-                ? 'Сначала включите расширение на форуме'
+                ? 'Сначала включите Tundra Toolkit на этом форуме'
                 : postCounterLabel
             }
             aria-label={ postCounterLabel }
@@ -481,8 +486,8 @@ export function App() {
               class={ `button small tabButton forumPowerToggle ${ isTrusted ? 'active' : 'muted' }` }
               onClick={ handleToggleForumPower }
               disabled={ forumPowerBusy || !boardHost }
-              title={ isTrusted ? 'Выключить на этом форуме' : 'Включить на этом форуме' }
-              aria-label={ isTrusted ? 'Выключить на форуме' : 'Включить на форуме' }
+              title={ isTrusted ? 'Выключить Tundra Toolkit на этом форуме' : 'Включить Tundra Toolkit на этом форуме' }
+              aria-label={ isTrusted ? 'Выключить Tundra Toolkit на форуме' : 'Включить Tundra Toolkit на форуме' }
               aria-pressed={ isTrusted }
             >
               <MaskIcon src={ powerIcon } />
@@ -533,11 +538,17 @@ export function App() {
           />
         ) }
       </div>
+      <PopupToastBar />
     </div>
   );
 }
 
 const root = document.getElementById('app');
 if (root) {
-  render(<App />, root);
+  render(
+    <PopupToastProvider>
+      <App />
+    </PopupToastProvider>,
+    root,
+  );
 }

@@ -915,10 +915,10 @@ export type CloudPinResult = {
 };
 
 export const CLOUD_UPLOAD_NO_SPACE =
-  'Загрузить в облако невозможно — сначала освободите место.';
+  'Не удалось добавить в Chrome Sync — сначала освободите место.';
 
 export const CLOUD_UPLOAD_RATE_LIMITED =
-  'Слишком много записей в облако. Подождите около минуты и попробуйте снова.';
+  'Слишком много записей в Chrome Sync. Подождите около минуты и попробуйте снова.';
 
 /** Toggle cloud: sync ↔ localPinned. Auto-local → localPinned on pin request. */
 export const setItemCloudPinned = async (

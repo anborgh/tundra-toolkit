@@ -11,7 +11,7 @@ export async function insertSticker(src: string, options: InsertStickerOptions =
     } catch (e) {
       // ignore clipboard errors; notify anyway
     } finally {
-      options.onUnavailable?.('Вставка недоступна. Ссылка на картинку скопирована в буфер обмена.');
+      options.onUnavailable?.('Формы ответа нет на странице. Прямая ссылка на картинку скопирована в буфер обмена.');
     }
   };
 

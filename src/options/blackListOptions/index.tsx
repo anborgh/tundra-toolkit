@@ -67,18 +67,18 @@ export function BlackListOptions() {
   const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
     refreshLocations().catch(() => {});
     if (result.fallback) {
-      setWarning('Память синхронизации переполнена. Списки сохранены только в этом браузере.');
+      setWarning('В Chrome Sync не хватило места. Списки остались только в этом браузере.');
     } else {
       setWarning(null);
     }
   };
 
   const handleSaveError = () => {
-    setError('Не удалось сохранить список: недостаточно памяти.');
+    setError('Не удалось сохранить список: в Chrome Sync не хватило места.');
   };
 
   const handleRemoveClick = (boardID: string, forumID: string, user: { userName: string, userID: string }) => {
-    const isConfirmed = confirm(`Разбанить ${ user.userName }?`);
+    const isConfirmed = confirm(`Убрать ${ user.userName } из игнора?`);
     if (!isConfirmed) return;
 
     const newData = data.map(board => {
@@ -109,7 +109,7 @@ export function BlackListOptions() {
   };
 
   const handleRemoveTopicClick = (boardID: string, topic: { topicName: string, topicID: string }) => {
-    const isConfirmed = confirm(`Перестать игнорировать тему «${ decodeEntities(topic.topicName) }»?`);
+    const isConfirmed = confirm(`Убрать тему «${ decodeEntities(topic.topicName) }» из игнора?`);
     if (!isConfirmed) return;
 
     const newData = topicsData.map(board => {
@@ -251,8 +251,8 @@ export function BlackListOptions() {
                         </div>
                         <button
                           className="button small icon-only blackListOptionsRemove"
-                          title="Амнистировать пользователя"
-                          aria-label={ `Амнистировать ${ user.userName }` }
+                          title="Убрать из игнора"
+                          aria-label={ `Убрать ${ user.userName } из игнора` }
                           onClick={ () => handleRemoveClick(boardID, forumID, user) }
                         >
                           <MaskIcon src={ xIcon } />
@@ -304,8 +304,8 @@ export function BlackListOptions() {
                     </div>
                     <button
                       className="button small icon-only blackListOptionsRemove"
-                      title="Перестать игнорировать тему"
-                      aria-label={ `Перестать игнорировать тему ${ decodeEntities(topic.topicName) }` }
+                      title="Убрать тему из игнора"
+                      aria-label={ `Убрать тему ${ decodeEntities(topic.topicName) } из игнора` }
                       onClick={ () => handleRemoveTopicClick(boardID, topic) }
                     >
                       <MaskIcon src={ xIcon } />

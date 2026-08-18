@@ -7,7 +7,7 @@ import plusIcon from '../../assets/icons/plus.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
-import circleAlertIcon from '../../assets/icons/circle-alert.svg';
+import { usePopupToast } from '../popupToast';
 
 import '../../components/icon.css';
 import './style.css';
@@ -112,6 +112,7 @@ const isStaleBoard = (boardUrl: string, boardStatuses: Record<string, BoardStatu
 };
 
 export function Favorites() {
+  const { showError, clearToast } = usePopupToast();
   const [ favorites, setFavorites ] = useState<IFavoriteTopic[]>([]);
   const [ loaded, setLoaded ] = useState(false);
   const [ refreshing, setRefreshing ] = useState(false);
@@ -124,14 +125,12 @@ export function Favorites() {
   const [ info, setInfo ] = useState<string | null>(null);
 
   const refreshTitle = useMemo(() => {
-    if (refreshing || info || error || !lastRefreshAt) return ' Обновить (не чаще раза в 1 мин.)';
+    if (refreshing || info || error || !lastRefreshAt) return 'Обновить (не чаще чем раз в 1 мин.)';
     return `Обновлено: ${ new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) } · каждые ${ intervalMinutes } мин.`;
   }, [ lastRefreshAt, intervalMinutes, refreshing, info, error ]);
 
   const statusView = useMemo(() => {
-    if (error) {
-      return { icon: circleAlertIcon, text: error, tone: 'error' as const, spin: false };
-    }
+    if (error) return null;
     if (info) {
       return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
     }
@@ -141,7 +140,7 @@ export function Favorites() {
     if (refreshing) {
       return {
         icon: loaderCircleIcon,
-        text: 'Проверяем новые сообщения…',
+        text: 'Проверяем новые ответы…',
         tone: 'muted' as const,
         spin: true,
       };
@@ -154,10 +153,11 @@ export function Favorites() {
     try {
       const result = await safeStorageSet({ [ STORAGE_KEY ]: safeItems });
       if (result.fallback) {
-        setInfo('Память синхронизации переполнена. Избранное сохранено только в этом браузере.');
+        setInfo('В Chrome Sync не хватило места. Эпизоды остались только в этом браузере.');
       }
     } catch (e) {
-      setError('Не удалось сохранить избранное');
+      setError('Не удалось сохранить эпизоды');
+      showError('Не удалось сохранить эпизоды');
     }
   };
 
@@ -188,7 +188,8 @@ export function Favorites() {
         setInfo(`Данные обновлялись меньше ${ mins } мин. назад`);
       }
     } catch (e) {
-      setError('Не удалось обновить избранное');
+      setError('Не удалось обновить эпизоды');
+      showError('Не удалось обновить эпизоды');
     } finally {
       setRefreshing(false);
     }
@@ -201,7 +202,8 @@ export function Favorites() {
         setLoaded(true);
         requestRefresh();
       } catch (e) {
-        setError('Не удалось загрузить избранное');
+        setError('Не удалось загрузить эпизоды');
+        showError('Не удалось загрузить эпизоды');
         setLoaded(true);
       }
     };
@@ -219,10 +221,12 @@ export function Favorites() {
     if (!activeTopic || activeAlreadyAdded) return;
     if (!isAllowedBoardHost(activeTopic.boardUrl)) {
       setError('Некорректный адрес форума');
+      showError('Некорректный адрес форума');
       return;
     }
     setAdding(true);
     setError(null);
+    clearToast();
 
     try {
       let boardName = activeTopic.boardUrl;
@@ -248,7 +252,7 @@ export function Favorites() {
       setFavorites(next);
       await persist(next);
       requestRefresh(true);
-      setInfo('Тема добавлена в избранное');
+      setInfo('Тема добавлена в «Эпизоды»');
     } finally {
       setAdding(false);
     }
@@ -263,7 +267,7 @@ export function Favorites() {
   };
 
   const handleRemove = async (item: IFavoriteTopic) => {
-    const confirmed = confirm(`Убрать «${ decodeEntities(item.topicName) }» из избранного?`);
+    const confirmed = confirm(`Убрать «${ decodeEntities(item.topicName) }» из списка эпизодов?`);
     if (!confirmed) return;
 
     const next = favorites.filter(fav => fav.id !== item.id);
@@ -310,7 +314,7 @@ export function Favorites() {
 
     return (
       <li class={ `favoriteItem ${ stale ? 'stale' : '' }` } key={ item.id }>
-        <label class="favoriteTurnToggle" title="Мой ход: следующим отвечаю я">
+        <label class="favoriteTurnToggle" title="Мой ход">
           <input
             type="checkbox"
             checked={ item.myTurn }
@@ -335,7 +339,7 @@ export function Favorites() {
                 class="favoriteNewBadge"
                 role="button"
                 tabIndex={ 0 }
-                title="Есть новые сообщения. Нажмите, чтобы отметить прочитанным"
+                title="Есть новые ответы. Нажмите, чтобы отметить как просмотренные"
                 onClick={ () => handleMarkSeen(item) }
               >
                 new
@@ -358,8 +362,8 @@ export function Favorites() {
               <span
                 class="favoriteStaleBadge"
                 title={ status === 'guest'
-                  ? 'Вы не авторизованы на этом форуме — данные не обновляются'
-                  : 'Форум недоступен — данные не обновляются'
+                  ? 'Вы вышли из аккаунта на этом форуме — тема не обновляется'
+                  : 'Форум временно недоступен — тема не обновляется'
                 }
               >
                 ⚠ не обновляется
@@ -370,8 +374,8 @@ export function Favorites() {
 
         <button
           class="button small icon-only favoriteRemove"
-          title="Убрать из избранного"
-          aria-label="Убрать из избранного"
+          title="Убрать из списка эпизодов"
+          aria-label="Убрать из списка эпизодов"
           onClick={ () => handleRemove(item) }
         >
           <MaskIcon src={ xIcon } />
@@ -410,8 +414,8 @@ export function Favorites() {
             class="button small primary"
             disabled={ !activeTopic || activeAlreadyAdded || adding }
             title={ !activeTopic
-              ? 'Откройте страницу темы на форуме, чтобы добавить её'
-              : (activeAlreadyAdded ? 'Эта тема уже в избранном' : 'Добавить открытую тему в избранное')
+              ? 'Кнопка работает только на странице темы'
+              : (activeAlreadyAdded ? 'Эта тема уже в избранном' : 'Добавить открытую тему в «Эпизоды»')
             }
             onClick={ handleAddActive }
           >

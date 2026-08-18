@@ -33,14 +33,14 @@ export default function () {
   const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
     refreshLocations();
     if (result.fallback) {
-      setWarning('Память синхронизации переполнена. Часть стикеров или все они сохранены только в этом браузере.');
+      setWarning('В Chrome Sync не хватило места. Часть стикеров или все они остались только в этом браузере.');
     } else {
       setWarning(null);
     }
   };
 
   const handleSaveError = () => {
-    setError('Не удалось сохранить стикеры: недостаточно памяти.');
+    setError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
   };
 
   const updateStickerPack = async (pack: IStickerPack) => {
@@ -190,8 +190,8 @@ export default function () {
           <h3>Стикеры</h3>
           <h6>
             { reorderMode
-              ? 'Перетаскивайте стикерпаки для изменения порядка'
-              : 'Можно перетаскивать стикеры для сортировки' }
+              ? 'Перетащите стикерпаки выше или ниже'
+              : 'Перетащите стикеры на нужные места' }
           </h6>
         </div>
         <div className="stickerPackOptionsActions">
@@ -249,7 +249,7 @@ export default function () {
         )) }
         {!data.length && (
           <div className="emptyList">
-            Список пока пуст. Создайте свой первый стикерпак по кнопке "Добавить".
+            Список пока пуст. Создайте первый стикерпак кнопкой «Добавить».
           </div>
         )}
         <div ref={ ref }></div>

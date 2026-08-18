@@ -46,7 +46,7 @@ export function StyleTab({
 
       { !available && (
         <div class="styleTabNotice">
-          Настройки доступны на форуме после включения расширения.
+          Настройки доступны на форуме, где включён Tundra Toolkit.
         </div>
       ) }
 
@@ -70,7 +70,7 @@ export function StyleTab({
       <div class="styleControl">
         <div>
           <h5>Размер шрифта постов</h5>
-          <p class="text-secondary">Масштаб текста на текущем форуме. Может не слушаться, если на форуме стоит свой скрипт размера шрифта.</p>
+          <p class="text-secondary">Если форум сам задаёт размер шрифта, текст в некоторых элементах может не измениться.</p>
         </div>
         <div class="fontScaleControl" aria-label="Размер шрифта постов">
           <button
@@ -87,7 +87,7 @@ export function StyleTab({
             type="button"
             disabled={ controlsDisabled || fontScale === 100 }
             onClick={ () => onFontScaleChange(100) }
-            title="Сбросить масштаб"
+            title="Вернуть 100%"
           >
             { fontScale }%
           </button>
@@ -108,8 +108,8 @@ export function StyleTab({
           <h5>Красная строка</h5>
           <p class="text-secondary">
             { sectionAvailable
-              ? 'Отступ в начале абзацев и после переноса строки в текущем разделе.'
-              : 'Настройка доступна внутри раздела форума.' }
+              ? 'Настраивается отдельно для каждого раздела форума.'
+              : 'Откройте любую страницу в нужном разделе форума.' }
           </p>
         </div>
         <label class="styleSwitch">
@@ -149,7 +149,7 @@ export function StyleTab({
               type="button"
               disabled={ controlsDisabled || paragraphSpacing === null }
               onClick={ () => onParagraphSpacingChange(null) }
-              title="Вернуть отступы форума"
+              title="Вернуть «Авто»"
             >
               { paragraphSpacing === null ? 'Авто' : `${ paragraphSpacing }em` }
             </button>

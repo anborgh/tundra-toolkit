@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   getStorageFallbacks,
   isStorageItemLocal,
@@ -14,15 +14,16 @@ import { MaskIcon } from '../../components/MaskIcon';
 import plusIcon from '../../assets/icons/plus.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
-import circleAlertIcon from '../../assets/icons/circle-alert.svg';
 import { addRecentSticker, getRecentStickers, RECENT_STICKERS_KEY } from './recentStickers';
 import { insertSticker } from './insertSticker';
+import { usePopupToast } from '../popupToast';
 
 import '../../components/icon.css';
 import './style.css';
 
 export function Stickers() {
 
+  const { showError } = usePopupToast();
   const [ data, setData ] = useState<IStickerPack[]>([]);
   const [ recentStickers, setRecentStickers ] = useState<string[]>([]);
 
@@ -31,20 +32,11 @@ export function Stickers() {
   const [ error, setError ] = useState<boolean>(false);
   const [ warning, setWarning ] = useState<string | null>(null);
   const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
-  const [ notice, setNotice ] = useState<string | null>(null);
-  const noticeTimer = useRef<number | null>(null);
 
   const [ editPack, setEditPack ] = useState<IStickerPack | null>(null);
 
   const statusView = useMemo(() => {
-    if (error) {
-      return {
-        icon: circleAlertIcon,
-        text: warning || 'Ошибка загрузки',
-        tone: 'error' as const,
-        spin: false,
-      };
-    }
+    if (error) return null;
     if (warning) {
       return {
         icon: circleCheckIcon,
@@ -74,17 +66,6 @@ export function Stickers() {
     setData(newData);
   }
 
-  const showNotice = (message: string) => {
-    setNotice(message);
-    if (noticeTimer.current) {
-      clearTimeout(noticeTimer.current);
-    }
-    noticeTimer.current = window.setTimeout(() => {
-      setNotice(null);
-      noticeTimer.current = null;
-    }, 4000);
-  };
-
   const handleStickerUsed = (src: string) => {
     addRecentSticker(src)
       .then(setRecentStickers)
@@ -96,7 +77,7 @@ export function Stickers() {
     if (!src) return;
 
     handleStickerUsed(src);
-    await insertSticker(src, { onUnavailable: showNotice });
+    await insertSticker(src, { onUnavailable: showError });
   };
 
   const addPack = () => {
@@ -160,6 +141,7 @@ export function Stickers() {
       })
       .catch(reason => {
         setError(true);
+        showError('Не удалось загрузить список');
       })
       .finally(() => {
         setLoading(false);
@@ -174,13 +156,12 @@ export function Stickers() {
         const result = await safeStorageSet({ stickerPack: data });
         refreshFallbacks();
         if (result.fallback) {
-          setWarning('Память синхронизации переполнена. Часть стикеров или все они сохранены только в этом браузере.');
+          setWarning('В Chrome Sync не хватило места. Часть стикеров или все они остались только в этом браузере.');
         } else {
           setWarning(null);
         }
       } catch (e) {
-        setError(true);
-        setWarning('Не удалось сохранить стикеры: недостаточно памяти.');
+        showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
       }
     }
 
@@ -204,14 +185,6 @@ export function Stickers() {
     return () => chrome.storage.onChanged.removeListener(handleChange);
   }, []);
 
-  useEffect(() => {
-    return () => {
-      if (noticeTimer.current) {
-        clearTimeout(noticeTimer.current);
-      }
-    };
-  }, []);
-
   const renderContent = () => {
     if (loading) {
       return (
@@ -223,8 +196,8 @@ export function Stickers() {
 
     if (error) {
       return (
-        <div class="stickerList_empty text-error">
-          Не удалось загрузить список
+        <div class="stickerList_empty">
+          Список недоступен
         </div>
       );
     }
@@ -234,7 +207,7 @@ export function Stickers() {
         <div class="stickerList_empty" onClick={ addPack }>
           <div class="stickerList_emptyIcon" />
           <div class="stickerList_emptyTitle">Список пуст</div>
-          <div class="text-secondary">Нажмите, чтобы добавить первый пак</div>
+          <div class="text-secondary">Нажмите, чтобы добавить первый стикерпак</div>
         </div>
       );
     }
@@ -281,11 +254,6 @@ export function Stickers() {
 
       { !!recentStickers.length && (
         <div class="recentStickers">
-          { notice && (
-            <div class="text-secondary" style={{ margin: '0 0 8px 0', fontSize: '12px' }}>
-              { notice }
-            </div>
-          ) }
           <div class="recentStickersList">
             { recentStickers.map(sticker => (
               <div class="stickerItem" key={ sticker }>

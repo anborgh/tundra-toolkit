@@ -88,13 +88,13 @@ export default function TemplateOptions() {
   };
 
   const removeTemplate = (templateId: number) => {
-    const confirmed = confirm('Удалить шаблон? Действие нельзя отменить.');
+    const confirmed = confirm('Удалить черновик или шаблон? После удаления восстановить его нельзя.');
     if (!confirmed) return;
     setTemplates(prev => prev.filter(item => item.id !== templateId));
   };
 
   const clearTemplates = () => {
-    const confirmed = confirm('Очистить все шаблоны? Действие нельзя отменить.');
+    const confirmed = confirm('Очистить все черновики и шаблоны? После удаления восстановить их нельзя.');
     if (!confirmed) return;
     setTemplates([]);
   };
@@ -123,8 +123,8 @@ export default function TemplateOptions() {
     <section className="templateOptions">
       <div className="templateOptionsHeader">
         <div>
-          <h3>Шаблоны</h3>
-          <h6>Глобальные черновики для вставки в #main-reply</h6>
+          <h3>Черновики</h3>
+          <h6>Редактируйте названия и содержимое черновиков и шаблонов</h6>
         </div>
         <div className="templateOptionsActions">
           <button className="button small primary" onClick={ addTemplate }>Добавить</button>
@@ -142,7 +142,7 @@ export default function TemplateOptions() {
 
       { !templates.length && (
         <div className="emptyList">
-          Пока нет ни одного шаблона. Добавьте новый или сохраните из всплывающего окна.
+          Пока нет ни одного черновика или шаблона. Добавьте новый или сохраните из окна расширения.
         </div>
       ) }
 
@@ -176,7 +176,7 @@ export default function TemplateOptions() {
                   rows={ 6 }
                   value={ template.content }
                   onInput={ (event: any) => updateTemplate(template.id, { content: event.target.value }) }
-                  placeholder="BBCode или HTML, можно смешивать"
+                  placeholder="Обычный текст, BBCode или HTML"
                 />
               </label>
               <div className="templateOptionsFooter">

@@ -233,6 +233,32 @@ main {
     font-family: var(--tt-font-display);
 }
 
+.optionsGuide > p {
+    margin: 0 0 10px;
+}
+
+.optionsGuideToc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    margin: 12px 0 4px;
+}
+
+.optionsGuideToc button {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: var(--tt-muted);
+    font-size: 0.85rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.optionsGuideToc button:hover {
+    color: var(--tt-text);
+}
+
 .optionsGuideBlock {
     margin-top: 16px;
     padding: 12px;
@@ -240,6 +266,7 @@ main {
     border-radius: 0;
     border-left: 3px solid var(--tt-frost);
     background: var(--tt-card);
+    scroll-margin-top: 12px;
 }
 
 .optionsGuideBlock h5 {
@@ -247,13 +274,44 @@ main {
     font-family: var(--tt-font-display);
 }
 
-.optionsGuideBlock ul {
+.optionsGuideBlock p,
+.optionsGuideBlock ul,
+.optionsGuideBlock ol {
     margin: 0;
+}
+
+.optionsGuideBlock p + p,
+.optionsGuideBlock p + ul,
+.optionsGuideBlock p + ol,
+.optionsGuideBlock ul + p,
+.optionsGuideBlock ol + p {
+    margin-top: 8px;
+}
+
+.optionsGuideBlock ul,
+.optionsGuideBlock ol {
     padding-left: 20px;
 }
 
 .optionsGuideBlock li + li {
     margin-top: 6px;
+}
+
+.optionsGuideFaq {
+    margin: 0;
+}
+
+.optionsGuideFaq dt {
+    margin-top: 12px;
+    font-weight: 600;
+}
+
+.optionsGuideFaq dt:first-child {
+    margin-top: 0;
+}
+
+.optionsGuideFaq dd {
+    margin: 4px 0 0;
 }
 
 .optionsGuideWarning {

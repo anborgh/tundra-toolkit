@@ -536,12 +536,12 @@
             <div class="hvPostStatsModal__formItem">
               <label for="countPostsForums">Форумы:</label>
               <input type="text" id="countPostsForums" readonly placeholder="Не выбрано…" value="" autocomplete="off" />
-              <span class="hvPostStatsModal__hint">Клик по полю — выбор из списка</span>
+              <span class="hvPostStatsModal__hint">Нажмите поле, чтобы выбрать из списка</span>
             </div>
             <div class="hvPostStatsModal__formItem">
               <label for="countPostsUsers">Пользователи:</label>
               <input type="text" id="countPostsUsers" readonly placeholder="Не выбрано…" value="" autocomplete="off" />
-              <span class="hvPostStatsModal__hint">Клик по полю — выбор из списка</span>
+              <span class="hvPostStatsModal__hint">Нажмите поле, чтобы выбрать из списка</span>
             </div>
             <div class="hvPostStatsModal__formRow">
               <div class="hvPostStatsModal__formItem">
@@ -582,7 +582,7 @@
           <div id="hvPostStatsForumsPicker" class="hvPostStatsModal__picker" hidden>
             <div class="hvPostStatsModal__pickerInner">
               <div class="hvPostStatsModal__pickerHeader">
-                <strong>Выбор форумов</strong>
+                <strong>Форумы</strong>
                 <button type="button" class="hvPostStatsModal__close" id="hvPostStatsForumsPickerClose" aria-label="Закрыть">${CLOSE_ICON}</button>
               </div>
               <input type="search" id="countPostsForumsSearch" placeholder="Поиск по названию или ID…" autocomplete="off" spellcheck="false" aria-label="Поиск форумов" />
@@ -596,7 +596,7 @@
           <div id="hvPostStatsUsersPicker" class="hvPostStatsModal__picker" hidden>
             <div class="hvPostStatsModal__pickerInner">
               <div class="hvPostStatsModal__pickerHeader">
-                <strong>Выбор пользователей</strong>
+                <strong>Пользователи</strong>
                 <button type="button" class="hvPostStatsModal__close" id="hvPostStatsUsersPickerClose" aria-label="Закрыть">${CLOSE_ICON}</button>
               </div>
               <input type="search" id="countPostsUsersSearch" placeholder="Поиск по нику или ID…" autocomplete="off" spellcheck="false" aria-label="Поиск пользователей" />

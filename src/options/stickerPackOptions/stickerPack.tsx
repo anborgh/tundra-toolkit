@@ -63,7 +63,7 @@ export default function ({
   }
 
   const hideRemovePack = () => {
-    const isConfirmed = confirm('Удалить стикерпак? Это необратимо.')
+    const isConfirmed = confirm('Удалить стикерпак? После удаления восстановить его нельзя.')
 
     if (!isConfirmed) return;
 
@@ -126,12 +126,12 @@ export default function ({
       <div className="stickerListHeader">
         { edit && !reorderMode ? (
           <div>
-            <input type="text" value={ name } onChange={ handleNameChange }/>
+            <input type="text" value={ name } onChange={ handleNameChange } placeholder="Название"/>
           </div>
         ) : (
           <div className="stickerListTitle">
             { reorderMode && (
-              <span className="stickerListDragHandle" title="Перетащите для изменения порядка">
+              <span className="stickerListDragHandle" title="Перетащите стикерпак выше или ниже">
                 <MaskIcon src={ gripVerticalIcon } />
               </span>
             ) }
@@ -152,7 +152,7 @@ export default function ({
       </div>
       { !reorderMode && (edit ? (
         <div className="stickerListContent edited">
-          <textarea rows={10} value={textItems} onChange={ handleItemsChange } />
+          <textarea rows={10} value={textItems} onChange={ handleItemsChange } placeholder="Прямые ссылки на картинки — по одной на строку" />
         </div>
       ) : (
         <div className="stickerListContent">

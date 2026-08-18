@@ -10,7 +10,7 @@ import {
 import { MaskIcon } from '../../components/MaskIcon';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
-import circleAlertIcon from '../../assets/icons/circle-alert.svg';
+import { usePopupToast } from '../popupToast';
 
 import '../../components/icon.css';
 
@@ -40,6 +40,7 @@ const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reje
 });
 
 export function Templates() {
+  const { showError, clearToast } = usePopupToast();
   const [templates, setTemplates] = useState<ITemplate[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -62,9 +63,7 @@ export function Templates() {
   }, [templates]);
 
   const statusView = useMemo(() => {
-    if (error) {
-      return { icon: circleAlertIcon, text: error, tone: 'error' as const, spin: false };
-    }
+    if (error) return null;
     if (info) {
       return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
     }
@@ -82,7 +81,8 @@ export function Templates() {
         setTemplates(stored);
         refreshFallbacks();
       } catch (e) {
-        setError('Не удалось загрузить шаблоны');
+        setError('Не удалось загрузить черновики');
+        showError('Не удалось загрузить черновики');
       } finally {
         setLoaded(true);
       }
@@ -96,14 +96,16 @@ export function Templates() {
     safeStorageSet({ [ STORAGE_KEY ]: templates })
       .then(result => {
         refreshFallbacks();
+        setError(null);
         if (result.fallback) {
-          setInfo('Память синхронизации переполнена. Часть шаблонов или все они сохранены только в этом браузере.');
+          setInfo('В Chrome Sync не хватило места. Часть шаблонов или все они остались только в этом браузере.');
         } else {
           setInfo(null);
         }
       })
       .catch(() => {
-        setError('Не удалось сохранить шаблоны: недостаточно памяти.');
+        setError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
+        showError('Не удалось сохранить шаблоны: в Chrome Sync не хватило места.');
       });
   }, [templates, loaded]);
 
@@ -135,6 +137,7 @@ export function Templates() {
   const resetInfo = () => {
     setError(null);
     setInfo(null);
+    clearToast();
   };
 
   const addEmptyTemplate = () => {
@@ -165,7 +168,8 @@ export function Templates() {
 
   const saveEdit = (templateId: number) => {
     if (!draft.name.trim()) {
-      setError('Укажите название шаблона');
+      setError('Укажите название');
+      showError('Укажите название');
       return;
     }
 
@@ -181,7 +185,7 @@ export function Templates() {
 
   const removeTemplate = (templateId: number) => {
     resetInfo();
-    const confirmDelete = confirm('Удалить шаблон? Это действие необратимо.');
+    const confirmDelete = confirm('Удалить черновик или шаблон? После удаления восстановить его нельзя.');
     if (!confirmDelete) return;
 
     setTemplates(prev => prev.filter(item => item.id !== templateId));
@@ -197,12 +201,14 @@ export function Templates() {
       });
 
       if (!resp?.success) {
-        setError('Не удалось вставить шаблон. Откройте подходящий форум.');
+        setError('Не удалось вставить текст. Откройте страницу с формой ответа.');
+        showError('Не удалось вставить текст. Откройте страницу с формой ответа.');
       } else {
         setInfo('Шаблон вставлен');
       }
     } catch (e) {
       setError('Не удалось вставить: нет связи со страницей');
+      showError('Не удалось вставить: нет связи со страницей');
     } finally {
       setBusy(false);
     }
@@ -214,13 +220,15 @@ export function Templates() {
     try {
       const resp = await sendMessageToActiveTab({ type: 'tundra_toolkit_templates_get' });
       if (!resp?.success) {
-        setError('Не удалось получить текст из формы. Откройте страницу форума с полем #main-reply.');
+        setError('Не удалось получить текст из формы. Откройте страницу с формой ответа.');
+        showError('Не удалось получить текст из формы. Откройте страницу с формой ответа.');
         return;
       }
 
       const content = resp.content || '';
       if (content.trim() === '') {
         setError('Текст пустой');
+        showError('Текст пустой');
         return;
       }
       const name = resp.name || content.trim().split('\n').shift() || `Черновик ${ nextId + 1 }`;
@@ -237,6 +245,7 @@ export function Templates() {
       setInfo('Черновик сохранён');
     } catch (e) {
       setError('Не удалось связаться со страницей');
+      showError('Не удалось связаться со страницей');
     } finally {
       setBusy(false);
     }
@@ -272,7 +281,7 @@ export function Templates() {
             class="button small primary"
             onClick={ handleSaveFromForm }
             disabled={ busy || canUse === false }
-            title={ canUse === false ? 'Откройте страницу форума с полем ответа' : 'Сохранить текст из поля ответа' }
+            title={ canUse === false ? 'Сначала откройте страницу с формой ответа' : 'Сохранить текст из формы ответа' }
           >
             Сохранить из формы
           </button>
@@ -281,7 +290,7 @@ export function Templates() {
 
       { !templates.length && (
         <div class="emptyList">
-          Шаблонов пока нет. Сохраните текст из формы или создайте пустой.
+          Шаблонов и черновиков пока нет. Сохраните текст из формы или нажмите «Добавить пустой».
         </div>
       ) }
 
@@ -300,7 +309,7 @@ export function Templates() {
                   rows={ 5 }
                   value={ draft.content }
                   onInput={ event => setDraft({ ...draft, content: (event.target as HTMLTextAreaElement).value }) }
-                  placeholder="Текст шаблона"
+                  placeholder="Текст, BBCode или HTML"
                 />
                 <div class="templateCardActions">
                   <button class="button small success" onClick={ () => saveEdit(template.id) }>Сохранить</button>
@@ -314,7 +323,7 @@ export function Templates() {
                   { isStorageItemLocal(fallbacks, STORAGE_KEY, template.id) && (
                     <span
                       className="storageLocalBadge"
-                      title="Сохранено только на этом устройстве"
+                      title="Сохранено только в этом браузере"
                     >
                       локально
                     </span>

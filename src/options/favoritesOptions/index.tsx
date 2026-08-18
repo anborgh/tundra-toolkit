@@ -87,7 +87,7 @@ export function FavoritesOptions() {
     const safeItems = filterFavoritesByAllowedHost(items);
     const result = await safeStorageSet({ [ STORAGE_KEY ]: safeItems });
     if (result.fallback) {
-      setWarning('Память синхронизации переполнена. Избранное сохранено только в этом браузере.');
+      setWarning('В Chrome Sync не хватило места. Избранное осталось только в этом браузере.');
     } else {
       setWarning(null);
     }
@@ -187,7 +187,7 @@ export function FavoritesOptions() {
 
     return (
       <li className={ `favoritesOptionsItem ${ stale ? 'stale' : '' }` } key={ item.id }>
-        <label className="favoritesOptionsTurn" title="Мой ход: следующим отвечаю я">
+        <label className="favoritesOptionsTurn" title="Мой ход">
           <input
             type="checkbox"
             checked={ item.myTurn }
@@ -208,7 +208,7 @@ export function FavoritesOptions() {
             { isNew && !stale && (
               <button
                 className="favoritesOptionsNewBadge"
-                title="Есть новые сообщения. Нажмите, чтобы отметить прочитанным"
+                title="Есть новые ответы. Нажмите, чтобы отметить как просмотренные"
                 onClick={ () => handleMarkSeen(item) }
               >
                 new
@@ -233,8 +233,8 @@ export function FavoritesOptions() {
             ) }
             { stale && (
               <span className="favoritesOptionsStale" title={ status === 'guest'
-                ? 'Вы не авторизованы на этом форуме — данные не обновляются'
-                : 'Форум недоступен — данные не обновляются'
+                ? 'Вы вышли из аккаунта на этом форуме — тема не обновляется'
+                : 'Форум временно недоступен — тема не обновляется'
               }>
                 ⚠ не обновляется
               </span>
@@ -270,7 +270,7 @@ export function FavoritesOptions() {
       <div className="favoritesOptionsHeader">
         <div>
           <h3>Избранное</h3>
-          <h6>Мой ход { myTurnCount }/{ totalCount } · отслеживание новых сообщений</h6>
+          <h6>Мой ход { myTurnCount }/{ totalCount } · отслеживание новых ответов</h6>
         </div>
         <div className="favoritesOptionsHeaderActions">
           <div className="favoritesOptionsViewToggle" role="group" aria-label="Вид списка">
@@ -306,7 +306,7 @@ export function FavoritesOptions() {
       { warning && <div className="text-secondary">{ warning }</div> }
       { error && <div className="text-error">{ error }</div> }
       { info && <div className="text-success">{ info }</div> }
-      { refreshing && <div className="text-secondary">Проверяем новые сообщения…</div> }
+      { refreshing && <div className="text-secondary">Проверяем новые ответы…</div> }
       { !refreshing && lastRefreshAt && (
         <div className="text-secondary">
           Проверено: { new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
@@ -316,7 +316,7 @@ export function FavoritesOptions() {
 
       { !favorites.length && (
         <div className="emptyList">
-          Пока пусто. Добавьте тему через попап расширения на странице эпизода.
+          Пока пусто. Откройте тему и добавьте её кнопкой «Текущая тема».
         </div>
       ) }
 

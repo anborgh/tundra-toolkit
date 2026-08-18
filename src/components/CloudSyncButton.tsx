@@ -12,9 +12,9 @@ type Props = {
 };
 
 const LABELS: Record<ItemLocation, string> = {
-  sync: 'В облаке. Нажмите, чтобы хранить только в этом браузере',
-  local: 'Снято с облака из‑за нехватки места. Нажмите, чтобы закрепить только здесь',
-  localPinned: 'Только в этом браузере. Нажмите, чтобы вернуть в облако',
+  sync: 'Хранится в Chrome Sync. Нажмите, чтобы оставить только в этом браузере',
+  local: 'В Chrome Sync не хватило места. Элемент остался в этом браузере. Освободите место и нажмите ещё раз',
+  localPinned: 'Только в этом браузере. Нажмите, чтобы попробовать добавить в Chrome Sync',
 };
 
 export function CloudSyncButton({ location, onToggle, disabled = false }: Props) {

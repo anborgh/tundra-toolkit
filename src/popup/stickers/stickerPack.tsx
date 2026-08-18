@@ -1,8 +1,9 @@
-import {useEffect, useRef, useState} from "react";
+import {useEffect, useState} from "react";
 import { useBatchedItems } from '../../hooks/useBatchedItems';
 import { MaskIcon } from "../../components/MaskIcon";
 import EditIcon from "../../assets/icons/pencil.svg";
 import { insertSticker } from './insertSticker';
+import { usePopupToast } from '../popupToast';
 
 type PackProps = {
   pack: IStickerPack;
@@ -23,9 +24,8 @@ export function StickerPack({
 }: PackProps) {
 
   const [titleImg, setTitleImg] = useState<string>('');
-  const [notice, setNotice] = useState<string | null>(null);
-  const noticeTimer = useRef<number | null>(null);
   const visibleStickers = useBatchedItems(pack.items, opened);
+  const { showError } = usePopupToast();
 
   const handleTitleClick = () => {
     onChange(pack.id)
@@ -40,28 +40,9 @@ export function StickerPack({
     const src = event?.target?.src;
     if (!src) return;
 
-    const showNotice = (message: string) => {
-      setNotice(message);
-      if (noticeTimer.current) {
-        clearTimeout(noticeTimer.current);
-      }
-      noticeTimer.current = window.setTimeout(() => {
-        setNotice(null);
-        noticeTimer.current = null;
-      }, 4000);
-    };
-
     onStickerUsed?.(src);
-    await insertSticker(src, { onUnavailable: showNotice });
+    await insertSticker(src, { onUnavailable: showError });
   }
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimer.current) {
-        clearTimeout(noticeTimer.current);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (!pack.items.length) return;
@@ -84,7 +65,7 @@ export function StickerPack({
           { localOnly && (
             <span
               className="storageLocalBadge"
-              title="Сохранено только на этом устройстве"
+              title="Сохранено только в этом браузере"
             >
               локально
             </span>
@@ -96,11 +77,6 @@ export function StickerPack({
       </div>
       {opened && (
         <div class="stickerPackContent">
-          {notice && (
-            <div class="text-secondary" style={{ margin: '0 0 8px 0', fontSize: '12px' }}>
-              {notice}
-            </div>
-          )}
           {visibleStickers.map(sticker => (
             <div class="stickerItem" key={sticker}>
               <img src={sticker} onClick={handleStickerClick} />

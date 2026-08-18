@@ -44,7 +44,7 @@ export function EditDialog<Props>({
   const handleRemove = () => {
     if (!pack) return;
 
-    const isConfirmed = confirm('Удалить стикерпак? Это необратимо.')
+    const isConfirmed = confirm('Удалить стикерпак? После удаления восстановить его нельзя.')
 
     if (!isConfirmed) return;
 
@@ -72,10 +72,10 @@ export function EditDialog<Props>({
     <dialog class="editPackDialog" ref={ref} onCancel={close}>
       <div className="editPackDialogWrapper">
         <div className="editPackDialogNameWrapper">
-          <input type="text" value={ newData.name } onChange={ handleNameChange }/>
+          <input type="text" value={ newData.name } onChange={ handleNameChange } placeholder="Название"/>
         </div>
         <div className="editPackDialogItemsWrapper">
-          <textarea rows={ 4 } value={ newData.items.join('\n') } onChange={ handleItemsChange }/>
+          <textarea rows={ 4 } value={ newData.items.join('\n') } onChange={ handleItemsChange } placeholder="Прямые ссылки на картинки — по одной на строку"/>
         </div>
         <div className="editPackDialogActions">
           <button

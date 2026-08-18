@@ -9,7 +9,7 @@ import eyeOffIcon from '../../assets/icons/eye-off.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
-import circleAlertIcon from '../../assets/icons/circle-alert.svg';
+import { usePopupToast } from '../popupToast';
 
 import '../../components/icon.css';
 import './style.css';
@@ -117,6 +117,7 @@ const cleanupTopicsBoard = (
 };
 
 export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls }: IgnoreListProps) {
+  const { showError, clearToast } = usePopupToast();
   const [ state, setState ] = useState<IgnoreState>('loading');
   const [ context, setContext ] = useState<ForumContext | null>(null);
   const [ board, setBoard ] = useState<IBoardStore | null>(null);
@@ -131,24 +132,8 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
     if (state === 'loading') {
       return { icon: loaderCircleIcon, text: 'Загружаем…', tone: 'muted' as const, spin: true };
     }
-    if (state === 'unavailable') {
-      return {
-        icon: circleAlertIcon,
-        text: 'Текущая вкладка не поддерживает форум',
-        tone: 'error' as const,
-        spin: false,
-      };
-    }
-    if (state === 'noForum') {
-      return {
-        icon: circleAlertIcon,
-        text: 'Не нашли данные форума. Откройте вкладку с разделом.',
-        tone: 'error' as const,
-        spin: false,
-      };
-    }
-    if (state === 'error' || error) {
-      return { icon: circleAlertIcon, text: error || 'Ошибка', tone: 'error' as const, spin: false };
+    if (error || state === 'unavailable' || state === 'noForum' || state === 'error') {
+      return null;
     }
     if (info) {
       return { icon: circleCheckIcon, text: info, tone: 'success' as const, spin: false };
@@ -171,6 +156,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
   const load = async () => {
     setError(null);
+    clearToast();
     setState('loading');
 
     try {
@@ -181,6 +167,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
         setTopics([]);
         setContentRevealed(false);
         setState('unavailable');
+        showError('Откройте форум MyBB/RusFF и включите Tundra Toolkit.');
         return;
       }
 
@@ -192,6 +179,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
         setTopics([]);
         setContentRevealed(false);
         setState('noForum');
+        showError('Не нашли данные форума. Откройте страницу раздела или темы.');
         return;
       }
 
@@ -227,6 +215,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
       syncReadyState(usersList, topicsList);
     } catch (e) {
       setError('Не удалось загрузить список');
+      showError('Не удалось загрузить список');
       setState('error');
     }
   };
@@ -238,7 +227,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
   const handleRemove = async (user: IUserStore) => {
     if (!context) return;
 
-    const confirmed = confirm(`Разбанить ${ user.userName }?`);
+    const confirmed = confirm(`Убрать ${ user.userName } из игнора?`);
     if (!confirmed) return;
 
     try {
@@ -254,13 +243,15 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
       const result = await safeStorageSet({ ignoreList: newData });
       if (result.fallback) {
-        setInfo('Память синхронизации переполнена. Список сохранён только в этом браузере.');
+        setInfo('В Chrome Sync не хватило места. Список остался только в этом браузере.');
       } else {
         setInfo(null);
       }
       setError(null);
+      clearToast();
     } catch (e) {
       setError('Не удалось обновить список');
+      showError('Не удалось обновить список');
       setState('error');
     }
   };
@@ -269,7 +260,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
     if (!context) return;
 
     const topicTitle = decodeEntities(topic.topicName) || `Тема ${ topic.topicID }`;
-    const confirmed = confirm(`Перестать игнорировать тему «${ topicTitle }»?`);
+    const confirmed = confirm(`Убрать тему «${ topicTitle }» из игнора?`);
     if (!confirmed) return;
 
     try {
@@ -285,13 +276,15 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
       const result = await safeStorageSet({ ignoredTopicsList: newData });
       if (result.fallback) {
-        setInfo('Память синхронизации переполнена. Список сохранён только в этом браузере.');
+        setInfo('В Chrome Sync не хватило места. Список остался только в этом браузере.');
       } else {
         setInfo(null);
       }
       setError(null);
+      clearToast();
     } catch (e) {
       setError('Не удалось обновить список тем');
+      showError('Не удалось обновить список тем');
       setState('error');
     }
   };
@@ -306,7 +299,7 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
       const resp = await sendMessageToActiveTab({ type: 'tundra_toolkit_ignore_toggle' });
       setContentRevealed(!!resp?.revealed);
     } catch (e) {
-      // ignore popup errors; user can retry
+      showError('Не удалось переключить скрытый контент');
     } finally {
       setRevealToggling(false);
     }
@@ -316,8 +309,8 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
   const showForumGroups = !context?.forumID && !!board?.forums?.length;
   const revealDisabled = revealToggling || state === 'loading' || state === 'unavailable';
   const revealTitle = contentRevealed
-    ? 'Снова скрыть проигнорированный контент'
-    : 'Временно показать весь скрытый контент (до перезагрузки страницы)';
+    ? 'Скрыть посты и темы снова'
+    : 'Временно показать весь скрытый контент';
 
   const renderUserItem = (user: IUserStore, key: string) => (
     <li class="ignoreItem" key={ key }>
@@ -340,8 +333,8 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
       </div>
       <button
         class="button small icon-only ignoreRemove"
-        title="Амнистировать пользователя"
-        aria-label={ `Амнистировать ${ user.userName }` }
+        title="Убрать из игнора"
+        aria-label={ `Убрать ${ user.userName } из игнора` }
         onClick={ () => handleRemove(user) }
       >
         <MaskIcon src={ xIcon } />
@@ -372,8 +365,8 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
         </div>
         <button
           class="button small icon-only ignoreRemove"
-          title="Перестать игнорировать тему"
-          aria-label={ `Перестать игнорировать тему ${ title }` }
+          title="Убрать тему из игнора"
+          aria-label={ `Убрать тему ${ title } из игнора` }
           onClick={ () => handleRemoveTopic(topic) }
         >
           <MaskIcon src={ xIcon } />
@@ -420,8 +413,8 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
             disabled={ controlsToggling || state === 'loading' }
             onClick={ onToggleControls }
             title={ controlsVisible
-              ? 'Скрыть кнопки игнора на страницах форума'
-              : 'Показать кнопки игнора на страницах форума'
+              ? 'Скрыть кнопки ⊘ на страницах форума'
+              : 'Показать кнопки ⊘ на страницах форума'
             }
           >
             { controlsVisible ? 'Скрыть кнопки' : 'Показать кнопки' }
@@ -438,8 +431,8 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
           </button>
           <button
             class="button small ignoreHeaderSettingsLink icon-only"
-            title="Открыть полный чёрный список в настройках расширения"
-            aria-label="Открыть полный чёрный список в настройках расширения"
+            title="Открыть «Чёрный список» в настройках"
+            aria-label="Открыть «Чёрный список» в настройках"
             onClick={ handleOpenSettings }
           >
             <MaskIcon src={ externalLinkIcon } />

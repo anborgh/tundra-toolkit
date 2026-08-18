@@ -29,6 +29,8 @@ body {
   margin: 0;
   box-sizing: border-box;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--popup-bg);
   color: var(--popup-text);
   font-family: var(--tt-font-body);
@@ -52,6 +54,9 @@ h5 {
 .popupWrapper {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 320px;
   max-height: var(--popup-max-height);
   overflow: hidden;
 }
@@ -587,10 +592,73 @@ h5 {
   color: var(--tt-danger);
 }
 
+.popupToast {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: auto;
+  padding: 8px 10px;
+  background: color-mix(in oklab, var(--tt-ember) 12%, var(--popup-bg));
+  color: var(--tt-danger);
+  border-top: 2px solid var(--tt-ember);
+  font-size: 12px;
+  line-height: 1.4;
+  animation: popupToastIn 0.18s ease-out;
+}
+
+.popupToast > .ttIcon {
+  margin-top: 1px;
+}
+
+.popupToastText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.popupToastClose {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin: -2px -4px -2px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popupToastClose:hover {
+  background: color-mix(in oklab, var(--tt-ember) 18%, transparent);
+}
+
+.popupToastClose:focus-visible {
+  outline: 2px solid var(--popup-accent);
+  outline-offset: 2px;
+}
+
+@keyframes popupToastIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .popupTabs .button,
   .styleSwitch > span[aria-hidden],
   .styleSwitch > span[aria-hidden]::after {
     transition: none;
+  }
+
+  .popupToast {
+    animation: none;
   }
 }

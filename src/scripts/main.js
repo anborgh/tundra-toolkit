@@ -358,7 +358,7 @@ const hvTopicIgnore = /** @type {any} */ ({
     document.querySelector('#pun')?.classList.toggle('tundra-topic-ignore-buttons-hidden', !this.buttonsVisible);
   },
   getToggleLabel: function () {
-    return this.buttonsVisible ? 'Скрыть кнопки игнора' : 'Показать кнопки игнора';
+    return this.buttonsVisible ? 'Скрыть кнопки' : 'Показать кнопки';
   },
   updateToggleLabels: function () {
     const label = this.getToggleLabel();
