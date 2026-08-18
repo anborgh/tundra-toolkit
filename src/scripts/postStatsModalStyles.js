@@ -3,13 +3,85 @@
 
   const MODAL_STYLE_ATTR = 'data-tundra-post-stats-modal-style';
 
-  const ensureModalStyles = () => {
-    if (document.querySelector(`[${MODAL_STYLE_ATTR}]`)) return;
+  const HOST_CSS = `
+        #hvPostStatsModal.hvPostStatsModal {
+          box-sizing: border-box !important;
+          position: fixed !important;
+          inset: auto !important;
+          top: 50% !important;
+          left: 50% !important;
+          right: auto !important;
+          bottom: auto !important;
+          transform: translate(-50%, -50%) !important;
+          z-index: 1000 !important;
+          width: min(940px, calc(100vw - 32px)) !important;
+          max-width: min(940px, calc(100vw - 32px)) !important;
+          min-width: 0 !important;
+          height: auto !important;
+          max-height: 90vh !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          border-radius: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          overflow: visible !important;
+          outline: none !important;
+          color: #152122 !important;
+          font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif !important;
+          font-size: 16px !important;
+          line-height: 1.3 !important;
+          color-scheme: light;
+        }
 
-    const style = document.createElement('style');
-    style.setAttribute(MODAL_STYLE_ATTR, 'true');
-    style.textContent = `
-        #hvPostStatsModal {
+        @media (prefers-color-scheme: dark) {
+          #hvPostStatsModal.hvPostStatsModal {
+            color: #E4EEF0 !important;
+            color-scheme: dark;
+          }
+        }
+
+        #hvPostStatsModal.hvPostStatsModal > [data-tundra-post-stats-root] {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          background: transparent !important;
+          box-sizing: border-box !important;
+        }
+
+        #hvPostStatsModal.hvPostStatsModal::backdrop {
+          background: #152122 !important;
+          opacity: 0.72 !important;
+          backdrop-filter: blur(2px);
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          #hvPostStatsModal.hvPostStatsModal::backdrop {
+            backdrop-filter: none;
+          }
+        }
+      `;
+
+  const SHADOW_CSS = `
+        :host {
+          display: block;
+          width: 100%;
+          max-width: 100%;
+          color-scheme: light;
+        }
+        *, *::before, *::after { box-sizing: border-box; }
+        button, input, textarea, select {
+          font: inherit;
+          color: inherit;
+          margin: 0;
+        }
+        h1, h2, h3, h4, p { margin: 0; }
+        a { color: inherit; }
+
+        :host {
           --tt-night: #152122;
           --tt-bone: #F9F9F4;
           --tt-frost: #275355;
@@ -46,7 +118,7 @@
         }
 
         @media (prefers-color-scheme: dark) {
-          #hvPostStatsModal {
+          :host {
             color-scheme: dark;
             --tt-night: #0E1A1C;
             --tt-bone: #E4EEF0;
@@ -72,26 +144,17 @@
           }
         }
 
-        #hvPostStatsModal::backdrop {
-          background: var(--tt-overlay);
-          opacity: 0.72;
-          backdrop-filter: blur(2px);
-        }
 
         @media (prefers-reduced-motion: reduce) {
-          #hvPostStatsModal::backdrop {
-            backdrop-filter: none;
-          }
-
-          #hvPostStatsModal input[type="text"],
-          #hvPostStatsModal input[type="search"],
-          #hvPostStatsModal input[type="date"],
-          #hvPostStatsModal #countPostsProgressFill {
+          :host input[type="text"],
+          :host input[type="search"],
+          :host input[type="date"],
+          :host #countPostsProgressFill {
             transition: none;
           }
         }
 
-        #hvPostStatsModal .hvPostStatsModal__content {
+        :host .hvPostStatsModal__content {
           position: relative;
           display: flex;
           flex-direction: column;
@@ -107,7 +170,7 @@
           color: var(--tt-text);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__content::before {
+        :host .hvPostStatsModal__content::before {
           content: '›››';
           position: absolute;
           top: 18px;
@@ -120,7 +183,7 @@
           pointer-events: none;
         }
 
-        #hvPostStatsModal h2 {
+        :host h2 {
           flex: 0 0 auto;
           margin: 0;
           padding: 0 40px 0 36px;
@@ -135,26 +198,26 @@
           padding-bottom: 10px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__form {
+        :host .hvPostStatsModal__form {
           flex: 0 0 auto;
           display: grid;
           gap: 10px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__formItem {
+        :host .hvPostStatsModal__formItem {
           display: grid;
           gap: 6px;
         }
 
-        #hvPostStatsModal label {
+        :host label {
           color: var(--tt-muted);
           font-weight: 500;
           font-size: 13px;
         }
 
-        #hvPostStatsModal input[type="text"],
-        #hvPostStatsModal input[type="search"],
-        #hvPostStatsModal input[type="date"] {
+        :host input[type="text"],
+        :host input[type="search"],
+        :host input[type="date"] {
           width: 100%;
           box-sizing: border-box;
           padding: 8px 10px;
@@ -166,29 +229,29 @@
           transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
         }
 
-        #hvPostStatsModal input[type="text"]:focus-visible,
-        #hvPostStatsModal input[type="search"]:focus-visible,
-        #hvPostStatsModal input[type="date"]:focus-visible,
-        #hvPostStatsModal .hvPostStatsModal__bbcode:focus-visible {
+        :host input[type="text"]:focus-visible,
+        :host input[type="search"]:focus-visible,
+        :host input[type="date"]:focus-visible,
+        :host .hvPostStatsModal__bbcode:focus-visible {
           outline: none;
           border-color: var(--tt-accent);
           box-shadow: 0 0 0 2px var(--tt-focus);
           background: var(--tt-input-bg);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__hint {
+        :host .hvPostStatsModal__hint {
           color: var(--tt-muted);
           font-size: 12px;
         }
 
-        #hvPostStatsModal #countPostsUsers,
-        #hvPostStatsModal #countPostsForums {
+        :host #countPostsUsers,
+        :host #countPostsForums {
           cursor: pointer;
           caret-color: transparent;
           touch-action: manipulation;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__picker {
+        :host .hvPostStatsModal__picker {
           position: absolute;
           inset: 0;
           z-index: 5;
@@ -200,11 +263,11 @@
           overscroll-behavior: contain;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__picker[hidden] {
+        :host .hvPostStatsModal__picker[hidden] {
           display: none;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerInner {
+        :host .hvPostStatsModal__pickerInner {
           display: flex;
           flex-direction: column;
           gap: 10px;
@@ -217,7 +280,7 @@
           box-shadow: 0 12px 28px var(--tt-night);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerHeader {
+        :host .hvPostStatsModal__pickerHeader {
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -227,11 +290,11 @@
           font-size: 16px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerHeader .hvPostStatsModal__close {
+        :host .hvPostStatsModal__pickerHeader .hvPostStatsModal__close {
           position: static;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerList {
+        :host .hvPostStatsModal__pickerList {
           flex: 1 1 auto;
           min-height: 180px;
           max-height: 46vh;
@@ -242,7 +305,29 @@
           background: var(--tt-input-bg);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerItem {
+        :host .hvPostStatsModal__pickerGroup {
+          position: sticky;
+          top: 0;
+          z-index: 1;
+          padding: 8px 10px 6px;
+          background: var(--tt-card);
+          color: var(--tt-muted);
+          font-family: var(--tt-font-body);
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          border-bottom: 1px solid var(--tt-earth);
+        }
+
+        :host .hvPostStatsModal__pickerGroup::before {
+          content: '››';
+          margin-right: 6px;
+          letter-spacing: -0.12em;
+          color: var(--tt-earth);
+        }
+
+        :host .hvPostStatsModal__pickerItem {
           display: grid;
           grid-template-columns: auto 1fr auto;
           align-items: center;
@@ -256,38 +341,38 @@
           touch-action: manipulation;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerItem:last-child {
+        :host .hvPostStatsModal__pickerItem:last-child {
           border-bottom: none;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerItem:hover {
+        :host .hvPostStatsModal__pickerItem:hover {
           background: var(--tt-card-alt);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerName {
+        :host .hvPostStatsModal__pickerName {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerId {
+        :host .hvPostStatsModal__pickerId {
           color: var(--tt-muted);
           font-size: 12px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerEmpty {
+        :host .hvPostStatsModal__pickerEmpty {
           padding: 16px 12px;
           color: var(--tt-muted);
           text-align: center;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerActions {
+        :host .hvPostStatsModal__pickerActions {
           display: flex;
           gap: 8px;
           justify-content: flex-end;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerActions button {
+        :host .hvPostStatsModal__pickerActions button {
           min-width: 96px;
           padding: 7px 12px;
           border-radius: 0;
@@ -299,30 +384,30 @@
           font-family: inherit;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerActions button:hover {
+        :host .hvPostStatsModal__pickerActions button:hover {
           background: var(--tt-input-bg);
           border-color: var(--tt-earth);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__pickerActions button:focus-visible {
+        :host .hvPostStatsModal__pickerActions button:focus-visible {
           outline: none;
           box-shadow: 0 0 0 2px var(--tt-focus);
         }
 
-        #hvPostStatsModal #countPostsUsersApply,
-        #hvPostStatsModal #countPostsForumsApply {
+        :host #countPostsUsersApply,
+        :host #countPostsForumsApply {
           background: var(--tt-success);
           border-color: var(--tt-success);
           color: var(--tt-on-frost);
           font-weight: 600;
         }
 
-        #hvPostStatsModal input[type="checkbox"] {
+        :host input[type="checkbox"] {
           accent-color: var(--tt-success);
           transform: translateY(1px);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__checkboxLabel {
+        :host .hvPostStatsModal__checkboxLabel {
           display: inline-flex;
           align-items: center;
           gap: 8px;
@@ -331,7 +416,7 @@
           touch-action: manipulation;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__close {
+        :host .hvPostStatsModal__close {
           position: absolute;
           top: 12px;
           right: 12px;
@@ -351,7 +436,7 @@
           touch-action: manipulation;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__close svg {
+        :host .hvPostStatsModal__close svg {
           width: 16px;
           height: 16px;
           stroke: currentColor;
@@ -361,23 +446,23 @@
           stroke-linejoin: round;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__close:hover {
+        :host .hvPostStatsModal__close:hover {
           background: var(--tt-input-bg);
           border-color: var(--tt-earth);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__close:focus-visible {
+        :host .hvPostStatsModal__close:focus-visible {
           outline: none;
           box-shadow: 0 0 0 2px var(--tt-focus);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__formRow {
+        :host .hvPostStatsModal__formRow {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 10px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__formActions {
+        :host .hvPostStatsModal__formActions {
           display: flex;
           justify-content: flex-end;
           gap: 8px;
@@ -386,7 +471,7 @@
           border-top: 1px solid var(--tt-border);
         }
 
-        #hvPostStatsModal #countPostsSubmit {
+        :host #countPostsSubmit {
           min-width: 126px;
           padding: 8px 14px;
           border-radius: 0;
@@ -399,34 +484,34 @@
           touch-action: manipulation;
         }
 
-        #hvPostStatsModal #countPostsSubmit:hover {
+        :host #countPostsSubmit:hover {
           opacity: 0.92;
         }
 
-        #hvPostStatsModal #countPostsSubmit:focus-visible {
+        :host #countPostsSubmit:focus-visible {
           outline: none;
           box-shadow: 0 0 0 2px var(--tt-focus);
         }
 
-        #hvPostStatsModal #countPostsSubmit:disabled {
+        :host #countPostsSubmit:disabled {
           opacity: 0.6;
           cursor: default;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__progress {
+        :host .hvPostStatsModal__progress {
           flex: 0 0 auto;
           display: none;
           margin-top: -2px;
           margin-bottom: 2px;
         }
 
-        #hvPostStatsModal #countPostsProgressText {
+        :host #countPostsProgressText {
           margin-bottom: 6px;
           font-size: 12px;
           color: var(--tt-muted);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__progressBar {
+        :host .hvPostStatsModal__progressBar {
           width: 100%;
           height: 10px;
           border: 1px solid var(--tt-border);
@@ -435,14 +520,14 @@
           background: var(--tt-card-alt);
         }
 
-        #hvPostStatsModal #countPostsProgressFill {
+        :host #countPostsProgressFill {
           height: 100%;
           width: 0%;
           background: var(--tt-frost);
           transition: width 0.15s ease;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__result {
+        :host .hvPostStatsModal__result {
           flex: 1 1 auto;
           min-height: 0;
           overflow-y: auto;
@@ -457,15 +542,15 @@
           font-variant-numeric: tabular-nums;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__result[hidden] {
+        :host .hvPostStatsModal__result[hidden] {
           display: none;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__result a {
+        :host .hvPostStatsModal__result a {
           color: var(--tt-link);
         }
 
-        #hvPostStatsModal .hvPostStatsModal__result hr {
+        :host .hvPostStatsModal__result hr {
           margin: 10px 0;
           border: none;
           height: 1px;
@@ -473,16 +558,16 @@
           opacity: 0.45;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__bbcodeToggle {
+        :host .hvPostStatsModal__bbcodeToggle {
           flex: 0 0 auto;
           margin-top: 2px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__bbcodeToggle[hidden] {
+        :host .hvPostStatsModal__bbcodeToggle[hidden] {
           display: none;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__bbcode {
+        :host .hvPostStatsModal__bbcode {
           flex: 1 1 auto;
           min-height: 180px;
           width: 100%;
@@ -499,36 +584,101 @@
           font-size: 12px;
         }
 
-        #hvPostStatsModal .hvPostStatsModal__bbcode[hidden] {
+        :host .hvPostStatsModal__bbcode[hidden] {
           display: none;
         }
 
         @media (max-width: 720px) {
-          #hvPostStatsModal .hvPostStatsModal__content {
+          :host .hvPostStatsModal__content {
             padding: 14px;
           }
 
-          #hvPostStatsModal h2 {
+          :host h2 {
             font-size: 22px;
             padding-left: 28px;
           }
 
-          #hvPostStatsModal .hvPostStatsModal__formRow {
+          :host .hvPostStatsModal__formRow {
             grid-template-columns: 1fr;
           }
         }
       `;
+
+  const ensureModalStyles = () => {
+    if (document.querySelector(`[${MODAL_STYLE_ATTR}]`)) return;
+
+    const style = document.createElement('style');
+    style.setAttribute(MODAL_STYLE_ATTR, 'true');
+    style.textContent = HOST_CSS;
     document.head.appendChild(style);
+  };
+
+  const applyHostBox = (modal) => {
+    const set = (name, value) => modal.style.setProperty(name, value, 'important');
+    set('box-sizing', 'border-box');
+    set('position', 'fixed');
+    set('inset', 'auto');
+    set('top', '50%');
+    set('left', '50%');
+    set('right', 'auto');
+    set('bottom', 'auto');
+    set('transform', 'translate(-50%, -50%)');
+    set('z-index', '1000');
+    set('width', 'min(940px, calc(100vw - 32px))');
+    set('max-width', 'min(940px, calc(100vw - 32px))');
+    set('min-width', '0');
+    set('height', 'auto');
+    set('max-height', '90vh');
+    set('margin', '0');
+    set('padding', '0');
+    set('border', 'none');
+    set('border-radius', '0');
+    set('background', 'transparent');
+    set('box-shadow', 'none');
+    set('overflow', 'visible');
+    set('outline', 'none');
+  };
+
+  const applyShellBox = (shell) => {
+    const set = (name, value) => shell.style.setProperty(name, value, 'important');
+    set('display', 'block');
+    set('box-sizing', 'border-box');
+    set('width', '100%');
+    set('max-width', '100%');
+    set('height', 'auto');
+    set('max-height', '90vh');
+    set('margin', '0');
+    set('padding', '0');
+    set('border', 'none');
+    set('background', 'transparent');
+    set('overflow', 'visible');
+    set('font', 'inherit');
+    set('color', 'inherit');
+  };
+
+  const getModalRoot = (modal) => {
+    if (!modal) return modal;
+    if (modal.shadowRoot) return modal.shadowRoot;
+    const shell = modal.querySelector('[data-tundra-post-stats-root]');
+    return shell?.shadowRoot || modal;
   };
 
   const CLOSE_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 
   const createModal = () => {
     const modal = document.createElement('dialog');
-    modal.style = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: min(940px, calc(100vw - 32px)); max-height: 90vh;';
     modal.id = 'hvPostStatsModal';
     modal.classList.add('hvPostStatsModal');
-    modal.innerHTML = `
+    modal.setAttribute('data-tundra-toolkit', 'post-stats');
+    applyHostBox(modal);
+
+    const shell = document.createElement('div');
+    shell.setAttribute('data-tundra-post-stats-root', '');
+    applyShellBox(shell);
+    modal.appendChild(shell);
+
+    const shadow = shell.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `<style>${SHADOW_CSS}</style>
         <div class="hvPostStatsModal__content">
           <button type="button" class="hvPostStatsModal__close" id="hvPostStatsModalClose" aria-label="Закрыть">${CLOSE_ICON}</button>
           <h2>Счётчик постов</h2>
@@ -614,5 +764,7 @@
   global.__TT_POST_STATS_MODAL_UI__ = {
     ensureModalStyles,
     createModal,
+    getModalRoot,
+    applyHostBox,
   };
 })(typeof globalThis !== 'undefined' ? globalThis : window);

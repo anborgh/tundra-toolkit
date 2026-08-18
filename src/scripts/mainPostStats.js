@@ -17,7 +17,7 @@
     // picker catalogs (list/map/loaded)
     catalogs: {
       users: { list: [], map: {}, loaded: false },
-      forums: { list: [], map: {}, loaded: false },
+      forums: { list: [], map: {}, loaded: false, categories: [] },
     },
     pickers: {
       users: null,
@@ -63,6 +63,9 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    },
+    cleanApiText: function (value) {
+      return String(value || '').replace(/\u00ad/g, '').trim();
     },
     getUserLabelHtml: function (userId) {
       const { profileUrl, label } = this.getUserLabelParts(userId);
@@ -184,7 +187,18 @@
       const name = forum?.forum_name || forum?.name || forum?.title;
       const redirect = forum?.redirect_url || forum?.redirect;
       if (!Number.isFinite(id) || id <= 0 || !name || redirect) return null;
-      return { id, name: String(name) };
+      const catId = Number(forum?.cat_id ?? forum?.category_id);
+      return {
+        id,
+        name: this.cleanApiText(name),
+        catId: Number.isFinite(catId) && catId > 0 ? catId : 0,
+      };
+    },
+    mapCategoryItem: function (category, order) {
+      const id = Number(category?.id ?? category?.cat_id);
+      const name = category?.name || category?.cat_name || category?.title;
+      if (!Number.isFinite(id) || id <= 0 || !name) return null;
+      return { id, name: this.cleanApiText(name), order };
     },
     loadEntityList: async function ({ catalog, limit, fetchBatch, mapItem }) {
       const cat = this.catalogs[catalog];
@@ -249,7 +263,7 @@
       return found;
     },
     loadForumList: async function () {
-      return this.loadEntityList({
+      const items = await this.loadEntityList({
         catalog: 'forums',
         limit: 100,
         fetchBatch: async (limit, skip) => {
@@ -261,6 +275,53 @@
         },
         mapItem: (forum) => this.mapForumItem(forum),
       });
+      await this.attachForumCategories(items);
+      return items;
+    },
+    loadCategoryList: async function () {
+      const cat = this.catalogs.forums;
+      if (cat.categoriesLoaded) return cat.categories || [];
+
+      const { loadPagedEntities } = global.__TT_POST_STATS_PICKER__ || {};
+      if (typeof loadPagedEntities !== 'function') return [];
+
+      try {
+        let order = 0;
+        const { items } = await loadPagedEntities({
+          limit: 100,
+          fetchBatch: async (limit, skip) => {
+            const response = await fetchForumApi(`method=board.getCategories&limit=${limit}&skip=${skip}`);
+            return this.parseApiList(await response.json(), {
+              listKeys: ['categories'],
+              errorLabel: 'board.getCategories',
+            });
+          },
+          mapItem: (category) => this.mapCategoryItem(category, order++),
+        });
+        cat.categories = items;
+        cat.categoriesLoaded = true;
+        return items;
+      } catch (error) {
+        cat.categories = cat.categories || [];
+        cat.categoriesLoaded = false;
+        return cat.categories;
+      }
+    },
+    attachForumCategories: async function (forums) {
+      const categories = await this.loadCategoryList();
+      const orderById = new Map(categories.map((item, index) => [item.id, index]));
+      const nameById = new Map(categories.map((item) => [item.id, item.name]));
+
+      forums.forEach((forum, index) => {
+        forum.catName = nameById.get(forum.catId) || (forum.catId ? `Категория ${forum.catId}` : '');
+        forum.catOrder = orderById.has(forum.catId) ? orderById.get(forum.catId) : 10000;
+        forum.sourceOrder = index;
+      });
+
+      forums.sort((a, b) => {
+        if (a.catOrder !== b.catOrder) return a.catOrder - b.catOrder;
+        return a.sourceOrder - b.sourceOrder;
+      });
     },
     mountEntityPickers: function () {
       const api = global.__TT_POST_STATS_PICKER__;
@@ -268,6 +329,7 @@
         throw new Error('post stats picker API missing');
       }
       const { createEntityPicker, queryPickerEls } = api;
+      const root = (global.__TT_POST_STATS_MODAL_UI__?.getModalRoot || ((node) => node.shadowRoot || node))(this.modal);
 
       const specs = [
         {
@@ -302,6 +364,12 @@
             this.updateSubmitState();
           },
           loadItems: () => this.loadForumList(),
+          groupBy: (item) => ({
+            id: item.catId || 0,
+            name: item.catName || '',
+            order: item.catOrder,
+          }),
+          preserveOrder: true,
           texts: {
             empty: 'Форумы не найдены',
             noMatch: 'Нет совпадений',
@@ -320,9 +388,11 @@
           setSelectedIds: spec.setSelectedIds,
           loadItems: spec.loadItems,
           lookupByQuery: spec.lookupByQuery,
+          groupBy: spec.groupBy,
+          preserveOrder: spec.preserveOrder,
           onLoadError: () => { cat.loaded = false; },
           texts: spec.texts,
-          els: queryPickerEls(spec.kindCap, spec.trigger),
+          els: queryPickerEls(spec.kindCap, spec.trigger, root),
         });
         ctrl.bind();
         this.pickers[spec.pickerKey] = ctrl;
@@ -394,7 +464,7 @@
       if (this._inited) return;
 
       this.renderModal();
-      this.bindDomRefs(this.modal);
+      this.bindDomRefs(global.__TT_POST_STATS_MODAL_UI__.getModalRoot(this.modal));
       this.restoreSelection();
 
       this.syncSelections();
@@ -458,8 +528,13 @@
       if (this.modal?.isConnected) return;
 
       const existing = document.querySelector('#hvPostStatsModal');
-      if (existing) {
+      const existingRoot = existing ? ui.getModalRoot(existing) : null;
+      const hasShadow = !!(existingRoot && existingRoot !== existing);
+      if (existing && !hasShadow) {
+        existing.remove();
+      } else if (existing) {
         this.modal = existing;
+        ui.applyHostBox?.(existing);
         return;
       }
 

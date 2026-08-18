@@ -32,14 +32,14 @@
     return { items, map };
   };
 
-  const queryPickerEls = (kindCap, trigger) => ({
+  const queryPickerEls = (kindCap, trigger, root = document) => ({
     trigger,
-    search: document.querySelector(`#countPosts${kindCap}Search`),
-    list: document.querySelector(`#countPosts${kindCap}List`),
-    picker: document.querySelector(`#hvPostStats${kindCap}Picker`),
-    apply: document.querySelector(`#countPosts${kindCap}Apply`),
-    cancel: document.querySelector(`#countPosts${kindCap}Cancel`),
-    close: document.querySelector(`#hvPostStats${kindCap}PickerClose`),
+    search: root.querySelector(`#countPosts${kindCap}Search`),
+    list: root.querySelector(`#countPosts${kindCap}List`),
+    picker: root.querySelector(`#hvPostStats${kindCap}Picker`),
+    apply: root.querySelector(`#countPosts${kindCap}Apply`),
+    cancel: root.querySelector(`#countPosts${kindCap}Cancel`),
+    close: root.querySelector(`#hvPostStats${kindCap}PickerClose`),
   });
 
   /**
@@ -54,6 +54,8 @@
     loadItems,
     lookupByQuery,
     getLabel = (item) => item.name,
+    groupBy = null,
+    preserveOrder = false,
     onLoadError,
     texts,
     els,
@@ -77,6 +79,40 @@
       if (els.list) els.list.innerHTML = html;
     };
 
+    const renderItem = (item) => {
+      const checked = draft.has(item.id) ? ' checked' : '';
+      const label = escapeHtml(getLabel(item) || String(item.id));
+      return `
+          <label class="hvPostStatsModal__pickerItem">
+            <input type="checkbox" value="${item.id}"${checked} />
+            <span class="hvPostStatsModal__pickerName">${label}</span>
+            <span class="hvPostStatsModal__pickerId">#${item.id}</span>
+          </label>
+        `;
+    };
+
+    const renderGrouped = (items) => {
+      const groups = [];
+      const index = new Map();
+      items.forEach((item) => {
+        const meta = typeof groupBy === 'function' ? groupBy(item) : null;
+        const id = meta && meta.id != null ? meta.id : 0;
+        if (!index.has(id)) {
+          const group = { id, name: meta?.name || '', items: [] };
+          index.set(id, group);
+          groups.push(group);
+        }
+        index.get(id).items.push(item);
+      });
+
+      return groups.map((group) => {
+        const title = group.name
+          ? `<div class="hvPostStatsModal__pickerGroup">${escapeHtml(group.name)}</div>`
+          : '';
+        return title + group.items.map(renderItem).join('');
+      }).join('');
+    };
+
     const renderList = (query = '') => {
       if (!els.list) return;
 
@@ -87,9 +123,10 @@
         : items.filter((item) => {
           const idMatch = String(item.id).includes(q);
           const nameMatch = String(getLabel(item) || '').toLowerCase().includes(q);
-          return idMatch || nameMatch;
+          const groupMatch = String(item.catName || '').toLowerCase().includes(q);
+          return idMatch || nameMatch || groupMatch;
         });
-      const ordered = sortPinnedFirst(filtered, pinned);
+      const ordered = preserveOrder ? filtered : sortPinnedFirst(filtered, pinned);
 
       if (!items.length) {
         setListHtml(`<div class="hvPostStatsModal__pickerEmpty">${texts.empty}</div>`);
@@ -101,17 +138,9 @@
         return;
       }
 
-      els.list.innerHTML = ordered.map((item) => {
-        const checked = draft.has(item.id) ? ' checked' : '';
-        const label = escapeHtml(getLabel(item) || String(item.id));
-        return `
-          <label class="hvPostStatsModal__pickerItem">
-            <input type="checkbox" value="${item.id}"${checked} />
-            <span class="hvPostStatsModal__pickerName">${label}</span>
-            <span class="hvPostStatsModal__pickerId">#${item.id}</span>
-          </label>
-        `;
-      }).join('');
+      els.list.innerHTML = groupBy
+        ? renderGrouped(ordered)
+        : ordered.map(renderItem).join('');
     };
 
     const handleSearchInput = () => {
