@@ -294,7 +294,7 @@ h5 {
   min-height: 58px;
   padding: 10px;
   border: 1px solid var(--popup-border);
-  border-left: 3px solid var(--tt-earth);
+  border-left: 3px solid var(--tt-frost);
   border-radius: 0;
   background: var(--tt-card-alt);
 }
