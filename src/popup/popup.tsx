@@ -47,7 +47,6 @@ const FAVORITES_META_KEY = 'favoritesRefreshMeta';
 const STYLE_OVERRIDE_KEY = 'styleOverrideByHost';
 const POST_APPEARANCE_KEY = 'postAppearanceByHost';
 const ACTIVE_TAB_KEY = 'popupActiveTab';
-const MIGRATION_PENDING_KEY = 'migrationPending';
 const DEFAULT_POST_APPEARANCE: PostAppearanceSettings = {
   fontScale: 100,
   firstLineIndent: false,
@@ -107,7 +106,6 @@ export function App() {
   const [ isTrusted, setIsTrusted ] = useState(false);
   const [ forumPowerBusy, setForumPowerBusy ] = useState(false);
   const [ unreadCount, setUnreadCount ] = useState(0);
-  const [ hasMigrationConflicts, setHasMigrationConflicts ] = useState(false);
   const [ styleOverrideEnabled, setStyleOverrideEnabled ] = useState(false);
   const [ styleOverrideMap, setStyleOverrideMap ] = useState<Record<string, boolean>>({});
   const [ styleToggling, setStyleToggling ] = useState(false);
@@ -122,15 +120,6 @@ export function App() {
       setUnreadCount(count);
     } catch (e) {
       setUnreadCount(0);
-    }
-  };
-
-  const loadMigrationConflicts = async () => {
-    try {
-      const data = await safeStorageGet([ MIGRATION_PENDING_KEY ]);
-      setHasMigrationConflicts(!!data[MIGRATION_PENDING_KEY]);
-    } catch (e) {
-      setHasMigrationConflicts(false);
     }
   };
 
@@ -214,10 +203,7 @@ export function App() {
           : DEFAULT_POST_APPEARANCE.paragraphSpacing,
       });
 
-      await Promise.all([
-        loadUnreadCount(),
-        loadMigrationConflicts(),
-      ]);
+      await loadUnreadCount();
     } catch (e) {
       setAvailability('unavailable');
       setHasForum(false);
@@ -258,9 +244,6 @@ export function App() {
       if (area === 'local' && changes[FAVORITES_META_KEY]) {
         const next = Number(changes[FAVORITES_META_KEY].newValue?.unreadCount) || 0;
         setUnreadCount(next);
-      }
-      if (changes[MIGRATION_PENDING_KEY]) {
-        setHasMigrationConflicts(!!changes[MIGRATION_PENDING_KEY].newValue);
       }
     };
 
@@ -508,19 +491,10 @@ export function App() {
           <button
             class="button small controlsSettings tabButton"
             onClick={ handleOpenOptions }
-            title={ hasMigrationConflicts
-              ? 'Есть конфликты синхронизации — открыть настройки'
-              : 'Настройки'
-            }
-            aria-label={ hasMigrationConflicts
-              ? 'Настройки, есть конфликты синхронизации'
-              : 'Настройки'
-            }
+            title="Настройки"
+            aria-label="Настройки"
           >
             <MaskIcon src={ settingsIcon } />
-            { hasMigrationConflicts && (
-              <span class="tabBadge tabBadgeWarn" aria-hidden="true">!</span>
-            ) }
           </button>
         </div>
       </div>

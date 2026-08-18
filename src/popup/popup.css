@@ -8,13 +8,27 @@
   --popup-success: var(--tt-success);
   --popup-danger: var(--tt-danger);
   --popup-radius: 0;
+  --popup-width: 460px;
+  /* Chrome popup practical max height — keep a single inner scroller */
+  --popup-max-height: 600px;
+}
+
+html,
+body {
+  width: var(--popup-width);
+  max-width: var(--popup-width);
+  margin: 0;
+  overflow: hidden;
 }
 
 #app {
-  width: 460px;
+  width: var(--popup-width);
+  max-width: var(--popup-width);
+  max-height: var(--popup-max-height);
   min-height: 320px;
-  margin: 0 auto;
+  margin: 0;
   box-sizing: border-box;
+  overflow: hidden;
   background: var(--popup-bg);
   color: var(--popup-text);
   font-family: var(--tt-font-body);
@@ -38,6 +52,8 @@ h5 {
 .popupWrapper {
   display: flex;
   flex-direction: column;
+  max-height: var(--popup-max-height);
+  overflow: hidden;
 }
 
 /* Tab bar — frost strip + chevron side motif */
@@ -50,6 +66,7 @@ h5 {
   color: var(--tt-night);
   border-bottom: var(--tt-border-width) solid var(--tt-earth);
   position: relative;
+  flex: 0 0 auto;
 }
 
 .popupTabsMain,
@@ -116,12 +133,6 @@ h5 {
   border: 1px solid var(--tt-night);
 }
 
-.tabBadgeWarn {
-  min-width: 14px;
-  font-size: 11px;
-  line-height: 12px;
-}
-
 .popupTabs .button:hover {
   background: var(--tt-card);
   border-color: var(--tt-earth);
@@ -173,9 +184,13 @@ h5 {
   position: relative;
   background: var(--popup-card);
   padding: 12px;
-  max-height: 560px;
-  overflow: auto;
-  min-height: 270px;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* Unified tab panel header — actions always top-right */

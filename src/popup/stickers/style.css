@@ -191,8 +191,8 @@
 }
 
 .editPackDialog {
-  width: 520px;
-  max-width: 90vw;
+  width: min(520px, 100%);
+  max-width: 100%;
   padding: 0;
   border: var(--tt-border-width) solid var(--tt-border-strong);
   border-radius: 0;
