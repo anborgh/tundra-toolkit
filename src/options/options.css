@@ -1,75 +1,105 @@
 body {
     margin: 0;
     font-family: var(--tt-font-body);
-    background: var(--bg-color);
+    font-size: 14px;
+    line-height: 1.5;
+    background: var(--tt-bg);
     color: var(--tt-text);
 }
 
 .wrapper {
     position: relative;
+    min-height: 100vh;
 }
 
-header {
-    background: var(--tt-frost);
-    color: var(--tt-on-frost);
-    overflow: hidden;
-    padding: 16px 0;
-    border-bottom: var(--tt-border-width) solid var(--tt-earth);
+/* ── Header ─────────────────────────────────────────── */
+.optionsHeader {
+    background: var(--tt-head-bg);
+    color: var(--tt-head-fg);
 }
 
-header .main {
+.optionsHeaderInner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 24px;
+    box-sizing: border-box;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 16px;
 }
 
-header .logo {
-    width: 72px;
-    height: 72px;
-    flex: 0 0 72px;
+.optionsLogo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex: 0 0 auto;
+    border-radius: 12px;
+    background: var(--tt-logo-bg);
+    color: var(--tt-logo-fg);
 }
 
-header .logo img {
-    max-width: 100%;
-    display: block;
+.optionsLogo .ttIcon {
+    width: 26px;
+    height: 26px;
 }
 
-header h1 {
+.optionsHeaderText {
+    flex: 1 1 280px;
+    min-width: 0;
+}
+
+.optionsHeader h1 {
     margin: 0;
-    font-family: var(--tt-font-display);
-    font-size: 1.75rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-size: 20px;
+    line-height: 1.3;
+    color: #FFFFFF;
 }
 
-header a {
-    color: var(--tt-on-frost);
-    text-decoration-thickness: 1px;
-    text-underline-offset: 3px;
-}
-
-header h1 span {
-    color: color-mix(in oklab, var(--tt-on-frost) 78%, var(--tt-frost));
-    font-size: 1rem;
+.optionsVersion {
+    margin-left: 6px;
     font-family: var(--tt-font-body);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--tt-head-muted);
+}
+
+.optionsHeader .headerMeta {
+    font-size: 13px;
+    color: #B4C5C2;
+}
+
+.optionsHeader .headerMeta a {
+    color: #6FD3C2;
+}
+
+.optionsHeaderLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--tt-head-line);
+    border-radius: var(--tt-radius);
+    color: var(--tt-head-soft);
+    font-size: 14px;
     font-weight: 500;
+    text-decoration: none;
 }
 
-header .headerMeta {
-    margin-top: 4px;
-    font-size: 0.95rem;
+.optionsHeaderLink:hover,
+.optionsHeaderLink.active {
+    background: rgba(255, 255, 255, 0.08);
+    color: #FFFFFF;
 }
 
-.main {
-    max-width: var(--width);
-    margin: auto;
-    padding: 0 16px 10px;
-}
-
+/* ── Layout ─────────────────────────────────────────── */
 main {
-    max-width: var(--width);
-    margin: auto;
-    padding: 24px 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px 48px;
+    box-sizing: border-box;
 }
 
 #options-main:focus {
@@ -77,129 +107,143 @@ main {
 }
 
 .optionsLayout {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    gap: 20px;
-    align-items: start;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 32px;
 }
 
 .optionsSidebar {
-    position: sticky;
-    top: 16px;
+    flex: 1 1 220px;
+    max-width: 260px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 20px;
+}
+
+.optionsContent {
+    flex: 999 1 560px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+@media (max-width: 860px) {
+    .optionsSidebar {
+        max-width: none;
+    }
 }
 
 .optionsNav {
     display: flex;
     flex-direction: column;
-    gap: 0;
-    border: var(--tt-border-width) solid var(--tt-border-strong);
-    background: var(--tt-card);
+    gap: 2px;
 }
 
 .optionsNavItem {
-    width: 100%;
-    justify-content: flex-start;
-    text-align: left;
-    text-decoration: none;
-    color: var(--tt-text);
-    border-radius: 0;
-    border: none;
-    border-bottom: 1px solid var(--tt-border);
-    background: transparent;
-    padding: 10px 12px;
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-family: var(--tt-font-body);
+    gap: 10px;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: var(--tt-radius);
+    color: var(--tt-text-2);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.optionsNavItem .ttIcon {
+    width: 18px;
+    height: 18px;
+}
+
+.optionsNavItem:hover {
+    background: var(--tt-subtle);
+    color: var(--tt-text);
+}
+
+.optionsNavItem[aria-current="page"] {
+    background: var(--tt-card);
+    color: var(--tt-frost);
+    box-shadow: 0 0 0 1px var(--tt-border);
 }
 
 .optionsNavItemLabel {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
 }
 
-.optionsNavItem:last-child {
-    border-bottom: none;
-}
-
-.optionsNavItem::before {
-    content: '›';
-    color: var(--tt-earth);
-    font-family: var(--tt-font-mono);
-    font-size: 14px;
-    line-height: 1;
-}
-
-.optionsNavItem.active {
-    background: var(--tt-frost);
-    color: var(--tt-on-frost);
-    font-weight: 600;
-}
-
-.optionsNavItem.active::before {
-    content: '››';
-    letter-spacing: -0.1em;
-}
-
+/* Section header shared by all settings sections */
 .optionsContent h2 {
     margin: 0;
     font-family: var(--tt-font-display);
-    font-size: 1.75rem;
+    font-size: 26px;
     font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
 }
 
 .optionsSectionLead {
     margin: 4px 0 0;
     color: var(--tt-muted);
-    font-size: 0.95rem;
-    font-weight: 400;
 }
 
 .optionsNotice {
-    margin-bottom: 8px;
+    color: var(--tt-muted);
 }
 
 .optionsSectionCard {
-    border: var(--tt-border-width) solid var(--tt-border);
-    border-left: 3px solid var(--tt-earth);
-    background: var(--tt-card);
     padding: 16px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
 }
 
+/* ── Storage card ───────────────────────────────────── */
 .storageUsageCard {
-    border: var(--tt-border-width) solid var(--tt-border);
-    border-radius: 0;
-    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
     background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
+}
+
+.storageUsageHead {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
 }
 
 .storageUsageTitle {
-    font-size: 0.85rem;
+    flex: 1 1 auto;
     font-weight: 600;
-    margin-bottom: 8px;
-    font-family: var(--tt-font-display);
+}
+
+.storageUsagePercent {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--tt-frost);
+    font-variant-numeric: tabular-nums;
 }
 
 .storageUsageBar {
-    width: 100%;
-    height: 10px;
-    border-radius: 0;
-    border: 1px solid var(--tt-border);
-    background: var(--tt-card-alt);
+    height: 8px;
+    border-radius: 4px;
+    background: var(--tt-subtle);
     overflow: hidden;
 }
 
 .storageUsageFill {
     height: 100%;
-    background: var(--tt-success);
-    transition: width 0.2s ease;
+    border-radius: 4px;
+    background: var(--tt-frost);
 }
 
 .storageUsageFill.warn {
-    background: var(--tt-warn);
+    background: var(--tt-earth);
 }
 
 .storageUsageFill.danger {
@@ -207,60 +251,75 @@ main {
 }
 
 .storageUsageMeta {
-    margin-top: 8px;
-    font-size: 0.85rem;
-    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: var(--tt-muted);
+}
+
+.storageLegend {
+    list-style: none;
+    margin: 0;
+    padding: 10px 0 0;
+    border-top: 1px solid var(--tt-border-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--tt-text-2);
+}
+
+.storageLegend li {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.storageLegend .is-sync { color: var(--tt-frost); }
+.storageLegend .is-local { color: var(--tt-muted); }
+.storageLegend .is-full { color: var(--tt-danger); }
+
+.storageLocalSummary {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: var(--tt-radius);
+    background: var(--tt-warn-soft);
+    color: var(--tt-warn-text);
+    font-size: 12px;
+}
+
+.storageLocalSummary .ttIcon {
+    margin-top: 1px;
+    color: var(--tt-earth);
+}
+
+.storageLocalSummary > span > span {
+    display: block;
+}
+
+.storageLocalSummaryTitle {
+    font-weight: 600;
 }
 
 .storageLocalNotice {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 12px;
-    padding: 10px 12px;
-    border: 1px solid var(--tt-earth);
-    border-left: 3px solid var(--tt-earth);
-    background: color-mix(in oklab, var(--tt-earth) 12%, transparent);
-    color: var(--tt-text);
-    font-size: 0.9rem;
-    line-height: 1.4;
+    gap: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--tt-warn-border);
+    border-radius: var(--tt-radius-lg);
+    background: var(--tt-warn-soft);
+    color: var(--tt-warn-text);
 }
 
-.storageLocalNotice .storageLocalBadge {
-    margin-top: 1px;
+.storageLocalNotice .ttIcon {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    color: var(--tt-earth);
 }
 
-.optionsGuideLink {
-    border: 0;
-    background: transparent;
-    color: var(--tt-muted);
-    font-size: 0.85rem;
-    text-align: left;
-    padding: 0 2px;
-    cursor: pointer;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    opacity: 0.9;
-}
-
-.optionsGuideLink:hover {
-    color: var(--tt-text);
-}
-
-a.optionsGuideLink {
-    display: inline-block;
-}
-
-.optionsGuideLink.active {
-    color: var(--tt-text);
-    font-weight: 600;
-}
-
-.optionsGuideLink:focus-visible {
-    outline: 2px solid var(--tt-accent);
-    outline-offset: 2px;
-}
-
+/* ── Guide ──────────────────────────────────────────── */
 .optionsGuide h2 {
     margin-bottom: 8px;
     font-family: var(--tt-font-display);
@@ -299,18 +358,17 @@ a.optionsGuideLink {
 
 .optionsGuideBlock {
     margin-top: 16px;
-    padding: 12px;
+    padding: 16px;
     border: 1px solid var(--tt-border);
-    border-radius: 0;
-    border-left: 3px solid var(--tt-frost);
+    border-radius: var(--tt-radius-lg);
     background: var(--tt-card);
     scroll-margin-top: 12px;
 }
 
 .optionsGuideBlock h3 {
     margin: 0 0 8px;
-    font-family: var(--tt-font-display);
-    font-size: 1.1rem;
+    font-family: var(--tt-font-body);
+    font-size: 16px;
     font-weight: 600;
 }
 
@@ -355,9 +413,9 @@ a.optionsGuideLink {
 }
 
 .optionsGuideWarning {
-    border-color: var(--tt-earth);
-    border-left-color: var(--tt-earth);
-    background: color-mix(in oklab, var(--tt-earth) 12%, transparent);
+    border-color: var(--tt-warn-border);
+    background: var(--tt-warn-soft);
+    color: var(--tt-warn-text);
 }
 
 .optionsGuideWarning h3 {
@@ -372,12 +430,14 @@ a.optionsGuideLink {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100px;
-    border: dashed 1px var(--tt-accent);
-    border-radius: 0;
-    opacity: 0.85;
+    min-height: 100px;
+    padding: 16px;
+    box-sizing: border-box;
+    text-align: center;
+    border: 1px dashed var(--tt-border-strong);
+    border-radius: var(--tt-radius-lg);
     color: var(--tt-muted);
-    background: var(--tt-card-alt);
+    background: transparent;
 }
 
 .conflictResolver {

@@ -9,19 +9,53 @@ import {
 } from '../../utils/storage';
 
 import { StickerList } from './stickerList';
+import { StickerPack } from './stickerPack';
+import { EnableBanner, EnableBannerProps } from '../enableBanner';
 import { MaskIcon } from '../../components/MaskIcon';
+import { Modal } from '../../components/Modal';
 import plusIcon from '../../assets/icons/plus.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
 import { addRecentSticker, getRecentStickers, RECENT_STICKERS_KEY } from './recentStickers';
 import { insertSticker } from './insertSticker';
 import { usePopupToast } from '../popupToast';
-import { nextCollectionId } from '../../components/ItemEditor';
+import { checkImageURL } from '../../utils';
+import {
+  ItemEditor,
+  nextCollectionId,
+  PACK_BODY_PLACEHOLDER,
+  PACK_NAME_PLACEHOLDER,
+  PACK_REMOVE_CONFIRM,
+} from '../../components/ItemEditor';
 
 import '../../components/icon.css';
 import './style.css';
 
-export function Stickers() {
+// Resolves once the image at `url` actually loads, rejects on error/timeout.
+// checkImageURL() only checks the extension — this catches dead links.
+const verifyImageLoads = (url: string) => new Promise<void>((resolve, reject) => {
+  const img = new Image();
+  const timer = window.setTimeout(() => {
+    cleanup();
+    reject(new Error('timeout'));
+  }, 6000);
+  const cleanup = () => {
+    window.clearTimeout(timer);
+    img.onload = null;
+    img.onerror = null;
+  };
+  img.onload = () => {
+    cleanup();
+    resolve();
+  };
+  img.onerror = () => {
+    cleanup();
+    reject(new Error('load_error'));
+  };
+  img.src = url;
+});
+
+export function Stickers({ enableBanner = null }: { enableBanner?: EnableBannerProps | null }) {
 
   const { showError } = usePopupToast();
   const [ data, setData ] = useState<IStickerPack[]>([]);
@@ -34,8 +68,17 @@ export function Stickers() {
   const [ fallbacks, setFallbacks ] = useState<StorageFallbackMap>({});
 
   const [ editPackId, setEditPackId ] = useState<number | null>(null);
+  const [ editDraft, setEditDraft ] = useState({ name: '', body: '' });
   const [ saving, setSaving ] = useState(false);
   const skipPersist = useRef(true);
+
+  const [ creatingPack, setCreatingPack ] = useState(false);
+  const [ createDraft, setCreateDraft ] = useState({ name: '', body: '' });
+
+  const [ activePackId, setActivePackId ] = useState<number | null>(null);
+  const [ addStickerUrl, setAddStickerUrl ] = useState('');
+  const [ addStickerError, setAddStickerError ] = useState<string | null>(null);
+  const [ addStickerChecking, setAddStickerChecking ] = useState(false);
 
   const statusView = useMemo(() => {
     if (error) return null;
@@ -100,18 +143,39 @@ export function Stickers() {
     return result;
   };
 
-  const addPack = () => {
+  const openCreatePack = () => {
     const newIndex = nextCollectionId(data);
+    setCreateDraft({ name: `Стикерпак ${ newIndex + 1 }`, body: '' });
+    setCreatingPack(true);
+  };
 
-    const newData = [ ...data, {
+  const closeCreatePack = () => setCreatingPack(false);
+
+  // Pack only gets created (and persisted) on explicit Save. Cancel/Escape/
+  // backdrop click in the modal just closes it — nothing is written.
+  const handleCreatePack = async () => {
+    const newIndex = nextCollectionId(data);
+    const newPack: IStickerPack = {
       id: newIndex,
-      name: `Стикерпак ${ newIndex + 1 }`,
-      items: [],
+      name: createDraft.name.trim(),
+      items: createDraft.body.split('\n').filter(item => checkImageURL(item)),
       updatedAt: Date.now(),
-    } ];
-
-    setData(newData);
-    setEditPackId(newIndex);
+    };
+    const next = [ ...data, newPack ];
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistPacks(next);
+      setData(next);
+      setActivePackId(newPack.id);
+      setCreatingPack(false);
+    } catch (e) {
+      skipPersist.current = false;
+      showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removePack = async (packId: number) => {
@@ -150,6 +214,57 @@ export function Stickers() {
     }
   };
 
+  const openEditPack = (packId: number) => {
+    const pack = data.find(item => item.id === packId);
+    if (!pack) return;
+    setEditDraft({ name: pack.name, body: pack.items.join('\n') });
+    setEditPackId(packId);
+  };
+
+  const handleAddStickerSubmit = async (event: Event) => {
+    event.preventDefault();
+    if (activePackId == null || addStickerChecking) return;
+
+    const url = addStickerUrl.trim();
+    if (!checkImageURL(url)) {
+      setAddStickerError('Нужна прямая ссылка на картинку: png, jpg, jpeg, gif, webp или bmp');
+      return;
+    }
+
+    setAddStickerChecking(true);
+    setAddStickerError(null);
+    try {
+      await verifyImageLoads(url);
+    } catch (e) {
+      setAddStickerError('Не удалось загрузить картинку по этой ссылке');
+      setAddStickerChecking(false);
+      return;
+    }
+
+    const pack = data.find(item => item.id === activePackId);
+    if (!pack) {
+      setAddStickerChecking(false);
+      return;
+    }
+
+    const next = data.map(item => item.id === activePackId
+      ? { ...item, items: [ ...item.items, url ], updatedAt: Date.now() }
+      : item);
+    skipPersist.current = true;
+    setSaving(true);
+    try {
+      await persistPacks(next);
+      setData(next);
+      setAddStickerUrl('');
+    } catch (e) {
+      skipPersist.current = false;
+      showError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
+    } finally {
+      setSaving(false);
+      setAddStickerChecking(false);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const [ result, recent ] = await Promise.all([
@@ -177,6 +292,16 @@ export function Stickers() {
         setLoading(false);
       });
   }, [])
+
+  useEffect(() => {
+    if (!data.length) {
+      if (activePackId !== null) setActivePackId(null);
+      return;
+    }
+    if (activePackId === null || !data.some(pack => pack.id === activePackId)) {
+      setActivePackId(data[0].id);
+    }
+  }, [ data ]);
 
   useEffect(() => {
     if (!loaded) return;
@@ -217,93 +342,170 @@ export function Stickers() {
     return () => chrome.storage.onChanged.removeListener(handleChange);
   }, []);
 
+  const activePack = data.find(pack => pack.id === activePackId) || null;
+
   const renderContent = () => {
     if (loading) {
-      return (
-        <div class="stickerList_empty">
-          Загружаем…
-        </div>
-      );
+      return <div class="emptyList">Загружаем…</div>;
     }
 
     if (error) {
-      return (
-        <div class="stickerList_empty">
-          Список недоступен
-        </div>
-      );
+      return <div class="emptyList">Список недоступен</div>;
     }
 
     if (!data.length) {
       return (
-        <button type="button" class="stickerList_empty" onClick={ addPack }>
-          <div class="stickerList_emptyIcon" />
-          <div class="stickerList_emptyTitle">Список пуст</div>
-          <div class="text-secondary">Нажмите, чтобы добавить первый стикерпак</div>
+        <button type="button" class="emptyList stickerEmptyCta" onClick={ openCreatePack }>
+          <strong>Стикерпаков пока нет</strong>
+          <span class="text-secondary">Нажмите, чтобы создать первый</span>
         </button>
       );
     }
 
     return (
-      <div class="stickerList">
+      <>
         <StickerList
           data={ data }
-          editingId={ editPackId }
-          onEdit={ setEditPackId }
-          onCancelEdit={ () => setEditPackId(null) }
-          onSave={ handleSavePack }
-          onRemove={ removePack }
-          onStickerUsed={ handleStickerUsed }
-          localIds={ data
-            .filter(pack => isStorageItemLocal(fallbacks, 'stickerPack', pack.id))
-            .map(pack => pack.id) }
+          activeId={ activePackId }
+          onSelect={ setActivePackId }
+          onCreate={ openCreatePack }
+          createDisabled={ saving }
         />
-      </div>
+        { activePack && (
+          <StickerPack
+            key={ activePack.id }
+            pack={ activePack }
+            onEdit={ openEditPack }
+            onStickerUsed={ handleStickerUsed }
+            localOnly={ isStorageItemLocal(fallbacks, 'stickerPack', activePack.id) }
+          />
+        ) }
+      </>
     );
   };
 
   return (
     <div class="stickerTab">
       <h2 class="sr-only">Стикеры</h2>
-      <div class="stickerHeader">
-        <div class="stickerActions">
-          { statusView && (
-            <span
-              class={ `stickerStatus stickerStatus--${ statusView.tone }` }
-              title={ statusView.text }
-              aria-label={ statusView.text }
-              role="status"
-            >
-              <MaskIcon
-                src={ statusView.icon }
-                class={ statusView.spin ? 'ttIconSpin' : '' }
-              />
-            </span>
-          ) }
-          <button type="button" class="button small" onClick={ addPack } disabled={ saving } title="Новый стикерпак">
-            <span class="buttonLabel">
-              <MaskIcon src={ plusIcon } />
-              Новый стикерпак
-            </span>
-          </button>
-        </div>
-      </div>
+      <div class="stickerScroll">
+        { enableBanner && (
+          <EnableBanner { ...enableBanner } title="Вставлять стикеры прямо в форму ответа?" />
+        ) }
 
-      { !!recentStickers.length && (
-        <div class="recentStickers">
-          <div class="recentStickersList">
-            { recentStickers.map(sticker => (
-              <button type="button" class="stickerItem" key={ sticker } onClick={ () => handleRecentStickerClick(sticker) } aria-label="Вставить стикер">
-                <img src={ sticker } alt="" />
-              </button>
-            )) }
-          </div>
-        </div>
-      ) }
+        { !!recentStickers.length && (
+          <section class="recentStickers">
+            <div class="recentStickersHead">
+              <h3 class="ttSectionLabel">Недавние</h3>
+              { statusView && (
+                <span
+                  class={ `ttStatusIcon ttStatusIcon--${ statusView.tone }` }
+                  title={ statusView.text }
+                  aria-label={ statusView.text }
+                  role="status"
+                >
+                  <MaskIcon src={ statusView.icon } class={ statusView.spin ? 'ttIconSpin' : '' } />
+                </span>
+              ) }
+            </div>
+            <div class="recentStickersList">
+              { recentStickers.map(sticker => (
+                <button type="button" class="stickerItem" key={ sticker } onClick={ () => handleRecentStickerClick(sticker) } aria-label="Вставить стикер">
+                  <img src={ sticker } alt="" />
+                </button>
+              )) }
+            </div>
+          </section>
+        ) }
 
-      <div class="stickerListWrapper">
+        { !recentStickers.length && statusView && (
+          <span
+            class={ `ttStatusIcon ttStatusIcon--${ statusView.tone }` }
+            title={ statusView.text }
+            aria-label={ statusView.text }
+            role="status"
+          >
+            <MaskIcon src={ statusView.icon } class={ statusView.spin ? 'ttIconSpin' : '' } />
+          </span>
+        ) }
+
         { renderContent() }
       </div>
+
+      { activePack && (
+        <form class="stickerAddBar" onSubmit={ handleAddStickerSubmit }>
+          <label for="stickerAddUrl" class="stickerAddLabel">Добавить в «{ activePack.name }»</label>
+          <div class="stickerAddRow">
+            <input
+              id="stickerAddUrl"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellcheck={ false }
+              placeholder="Прямая ссылка: png, jpg, gif, webp"
+              value={ addStickerUrl }
+              disabled={ addStickerChecking }
+              aria-invalid={ addStickerError ? 'true' : undefined }
+              aria-describedby="stickerAddHint"
+              onInput={ (event) => {
+                setAddStickerUrl((event.target as HTMLInputElement).value);
+                setAddStickerError(null);
+              } }
+            />
+            <button
+              type="submit"
+              class="button primary"
+              disabled={ addStickerChecking || saving || !addStickerUrl.trim() }
+            >
+              { addStickerChecking && <MaskIcon src={ loaderCircleIcon } class="ttIconSpin" /> }
+              { addStickerChecking ? 'Проверяем…' : 'Добавить' }
+            </button>
+          </div>
+          <div id="stickerAddHint" class={ addStickerError ? 'stickerAddHint text-error' : 'stickerAddHint' }>
+            { addStickerError }
+          </div>
+        </form>
+      ) }
+
+      { creatingPack && (
+        <Modal title="Новый стикерпак" onClose={ closeCreatePack }>
+          <ItemEditor
+            name={ createDraft.name }
+            body={ createDraft.body }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ name => setCreateDraft(d => ({ ...d, name })) }
+            onBodyChange={ body => setCreateDraft(d => ({ ...d, body })) }
+            onSave={ handleCreatePack }
+            onCancel={ closeCreatePack }
+            onInvalid={ showError }
+            bodySpellCheck={ false }
+          />
+        </Modal>
+      ) }
+
+      { editPackId != null && (
+        <Modal title="Редактировать стикерпак" onClose={ () => setEditPackId(null) }>
+          <ItemEditor
+            name={ editDraft.name }
+            body={ editDraft.body }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ name => setEditDraft(d => ({ ...d, name })) }
+            onBodyChange={ body => setEditDraft(d => ({ ...d, body })) }
+            onSave={ () => handleSavePack({
+              id: editPackId,
+              name: editDraft.name.trim(),
+              items: editDraft.body.split('\n').filter(item => checkImageURL(item)),
+              updatedAt: Date.now(),
+            }) }
+            onCancel={ () => setEditPackId(null) }
+            onRemove={ () => removePack(editPackId) }
+            onInvalid={ showError }
+            removeConfirm={ PACK_REMOVE_CONFIRM }
+            bodySpellCheck={ false }
+          />
+        </Modal>
+      ) }
     </div>
   )
 }

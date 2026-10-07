@@ -16,10 +16,11 @@ export async function insertSticker(src: string, options: InsertStickerOptions =
   };
 
   try {
-    await sendMessageToActiveTab({
+    const resp = await sendMessageToActiveTab({
       type: 'tundra_toolkit_insert_sticker',
       src,
     });
+    if (!resp?.success) await copyWithNotice();
   } catch (e) {
     await copyWithNotice();
   }

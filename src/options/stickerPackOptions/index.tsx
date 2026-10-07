@@ -8,9 +8,20 @@ import {
   setItemCloudPinned,
   STORAGE_FALLBACKS_KEY,
 } from '../../utils/storage';
+import { checkImageURL } from '../../utils';
 
 import StickerPack from './stickerPack';
-import { nextCollectionId, StorageSavingStatus } from '../../components/ItemEditor';
+import { Modal } from '../../components/Modal';
+import {
+  ItemEditor,
+  nextCollectionId,
+  PACK_BODY_PLACEHOLDER,
+  PACK_NAME_PLACEHOLDER,
+  PACK_REMOVE_CONFIRM,
+  StorageSavingStatus,
+} from '../../components/ItemEditor';
+import { MaskIcon } from '../../components/MaskIcon';
+import plusIcon from '../../assets/icons/plus.svg';
 
 const STORAGE_KEY = 'stickerPack';
 
@@ -26,6 +37,9 @@ export default function () {
   const [ reorderMode, setReorderMode ] = useState(false);
   const [ editingId, setEditingId ] = useState<number | null>(null);
   const [ saving, setSaving ] = useState(false);
+  const [ creating, setCreating ] = useState(false);
+  const [ createDraft, setCreateDraft ] = useState({ name: '', body: '' });
+  const [ editDraft, setEditDraft ] = useState({ name: '', body: '' });
 
   const refreshLocations = () => {
     getCollectionLocations('stickerPack')
@@ -69,23 +83,57 @@ export default function () {
     await writePacks(newData);
   }
 
-  const addStickerPack = async () => {
+  const openCreateStickerPack = () => {
     const newIndex = nextCollectionId(data);
-    const newData = [ ...data, {
-      id: newIndex,
-      name: `Стикерпак ${ newIndex + 1 }`,
-      items: [],
-      updatedAt: Date.now(),
-    } ];
+    setCreateDraft({ name: `Стикерпак ${ newIndex + 1 }`, body: '' });
+    setCreating(true);
+  };
 
+  const closeCreateStickerPack = () => setCreating(false);
+
+  // Only written on Save — Cancel/Escape/backdrop closes the modal and
+  // leaves storage untouched (no phantom empty pack).
+  const handleCreateStickerPack = async () => {
+    const newIndex = nextCollectionId(data);
+    const newPack: IStickerPack = {
+      id: newIndex,
+      name: createDraft.name.trim(),
+      items: createDraft.body.split('\n').filter(item => checkImageURL(item)),
+      updatedAt: Date.now(),
+    };
     try {
-      await writePacks(newData);
+      await writePacks([ ...data, newPack ]);
     } catch {
       return;
     }
-    setEditingId(newIndex);
+    setCreating(false);
     ref.current?.scrollIntoView();
   }
+
+  const openEditPack = (packId: number) => {
+    const pack = data.find(item => item.id === packId);
+    if (!pack) return;
+    setError(null);
+    setEditDraft({ name: pack.name, body: (pack.items || []).join('\n') });
+    setEditingId(packId);
+  };
+
+  const closeEditPack = () => setEditingId(null);
+
+  const handleEditPackSave = async () => {
+    if (editingId == null) return;
+    const clearedItems = editDraft.body.split('\n').filter(item => checkImageURL(item));
+    try {
+      await updateStickerPack({
+        id: editingId,
+        name: editDraft.name.trim(),
+        items: clearedItems,
+      });
+    } catch {
+      return;
+    }
+    setEditingId(null);
+  };
 
   const removeStickerPack = async (packId: number) => {
     const newData = [ ...data ];
@@ -212,7 +260,7 @@ export default function () {
           <StorageSavingStatus saving={ saving } />
           { data.length > 1 && (
             <button
-              className={ `button small${ reorderMode ? ' success' : '' }` }
+              className={ `button${ reorderMode ? ' success' : '' }` }
               title={ reorderMode ? 'Завершить изменение порядка' : 'Изменить порядок стикерпаков' }
               disabled={ saving }
               onClick={ () => {
@@ -220,22 +268,22 @@ export default function () {
                 setReorderMode(prev => !prev);
               } }
             >
-              { reorderMode ? 'Готово' : 'Изменить порядок' }
+              { reorderMode ? 'Готово' : 'Порядок паков' }
             </button>
           ) }
           { !reorderMode && (
             <button
-              className="button small primary"
-              title="Добавить стикерпак"
+              className="button primary"
               disabled={ saving }
-              onClick={ addStickerPack }
+              onClick={ openCreateStickerPack }
             >
-              Добавить
+              <MaskIcon src={ plusIcon } />
+              Новый стикерпак
             </button>
           ) }
         </div>
       </div>
-      <div>
+      <div className="stickerPackOptionsList">
         { warning && (
           <div className="text-secondary optionsNotice">
             { warning }
@@ -265,15 +313,8 @@ export default function () {
           >
             <StickerPack
               onChange={ updateStickerPack }
-              onRemove={ removeStickerPack }
               pack={ pack }
-              editing={ editingId === pack.id }
-              onEdit={ () => {
-                setError(null);
-                setEditingId(pack.id);
-              } }
-              onCancelEdit={ () => setEditingId(null) }
-              onInvalid={ setError }
+              onEdit={ openEditPack }
               location={ locations[String(pack.id)] || 'local' }
               onCloudToggle={ async () => {
                 const current = locations[String(pack.id)] || 'local';
@@ -287,11 +328,47 @@ export default function () {
         )) }
         {!data.length && (
           <div className="emptyList">
-            Список пока пуст. Создайте первый стикерпак кнопкой «Добавить».
+            Список пока пуст. Создайте первый стикерпак кнопкой «Новый стикерпак».
           </div>
         )}
         <div ref={ ref }></div>
       </div>
+
+      { editingId != null && (
+        <Modal title="Редактировать стикерпак" onClose={ closeEditPack }>
+          <ItemEditor
+            name={ editDraft.name }
+            body={ editDraft.body }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ name => setEditDraft(d => ({ ...d, name })) }
+            onBodyChange={ body => setEditDraft(d => ({ ...d, body })) }
+            onSave={ handleEditPackSave }
+            onCancel={ closeEditPack }
+            onRemove={ () => removeStickerPack(editingId) }
+            onInvalid={ setError }
+            removeConfirm={ PACK_REMOVE_CONFIRM }
+            bodySpellCheck={ false }
+          />
+        </Modal>
+      ) }
+
+      { creating && (
+        <Modal title="Новый стикерпак" onClose={ closeCreateStickerPack }>
+          <ItemEditor
+            name={ createDraft.name }
+            body={ createDraft.body }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ name => setCreateDraft(d => ({ ...d, name })) }
+            onBodyChange={ body => setCreateDraft(d => ({ ...d, body })) }
+            onSave={ handleCreateStickerPack }
+            onCancel={ closeCreateStickerPack }
+            onInvalid={ setError }
+            bodySpellCheck={ false }
+          />
+        </Modal>
+      ) }
     </section>
   )
 }

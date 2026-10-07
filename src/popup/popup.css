@@ -1,13 +1,12 @@
 :root {
-  --popup-bg: var(--bg-color);
-  --popup-card: var(--tt-accent-soft);
+  --popup-bg: var(--tt-bg);
+  --popup-card: var(--tt-card);
   --popup-border: var(--tt-border);
   --popup-muted: var(--tt-muted);
   --popup-text: var(--tt-text);
   --popup-accent: var(--tt-accent);
   --popup-success: var(--tt-success);
   --popup-danger: var(--tt-danger);
-  --popup-radius: 0;
   --popup-width: 460px;
   /* Chrome popup practical max height — keep a single inner scroller */
   --popup-max-height: 600px;
@@ -21,11 +20,16 @@ body {
   overflow: hidden;
 }
 
+body {
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 #app {
   width: var(--popup-width);
   max-width: var(--popup-width);
+  height: var(--popup-max-height);
   max-height: var(--popup-max-height);
-  min-height: 320px;
   margin: 0;
   box-sizing: border-box;
   overflow: hidden;
@@ -34,162 +38,204 @@ body {
   background: var(--popup-bg);
   color: var(--popup-text);
   font-family: var(--tt-font-body);
-  border: var(--tt-border-width) solid var(--tt-border-strong);
-}
-
-h4 {
-  margin: 0;
-  font-family: var(--tt-font-display);
-  font-size: 17px;
-  font-weight: 600;
-}
-
-h5 {
-  margin: 0;
-  font-family: var(--tt-font-display);
-  font-size: 14px;
-  font-weight: 600;
 }
 
 .popupWrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   width: 100%;
-  min-height: 320px;
-  max-height: var(--popup-max-height);
+  min-height: 0;
   overflow: hidden;
 }
 
-/* Tab bar — frost strip + chevron side motif */
-.popupTabs {
+/* ── Header ─────────────────────────────────────────── */
+.popupHeader {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 8px;
-  background: var(--tt-frost);
-  color: var(--tt-on-frost);
-  border-bottom: var(--tt-border-width) solid var(--tt-earth);
-  position: relative;
+  gap: 12px;
+  height: 60px;
+  padding: 0 8px 0 14px;
+  background: var(--tt-head-bg);
+  color: var(--tt-head-fg);
   flex: 0 0 auto;
 }
 
-.popupTabsMain,
-.popupTabsActions {
+.popupLogo {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 auto;
+  border-radius: 9px;
+  background: var(--tt-logo-bg);
+  color: var(--tt-logo-fg);
 }
 
-.popupTabsMain {
-  flex: 1;
+.popupLogo .ttIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.popupLogo.is-muted {
+  background: #2B3A3B;
+  color: var(--tt-head-muted);
+}
+
+.popupHeaderMeta {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
-.popupTabsActions {
-  flex: 0 0 auto;
-}
-
-.popupTabs .button {
-  flex: 0 0 auto;
-  min-width: 36px;
-  width: 36px;
-  height: 36px;
-  min-height: 36px;
-  padding: 0;
+.popupHeaderTitle {
+  font-size: 13px;
   font-weight: 600;
-  border: 1px solid transparent;
-  border-radius: 0;
-  color: var(--tt-night);
-  background: var(--tt-bone);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.popupTabs .button .ttIcon {
-  color: inherit;
+.popupHeaderSub {
+  font-size: 12px;
+  color: var(--tt-head-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.popupTabs .button.tabButton {
+.popupPower {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--tt-head-soft);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.popupHeaderButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: var(--tt-radius);
+  background: transparent;
+  color: var(--tt-head-soft);
+  cursor: pointer;
 }
 
-.popupTabs .button.outline {
-  background-color: transparent;
+.popupHeaderButton:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+}
+
+.popupHeaderButton .ttIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.popupOrnament {
+  flex: 0 0 auto;
+}
+
+/* ── Tabs ───────────────────────────────────────────── */
+.popupTabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  background: var(--tt-card);
+  border-bottom: 1px solid var(--tt-border);
+  flex: 0 0 auto;
+}
+
+.popupTab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 56px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tt-muted);
+  font: 500 11px/1 var(--tt-font-body);
+  cursor: pointer;
+}
+
+.popupTab .ttIcon {
+  width: 18px;
+  height: 18px;
+}
+
+.popupTab:hover {
+  background: var(--tt-card-alt);
+  color: var(--tt-text);
+}
+
+.popupTab[aria-current="page"] {
+  color: var(--tt-frost);
+  box-shadow: inset 0 -2px 0 var(--tt-frost);
+}
+
+.popupTab:disabled {
+  opacity: 1;
+  color: color-mix(in oklab, var(--tt-muted) 55%, transparent);
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.popupTab:focus-visible {
+  outline: 2px solid var(--tt-frost);
+  outline-offset: -2px;
+}
+
+.popupTabLabel {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.popupTabAction {
+  border-left: 1px solid var(--tt-border-soft);
 }
 
 .tabBadge {
   position: absolute;
-  top: -3px;
-  right: -3px;
+  top: 6px;
+  left: calc(50% + 4px);
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
-  border-radius: 0;
+  box-sizing: border-box;
+  border-radius: 8px;
   background: var(--tt-ember);
-  color: var(--tt-bone);
-  font-size: 11px;
+  color: #FFFFFF;
+  font-size: 10px;
   font-weight: 700;
   line-height: 16px;
   text-align: center;
   pointer-events: none;
-  border: 1px solid var(--tt-night);
   font-variant-numeric: tabular-nums;
 }
 
-.popupTabs .button:hover {
-  background: var(--tt-card);
-  border-color: var(--tt-earth);
-  color: var(--tt-text);
-}
-
-.popupTabs .button.primary {
-  background: var(--tt-night);
-  color: var(--tt-bone);
-  border-color: var(--tt-night);
-}
-
-.popupTabs .button.forumPowerToggle.muted {
-  background: var(--tt-card-alt);
-  color: var(--tt-muted);
-}
-
-.popupTabs .button.forumPowerToggle.active {
-  background: var(--tt-night);
-  color: var(--tt-success);
-  border-color: var(--tt-night);
-}
-
-.popupTabs .button.forumPowerToggle.active:hover {
-  background: var(--tt-night-lift);
-}
-
-.popupTabs .button.controlsSettings {
-  flex: 0 0 auto;
-  min-width: 0;
-  width: 36px;
-  padding: 0;
-}
-
-.controlsSettingsContent {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.controlsSettingsIcon {
-  width: 16px;
-  height: 16px;
-  display: inline-block;
-}
-
+/* ── Content ────────────────────────────────────────── */
 .popupTabContent {
   position: relative;
-  background: var(--popup-card);
-  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 12px 14px 16px;
   flex: 1 1 auto;
   min-height: 0;
   min-width: 0;
@@ -200,385 +246,114 @@ h5 {
   overscroll-behavior: contain;
 }
 
-/* Unified tab panel header — actions always top-right */
-.tabPanelHeader {
+.popupTabContent > * {
+  flex: 0 0 auto;
+}
+
+.popupNotice {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.tabPanelHeader > div:first-child {
-  min-width: 0;
-}
-
-.tabPanelHeader h2,
-.tabPanelHeader h4 {
-  margin: 0;
-  font-family: var(--tt-font-display);
-  font-size: 17px;
-  font-weight: 600;
-}
-
-.tabPanelHeader p {
-  margin: 2px 0 0;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tt-subtle);
+  color: var(--tt-text-2);
   font-size: 12px;
-  color: var(--popup-muted);
 }
 
-.tabPanelActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  margin-left: auto;
+.popupNotice .ttIcon {
+  margin-top: 1px;
 }
 
-.tabPanelStatus {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-  min-height: 22px;
-  color: var(--popup-muted);
-  font-size: 13px;
+/* Card shell shared by tabs */
+.ttCard {
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: 10px;
 }
 
-.tabPanelDivider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--tt-earth);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.tabPanelDivider::before,
-.tabPanelDivider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--tt-earth) 12%,
-    var(--tt-earth) 88%,
-    transparent
-  );
-  opacity: 0.55;
-}
-
-/* Style tab */
-.styleTab {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.styleTabHeader p,
-.styleControl p {
-  margin: 3px 0 0;
-  font-size: 13px;
-}
-
-.styleTabNotice {
-  padding: 9px 10px;
-  border: var(--tt-border-width) solid var(--popup-border);
-  border-radius: 0;
-  color: var(--popup-muted);
-  background: var(--tt-card-alt);
-}
-
-.styleControl {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  min-height: 58px;
-  padding: 10px;
-  border: 1px solid var(--popup-border);
-  border-left: 3px solid var(--tt-frost);
-  border-radius: 0;
-  background: var(--tt-card-alt);
-}
-
-.styleControl > div:first-child {
-  min-width: 0;
-}
-
-.styleControl h3 {
-  margin: 0;
-  font-family: var(--tt-font-display);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* Sharp switch — no pills */
-.styleSwitch {
-  position: relative;
-  flex: 0 0 auto;
-  width: 42px;
-  height: 22px;
-  margin: 0;
-}
-
-.styleSwitch input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-}
-
-.styleSwitch > span[aria-hidden] {
-  position: absolute;
-  inset: 0;
-  border-radius: 0;
-  border: 1px solid var(--popup-border);
-  background: var(--tt-muted);
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.styleSwitch > span[aria-hidden]::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 0;
-  background: var(--tt-bone);
-  transition: transform 0.15s ease;
-}
-
-.styleSwitch input:checked + span {
-  background: var(--popup-success);
-  border-color: var(--popup-success);
-}
-
-.styleSwitch input:checked + span::after {
-  transform: translateX(20px);
-}
-
-.styleSwitch input:focus-visible + span {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
-}
-
-.styleSwitch input:disabled + span {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.fontScaleControl {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 6px;
-}
-
-.fontScaleControl .button,
-.fontScaleValue {
-  min-width: 32px;
-  height: var(--tt-btn-height-sm);
-  min-height: var(--tt-btn-height-sm);
-  margin: 0;
-  padding: 0 8px;
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
+.ttStatusIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  line-height: 1;
-  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  color: var(--tt-muted);
+  cursor: help;
 }
 
-.fontScaleValue {
-  min-width: 58px;
-  color: var(--popup-text);
-  background: transparent;
-  font-variant-numeric: tabular-nums;
-}
+.ttStatusIcon--success { color: var(--tt-success); }
+.ttStatusIcon--error { color: var(--tt-danger); }
 
-.paragraphSpacingValue {
-  min-width: 68px;
-}
-
-.fontScaleValue:not(:disabled) {
-  cursor: pointer;
-}
-
-.fontScaleValue:focus-visible {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
-}
-
-.templatesTab,
-.stickerTab,
-.favoritesTab,
-.ignoreTab {
+/* "Enable on this forum" banner (stickers / drafts) */
+.enableBanner {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--tt-radius-lg);
+  background: var(--tt-head-bg);
+  color: #E8F0EE;
 }
 
-.templatesHeader,
-.stickerHeader,
-.favoritesHeader,
-.ignoreHeader {
+.enableBannerBody {
   display: flex;
-  justify-content: space-between;
+  gap: 12px;
   align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
 }
 
-.templatesHeader h4,
-.stickerHeader h4,
-.favoritesHeader h4,
-.ignoreHeader h4 {
-  margin: 0;
-}
-
-.templatesHeader p,
-.stickerHeader p,
-.favoritesHeader p,
-.ignoreHeader p {
-  margin: 2px 0 0;
-}
-
-.templatesActions,
-.stickerActions,
-.favoritesActions,
-.ignoreHeaderActions,
-.ignoreActions {
+.enableBannerIcon {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  margin-left: auto;
-}
-
-.templatesStatus {
-  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
-  color: var(--popup-muted);
-  cursor: help;
+  border-radius: 10px;
+  background: #243433;
+  color: #6FD3C2;
 }
 
-.templatesStatus--success {
-  color: var(--tt-success);
+.enableBannerTitle {
+  font-weight: 600;
+  color: #FFFFFF;
 }
 
-.templatesStatus--error {
-  color: var(--tt-danger);
+.enableBannerText {
+  font-size: 12px;
+  color: #B4C5C2;
 }
 
-.templatesStatus--muted {
-  color: var(--popup-muted);
-}
-
-.stickerStatus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  color: var(--popup-muted);
-  cursor: help;
-}
-
-.stickerStatus--success {
-  color: var(--tt-success);
-}
-
-.stickerStatus--error {
-  color: var(--tt-danger);
-}
-
-.stickerStatus--muted {
-  color: var(--popup-muted);
-}
-
-.templatesList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.templateCard {
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
-  padding: 10px;
-  background: var(--popup-card);
-  border-left: 3px solid var(--tt-frost);
-}
-
-.templateHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.templateHeader h3,
-.templateHeader h5 {
-  margin: 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--tt-font-display);
-  font-size: 14px;
+.enableBanner .button {
+  width: 100%;
+  background: var(--tt-head-accent);
+  border-color: var(--tt-head-accent);
+  color: #0B1716;
   font-weight: 600;
 }
 
-.templatePreview {
-  margin: 6px 0 10px;
-  font-size: 0.95em;
-  color: var(--popup-muted);
-  word-break: break-word;
-}
-
-.templateCardActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.enableBanner .button:hover {
+  background: #52BBA9;
+  border-color: #52BBA9;
+  color: #0B1716;
 }
 
 .emptyList {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   padding: 18px;
   text-align: center;
-  color: var(--popup-muted);
-  border: 1px dashed var(--popup-accent);
-  border-radius: 0;
-  background: var(--tt-card-alt);
+  color: var(--tt-muted);
+  border: 1px dashed var(--tt-border-strong);
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
 }
-
-.tag.success {
-  background: color-mix(in oklab, var(--tt-success) 12%, transparent);
-  color: var(--tt-success);
-  border: 1px solid color-mix(in oklab, var(--tt-success) 25%, transparent);
-}
-
-.tag.error {
-  background: color-mix(in oklab, var(--tt-danger) 12%, transparent);
-  color: var(--tt-danger);
-  border: 1px solid color-mix(in oklab, var(--tt-danger) 25%, transparent);
-}
-
 
 .text-secondary {
-  color: var(--popup-muted);
+  color: var(--tt-muted);
 }
 
 .text-success {
@@ -589,23 +364,264 @@ h5 {
   color: var(--tt-danger);
 }
 
-.popupToast {
+/* ── Style tab ──────────────────────────────────────── */
+.styleTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.styleTabNotice {
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--tt-text-2);
+  background: var(--tt-subtle);
+  font-size: 12px;
+}
+
+.styleGroupTitle {
+  padding: 10px 12px 2px;
+}
+
+.styleControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 12px;
+}
+
+.styleControl + .styleControl {
+  border-top: 1px solid var(--tt-border-soft);
+  padding-top: 12px;
+}
+
+.styleControlText {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.styleControlTitle {
+  display: block;
+  font-weight: 500;
+}
+
+.styleControlHint {
+  display: block;
+  font-size: 12px;
+  color: var(--tt-muted);
+}
+
+label.styleControl {
+  cursor: pointer;
+}
+
+.styleFootnote {
+  font-size: 12px;
+  color: var(--tt-muted);
+  text-align: center;
+}
+
+.ttStepper {
+  display: inline-flex;
+  align-items: stretch;
   flex: 0 0 auto;
+  border: 1px solid var(--tt-border-strong);
+  border-radius: var(--tt-radius);
+  background: var(--tt-card);
+  overflow: hidden;
+}
+
+.ttStepper button {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--tt-text);
+  font: 500 16px/1 var(--tt-font-body);
+  cursor: pointer;
+}
+
+.ttStepper button:hover:not(:disabled) {
+  background: var(--tt-card-alt);
+}
+
+.ttStepper button:disabled {
+  color: var(--tt-muted);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ttStepper .ttStepperValue {
+  width: 64px;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  border-left: 1px solid var(--tt-border-soft);
+  border-right: 1px solid var(--tt-border-soft);
+}
+
+.ttStepper .ttStepperValue:disabled {
+  opacity: 1;
+  color: var(--tt-text);
+  cursor: default;
+}
+
+.ttStepper button:focus-visible {
+  outline: 2px solid var(--tt-frost);
+  outline-offset: -2px;
+}
+
+/* ── Drafts tab ─────────────────────────────────────── */
+.draftsTab {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.draftsActions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.draftsActions .button {
+  height: 40px;
+}
+
+.draftsToolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ttSearch {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ttSearch > .ttIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tt-muted);
+  pointer-events: none;
+}
+
+.ttSearch input {
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px 0 34px;
+  font-size: 13px;
+}
+
+.draftList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.draftCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: 10px;
+}
+
+.draftCard:hover {
+  border-color: var(--tt-border-strong);
+}
+
+.draftCardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.draftTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.draftPreview {
+  color: var(--tt-text-2);
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.draftPreview.is-empty {
+  color: var(--tt-muted);
+  font-style: italic;
+}
+
+.draftCardFoot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.draftMeta {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tt-muted);
+}
+
+.localDot {
+  display: inline-flex;
+  color: var(--tt-earth);
+}
+
+.localDot .ttIcon {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Toast ──────────────────────────────────────────── */
+.popupToast {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 50;
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  margin-top: auto;
-  padding: 8px 10px;
-  background: color-mix(in oklab, var(--tt-ember) 12%, var(--popup-bg));
-  color: var(--tt-danger);
-  border-top: 2px solid var(--tt-ember);
-  font-size: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--tt-head-bg);
+  color: #FFFFFF;
+  box-shadow: var(--tt-shadow);
+  font-size: 13px;
   line-height: 1.4;
   animation: popupToastIn 0.18s ease-out;
 }
 
 .popupToast > .ttIcon {
   margin-top: 1px;
+  color: #F5A58A;
 }
 
 .popupToastText {
@@ -617,9 +633,10 @@ h5 {
   flex: 0 0 auto;
   width: 22px;
   height: 22px;
-  margin: -2px -4px -2px 0;
+  margin: -1px -4px -1px 0;
   padding: 0;
   border: 0;
+  border-radius: 4px;
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -629,17 +646,12 @@ h5 {
 }
 
 .popupToastClose:hover {
-  background: color-mix(in oklab, var(--tt-ember) 18%, transparent);
-}
-
-.popupToastClose:focus-visible {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 @keyframes popupToastIn {
   from {
-    transform: translateY(100%);
+    transform: translateY(8px);
     opacity: 0;
   }
   to {
@@ -649,12 +661,6 @@ h5 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .popupTabs .button,
-  .styleSwitch > span[aria-hidden],
-  .styleSwitch > span[aria-hidden]::after {
-    transition: none;
-  }
-
   .popupToast {
     animation: none;
   }

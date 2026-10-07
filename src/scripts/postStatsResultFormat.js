@@ -43,40 +43,49 @@
   };
 
   const reportToCharsHtml = (report, { getUserLabelHtml }) => {
-    const parts = [
-      `С ${report.fromLabel} по ${report.toLabel} написали:<br><br>`,
-      `Эпизодов: ${report.episodeCount}<br>`,
-      `Постов: ${report.postTotal}<br><br>`,
-    ];
+    const rows = [ ...report.users ]
+      .sort((a, b) => b.count - a.count)
+      .map(({ userId, count }) => `<tr><td>${getUserLabelHtml(userId)}</td><td class="num">${count}</td></tr>`)
+      .join('');
 
-    report.users.forEach(({ userId, count }) => {
-      parts.push(`${getUserLabelHtml(userId)}: ${count}<br>`);
-    });
-    parts.push('<br>');
-    return parts.join('');
+    return [
+      `<p class="ttPeriod">С ${report.fromLabel} по ${report.toLabel}</p>`,
+      '<div class="ttStats">',
+      `<div class="ttStat"><span>Эпизодов</span><strong>${report.episodeCount}</strong></div>`,
+      `<div class="ttStat"><span>Постов</span><strong>${report.postTotal}</strong></div>`,
+      '</div>',
+      rows
+        ? `<div class="ttTableWrap"><table class="ttTable"><thead><tr><th>Профиль</th><th class="num">Постов</th></tr></thead><tbody>${rows}</tbody></table></div>`
+        : '',
+    ].join('');
   };
 
   const reportToTopicsHtml = (report, { getUserLabelHtml, escapeHtml }) => {
     const parts = [];
 
-    report.topics.forEach(({ url, title, count }) => {
-      parts.push(
-        `${padCount(count)}| <a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a><br>`
-      );
-    });
+    if (report.topics.length) {
+      parts.push('<h4>Эпизоды</h4><ol class="ttTopics">');
+      report.topics.forEach(({ url, title, count }) => {
+        parts.push(
+          `<li><span class="count">${count}</span><a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(title)}</a></li>`
+        );
+      });
+      parts.push('</ol>');
+    }
 
     if (report.charStats) {
-      parts.push('<br><hr>', '<h4>По символам</h4>');
+      parts.push('<h4 style="margin-top:16px">По символам</h4><div class="ttChars">');
       report.charStats.forEach(({ userId, buckets }) => {
-        parts.push(`${getUserLabelHtml(userId)}:<br>`);
+        parts.push(`<strong>${getUserLabelHtml(userId)}</strong><br>`);
         buckets.forEach(({ key, urls }) => {
           parts.push(`${key}: ${urls.length}<br>`);
           urls.forEach((url) => {
-            parts.push(`  <a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a><br>`);
+            parts.push(`&nbsp;&nbsp;<a href="${url}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a><br>`);
           });
         });
         parts.push('<br>');
       });
+      parts.push('</div>');
     }
 
     return parts.join('');

@@ -1,13 +1,19 @@
 .itemEditor {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .itemEditorField {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
+}
+
+.itemEditorLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--tt-text);
 }
 
 .itemEditor input,
@@ -15,12 +21,9 @@
   width: 100%;
   box-sizing: border-box;
   margin: 0;
-  padding: 8px 10px;
-  border: 1px solid var(--popup-border, var(--tt-border));
-  border-radius: 0;
-  background: var(--tt-input-bg);
-  color: var(--popup-text, var(--tt-text));
-  font-family: inherit;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .itemEditor textarea {
@@ -30,9 +33,15 @@
 
 .itemEditorActions {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.itemEditorActions .itemEditorRemove {
+  margin-right: auto;
 }
 
 .itemEditor[aria-busy="true"] input,
@@ -47,17 +56,5 @@
   width: 28px;
   height: 28px;
   flex: 0 0 auto;
-  color: var(--popup-muted, var(--tt-muted));
-}
-
-.stickerPack > .itemEditor {
-  padding: 12px;
-}
-
-.stickerListEditor {
-  padding: 12px;
-  margin-bottom: 12px;
-  border: 1px solid var(--tt-border);
-  border-left: 3px solid var(--tt-frost);
-  background: var(--tt-card);
+  color: var(--tt-muted);
 }

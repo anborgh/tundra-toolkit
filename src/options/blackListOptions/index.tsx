@@ -9,6 +9,7 @@ import {
 import { decodeEntities } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
 import { CloudSyncButton, hasCloudOverflow } from '../../components/CloudSyncButton';
+import { useConfirm } from '../../components/ConfirmDialog';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
@@ -18,6 +19,7 @@ import '../../components/icon.css';
 import './style.css';
 
 export function BlackListOptions() {
+  const confirmAction = useConfirm();
   const [ data, setData ] = useState<IBoardStore[]>([]);
   const [ topicsData, setTopicsData ] = useState<IBoardTopicsStore[]>([]);
   const [ loaded, setLoaded ] = useState(false);
@@ -77,8 +79,12 @@ export function BlackListOptions() {
     setError('Не удалось сохранить список: в Chrome Sync не хватило места.');
   };
 
-  const handleRemoveClick = (boardID: string, forumID: string, user: { userName: string, userID: string }) => {
-    const isConfirmed = confirm(`Убрать ${ user.userName } из игнора?`);
+  const handleRemoveClick = async (boardID: string, forumID: string, user: { userName: string, userID: string }) => {
+    const isConfirmed = await confirmAction({
+      message: `Убрать ${ user.userName } из игнора?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!isConfirmed) return;
 
     const newData = data.map(board => {
@@ -108,8 +114,12 @@ export function BlackListOptions() {
     }).then(handleSaveResult).catch(() => handleSaveError());
   };
 
-  const handleRemoveTopicClick = (boardID: string, topic: { topicName: string, topicID: string }) => {
-    const isConfirmed = confirm(`Убрать тему «${ decodeEntities(topic.topicName) }» из игнора?`);
+  const handleRemoveTopicClick = async (boardID: string, topic: { topicName: string, topicID: string }) => {
+    const isConfirmed = await confirmAction({
+      message: `Убрать тему «${ decodeEntities(topic.topicName) }» из игнора?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!isConfirmed) return;
 
     const newData = topicsData.map(board => {

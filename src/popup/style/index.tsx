@@ -37,12 +37,7 @@ export function StyleTab({
 
   return (
     <div class="styleTab">
-      <div class="styleTabHeader tabPanelHeader">
-        <div>
-          <h2>Стиль</h2>
-          <p class="text-secondary">Настройки сохраняются отдельно для каждого форума.</p>
-        </div>
-      </div>
+      <h2 class="sr-only">Стиль</h2>
 
       { !available && (
         <div class="styleTabNotice">
@@ -50,127 +45,126 @@ export function StyleTab({
         </div>
       ) }
 
-      <div class="styleControl">
-        <div>
-          <h3>SFW-стиль</h3>
-          <p class="text-secondary">Заменить оформление форума на нейтральное.</p>
-        </div>
-        <label class="styleSwitch">
-          <input
-            type="checkbox"
-            checked={ sfwEnabled }
-            disabled={ !available || sfwBusy }
-            onChange={ onToggleSfw }
-          />
-          <span aria-hidden="true" />
-          <span class="sr-only">SFW-стиль</span>
+      <section class="ttCard" aria-labelledby="styleGroupForum">
+        <h3 id="styleGroupForum" class="ttSectionLabel styleGroupTitle">Весь форум</h3>
+        <label class="styleControl">
+          <span class="styleControlText">
+            <span class="styleControlTitle">SFW-стиль</span>
+            <span class="styleControlHint">Мелкие аватары, без подписей, шапки и декора. Содержимое постов не фильтрует.</span>
+          </span>
+          <span class="ttSwitch">
+            <input
+              type="checkbox"
+              checked={ sfwEnabled }
+              disabled={ !available || sfwBusy }
+              onChange={ onToggleSfw }
+            />
+            <span aria-hidden="true" />
+          </span>
         </label>
-      </div>
-
-      <div class="styleControl">
-        <div>
-          <h3>Размер шрифта постов</h3>
-          <p class="text-secondary">Если форум сам задаёт размер шрифта, текст в некоторых элементах может не измениться.</p>
-        </div>
-        <div class="fontScaleControl" role="group" aria-label="Размер шрифта постов">
-          <button
-            class="button small"
-            type="button"
-            disabled={ controlsDisabled || fontScale <= MIN_FONT_SCALE }
-            onClick={ () => onFontScaleChange(fontScale - FONT_SCALE_STEP) }
-            aria-label="Уменьшить шрифт"
-          >
-            −
-          </button>
-          <button
-            class="fontScaleValue"
-            type="button"
-            disabled={ controlsDisabled || fontScale === 100 }
-            onClick={ () => onFontScaleChange(100) }
-            title="Вернуть 100%"
-            aria-label="Вернуть 100%"
-          >
-            { fontScale }%
-          </button>
-          <button
-            class="button small"
-            type="button"
-            disabled={ controlsDisabled || fontScale >= MAX_FONT_SCALE }
-            onClick={ () => onFontScaleChange(fontScale + FONT_SCALE_STEP) }
-            aria-label="Увеличить шрифт"
-          >
-            +
-          </button>
-        </div>
-      </div>
-
-      <div class="styleControl">
-        <div>
-          <h3>Красная строка</h3>
-          <p class="text-secondary">
-            { sectionAvailable
-              ? 'Настраивается отдельно для каждого раздела форума.'
-              : 'Откройте любую страницу в нужном разделе форума.' }
-          </p>
-        </div>
-        <label class="styleSwitch">
-          <input
-            type="checkbox"
-            checked={ firstLineIndent }
-            disabled={ controlsDisabled || !sectionAvailable }
-            onChange={ onToggleFirstLineIndent }
-          />
-          <span aria-hidden="true" />
-          <span class="sr-only">Красная строка</span>
-        </label>
-      </div>
-
-      { firstLineIndent && (
         <div class="styleControl">
-          <div>
-            <h3>Отступ между абзацами</h3>
-            <p class="text-secondary">Расстояние между соседними абзацами поста.</p>
+          <div class="styleControlText">
+            <span class="styleControlTitle">Размер шрифта постов</span>
+            <span class="styleControlHint">Клик по значению вернёт 100%</span>
           </div>
-          <div class="fontScaleControl" role="group" aria-label="Отступ между абзацами">
+          <div class="ttStepper" role="group" aria-label="Размер шрифта постов">
             <button
-              class="button small"
               type="button"
-              disabled={ controlsDisabled || paragraphSpacing === 0 }
-              onClick={ () => onParagraphSpacingChange(
-                paragraphSpacing === null
-                  ? 0
-                  : Math.max(0, paragraphSpacing - PARAGRAPH_SPACING_STEP),
-              ) }
-              aria-label="Уменьшить отступ между абзацами"
+              disabled={ controlsDisabled || fontScale <= MIN_FONT_SCALE }
+              onClick={ () => onFontScaleChange(fontScale - FONT_SCALE_STEP) }
+              aria-label="Уменьшить шрифт"
             >
               −
             </button>
             <button
-              class="fontScaleValue paragraphSpacingValue"
+              class="ttStepperValue"
               type="button"
-              disabled={ controlsDisabled || paragraphSpacing === null }
-              onClick={ () => onParagraphSpacingChange(null) }
-              title="Вернуть «Авто»"
-              aria-label="Вернуть «Авто»"
+              disabled={ controlsDisabled || fontScale === 100 }
+              onClick={ () => onFontScaleChange(100) }
+              title="Вернуть 100%"
+              aria-label={ `${ fontScale }%. Вернуть 100%` }
             >
-              { paragraphSpacing === null ? 'Авто' : `${ paragraphSpacing }em` }
+              { fontScale }%
             </button>
             <button
-              class="button small"
               type="button"
-              disabled={ controlsDisabled || paragraphSpacing === MAX_PARAGRAPH_SPACING }
-              onClick={ () => onParagraphSpacingChange(
-                paragraphSpacing === null
-                  ? PARAGRAPH_SPACING_STEP
-                  : Math.min(MAX_PARAGRAPH_SPACING, paragraphSpacing + PARAGRAPH_SPACING_STEP),
-              ) }
-              aria-label="Увеличить отступ между абзацами"
+              disabled={ controlsDisabled || fontScale >= MAX_FONT_SCALE }
+              onClick={ () => onFontScaleChange(fontScale + FONT_SCALE_STEP) }
+              aria-label="Увеличить шрифт"
             >
               +
             </button>
           </div>
         </div>
-      ) }
+      </section>
+
+      <section class="ttCard" aria-labelledby="styleGroupSection">
+        <h3 id="styleGroupSection" class="ttSectionLabel styleGroupTitle">Текущий раздел</h3>
+        <label class="styleControl">
+          <span class="styleControlText">
+            <span class="styleControlTitle">Красная строка</span>
+            <span class="styleControlHint">
+              { sectionAvailable
+                ? 'Отступ в начале каждого абзаца'
+                : 'Откройте любую страницу в нужном разделе форума' }
+            </span>
+          </span>
+          <span class="ttSwitch">
+            <input
+              type="checkbox"
+              checked={ firstLineIndent }
+              disabled={ controlsDisabled || !sectionAvailable }
+              onChange={ onToggleFirstLineIndent }
+            />
+            <span aria-hidden="true" />
+          </span>
+        </label>
+        { firstLineIndent && (
+          <div class="styleControl">
+            <div class="styleControlText">
+              <span class="styleControlTitle">Отступ между абзацами</span>
+              <span class="styleControlHint">Клик по значению вернёт «Авто»</span>
+            </div>
+            <div class="ttStepper" role="group" aria-label="Отступ между абзацами">
+              <button
+                type="button"
+                disabled={ controlsDisabled || paragraphSpacing === 0 }
+                onClick={ () => onParagraphSpacingChange(
+                  paragraphSpacing === null
+                    ? 0
+                    : Math.max(0, paragraphSpacing - PARAGRAPH_SPACING_STEP),
+                ) }
+                aria-label="Уменьшить отступ между абзацами"
+              >
+                −
+              </button>
+              <button
+                class="ttStepperValue"
+                type="button"
+                disabled={ controlsDisabled || paragraphSpacing === null }
+                onClick={ () => onParagraphSpacingChange(null) }
+                title="Вернуть «Авто»"
+              >
+                { paragraphSpacing === null ? 'Авто' : `${ paragraphSpacing }em` }
+              </button>
+              <button
+                type="button"
+                disabled={ controlsDisabled || paragraphSpacing === MAX_PARAGRAPH_SPACING }
+                onClick={ () => onParagraphSpacingChange(
+                  paragraphSpacing === null
+                    ? PARAGRAPH_SPACING_STEP
+                    : Math.min(MAX_PARAGRAPH_SPACING, paragraphSpacing + PARAGRAPH_SPACING_STEP),
+                ) }
+                aria-label="Увеличить отступ между абзацами"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        ) }
+      </section>
+
+      <div class="styleFootnote">Настройки сохраняются отдельно для каждого форума</div>
     </div>
   );
 }

@@ -1,81 +1,176 @@
 .templateOptions {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
 .templateOptionsHeader {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-end;
+  gap: 16px;
 }
 
-.templateOptionsHeader h2 {
-  margin: 0;
+.templateOptionsHeader > div:first-child {
+  flex: 1 1 280px;
 }
 
 .templateOptionsActions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
 
-.templateOptionsList {
+.templateSplit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.templateListPane {
+  flex: 1 1 260px;
+  max-width: 340px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.templateOptionsItem {
-  border: 1px solid var(--tt-border);
-  border-radius: 0;
-  border-left: 3px solid var(--tt-frost);
-  padding: 12px;
+  gap: 8px;
+  padding: 10px;
   background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-lg);
+  box-sizing: border-box;
 }
 
-.templateOptionsViewHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+@media (max-width: 860px) {
+  .templateListPane {
+    max-width: none;
+  }
 }
 
-.templateOptionsViewHeader h3,
-.templateOptionsViewHeader h5 {
+.templateListPane .ttSearch {
+  position: relative;
+  display: block;
+}
+
+.templateListPane .ttSearch > .ttIcon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tt-muted);
+  pointer-events: none;
+}
+
+.templateListPane .ttSearch input {
+  width: 100%;
+  height: 36px;
   margin: 0;
-  min-width: 0;
+  box-sizing: border-box;
+  padding: 0 12px 0 34px;
+  font-size: 14px;
+}
+
+.templateListEmpty {
+  margin: 8px 4px;
+  color: var(--tt-muted);
+  font-size: 13px;
+}
+
+.templateList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 640px;
+  overflow-y: auto;
+}
+
+.templateListItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--tt-radius);
+  background: transparent;
+  color: var(--tt-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.templateListItem:hover {
+  background: var(--tt-card-alt);
+}
+
+.templateListItem[aria-current="true"] {
+  background: var(--tt-accent-soft);
+  border-color: var(--tt-accent-border);
+}
+
+.templateListName {
+  font-weight: 600;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: var(--tt-font-display);
-  font-size: 1.1rem;
-  font-weight: 600;
 }
 
-.templateOptionsPreview {
-  margin: 6px 0 10px;
-  font-size: 0.95em;
+.templateListMeta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
   color: var(--tt-muted);
-  word-break: break-word;
 }
 
-.templateOptionsMeta {
-  min-width: 180px;
+.templateListLocal {
+  width: 14px;
+  height: 14px;
+  color: var(--tt-earth);
+}
+
+.templateEditorPane {
+  flex: 999 1 380px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  gap: 6px;
-  text-align: right;
-  color: var(--tt-muted);
-  font-size: 0.9em;
+  gap: 14px;
+  padding: 16px;
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: var(--tt-radius-lg);
+  box-sizing: border-box;
 }
 
-.templateOptionsFooter {
-  margin-top: 8px;
+.templateEditorPane .itemEditor textarea {
+  min-height: 300px;
+}
+
+.templateEditorTitle {
+  margin: 0;
+  font-size: 16px;
+}
+
+.templateEditorMeta {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.templateEditorEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 240px;
+  padding: 24px;
+  text-align: center;
+  color: var(--tt-muted);
 }

@@ -1,240 +1,257 @@
+/* Stickers tab: scrolling body + pinned "add by link" bar */
+.popupTabContent:has(> .stickerTab) {
+  padding: 0;
+  overflow: hidden;
+}
+
 .stickerTab {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.stickerHeader {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.stickerActions {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  margin-left: auto;
-}
-
-.stickerStatus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  color: var(--popup-muted);
-  cursor: help;
-}
-
-.stickerStatus--success {
-  color: var(--tt-success);
-}
-
-.stickerStatus--error {
-  color: var(--tt-danger);
-}
-
-.stickerStatus--muted {
-  color: var(--popup-muted);
-}
-
-.stickerListWrapper {
+.stickerScroll {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 14px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.stickerScroll > * {
+  flex: 0 0 auto;
+}
+
+.recentStickers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recentStickersHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+}
+
+.recentStickersHead .ttStatusIcon {
+  width: 20px;
+  height: 20px;
 }
 
 .recentStickersList {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
 }
 
-.recentStickersList .stickerItem {
-  width: 64px;
+/* Pack chips */
+.stickerChips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: thin;
 }
 
-.stickerList {
+.stickerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  max-width: 200px;
+  height: 30px;
+  margin: 0;
+  padding: 0 12px 0 5px;
+  border: 1px solid var(--tt-border-strong);
+  border-radius: 15px;
+  background: var(--tt-card);
+  color: var(--tt-text);
+  font: 500 12px/1 var(--tt-font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.stickerChip:hover {
+  border-color: var(--tt-muted);
+}
+
+.stickerChip[aria-pressed="true"] {
+  background: var(--tt-fg);
+  border-color: var(--tt-fg);
+  color: var(--tt-bg);
+}
+
+.stickerChipCover {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tt-subtle);
+}
+
+.stickerChipCover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.stickerChipName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stickerChipCount {
+  color: var(--tt-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.stickerChip[aria-pressed="true"] .stickerChipCount {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.stickerChipAdd {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+.stickerChipAdd .ttIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Active pack */
+.stickerPack {
   display: flex;
   flex-direction: column;
   gap: 10px;
-}
-
-.stickerList_empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 20px 12px;
-  min-height: 140px;
-  border: 1px dashed var(--popup-accent);
-  border-radius: 0;
-  background: var(--tt-card-alt);
-  color: var(--popup-muted);
-}
-
-button.stickerList_empty {
-  width: 100%;
-  margin: 0;
-  font: inherit;
-  cursor: pointer;
-  appearance: none;
-}
-
-.stickerList_empty:focus-visible {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
-}
-
-.stickerList_emptyIcon {
-  width: 56px;
-  height: 56px;
-  background: url('../../../public/icon128.png');
-  background-size: contain;
-  opacity: 0.55;
-}
-
-.stickerList_emptyTitle {
-  font-family: var(--tt-font-display);
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--popup-text);
-}
-
-.stickerPack {
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
-  background: var(--popup-card);
-  overflow: hidden;
-  border-left: 3px solid var(--tt-frost);
 }
 
 .stickerPackHeader {
-  padding: 0;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 0;
-  --bg-image: none;
-  background: var(--popup-card);
-  border-bottom: 1px solid var(--popup-border);
-}
-
-.stickerPackToggle {
-  flex: 1 1 auto;
-  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 0;
-  padding: 10px 12px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.stickerPackToggle:focus-visible {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: -2px;
-}
-
-.stickerPackTitleIcon {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  background-image: var(--bg-image);
-  background-size: cover;
-  background-position: center;
-  flex: 0 0 32px;
-  border-radius: 0;
-  border: 1px solid var(--popup-border);
-  background-color: var(--tt-card-alt);
+  gap: 8px;
 }
 
 .stickerPackTitle {
   flex: 1 1 auto;
-  color: var(--popup-text);
-  font-size: 15px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
   min-width: 0;
-}
-
-.stickerPackTitleText {
-  font-family: var(--tt-font-display);
+  margin: 0;
+  font-size: 13px;
   font-weight: 600;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.stickerPackMeta {
-  color: var(--popup-muted);
-  font-size: 12px;
+.stickerPackStorage {
+  display: inline-flex;
+  color: var(--tt-muted);
 }
 
-.stickerPackTitleActions {
-  display: flex;
-  gap: 6px;
-  padding-right: 12px;
+.stickerPackStorage.is-local {
+  color: var(--tt-earth);
 }
 
-.stickerPackContent {
-  display: flex;
-  flex-wrap: wrap;
+.stickerPackGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
-  padding: 12px;
-  background: var(--tt-card-alt);
 }
 
 .stickerItem {
-  width: 74px;
-  height: 64px;
-  padding: 0;
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
-  background: var(--popup-card);
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-card);
+  box-shadow: inset 0 0 0 1px var(--tt-border-soft);
   cursor: pointer;
-  font: inherit;
-  color: inherit;
+  overflow: hidden;
 }
 
-.stickerItem:focus-visible {
-  outline: 2px solid var(--popup-accent);
+.stickerItem:hover {
+  outline: 2px solid var(--tt-frost);
   outline-offset: 2px;
 }
 
 .stickerItem img {
-  min-width: 12px;
-  min-height: 12px;
-  max-height: 60px;
-  max-width: 60px;
-  object-fit: contain;
-  transition: transform 0.1s ease;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
 }
 
-.stickerItem img:hover {
-  transform: translateY(-2px);
+.stickerEmptyCta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .stickerItem img {
-    transition: none;
-  }
+.stickerEmptyCta:hover {
+  border-color: var(--tt-frost);
+}
+
+/* Add-by-link bar */
+.stickerAddBar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  background: var(--tt-card);
+  border-top: 1px solid var(--tt-border);
+}
+
+.stickerAddLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tt-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stickerAddRow {
+  display: flex;
+  gap: 8px;
+}
+
+.stickerAddRow input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.stickerAddHint {
+  font-size: 12px;
+  color: var(--tt-muted);
+}
+
+.popupTabContent > .stickerTab {
+  flex: 1 1 auto;
+  min-height: 0;
 }

@@ -87,7 +87,7 @@
       const hasResult = !!this.view.bbcodeText;
       const showBbcode = hasResult && !!this.inputs.bbcodeToggle?.checked;
 
-      if (this.outputs.resultWrap) this.outputs.resultWrap.hidden = !hasResult || showBbcode;
+      if (this.outputs.resultWrap) this.outputs.resultWrap.hidden = !hasResult;
       if (this.outputs.bbcode) {
         this.outputs.bbcode.hidden = !showBbcode;
         if (showBbcode) this.outputs.bbcode.value = this.view.bbcodeText;

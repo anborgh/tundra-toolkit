@@ -10,6 +10,7 @@ import { decodeEntities, filterFavoritesByAllowedHost } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
 import { TurnSwitch } from '../../components/TurnSwitch';
 import { CloudSyncButton, hasCloudOverflow } from '../../components/CloudSyncButton';
+import { useConfirm } from '../../components/ConfirmDialog';
 import refreshIcon from '../../assets/icons/refresh-cw.svg';
 import xIcon from '../../assets/icons/x.svg';
 
@@ -44,6 +45,7 @@ const byLastPostDesc = (a: IFavoriteTopic, b: IFavoriteTopic) =>
   (b.lastPostDate || 0) - (a.lastPostDate || 0);
 
 export function FavoritesOptions() {
+  const confirmAction = useConfirm();
   const [ favorites, setFavorites ] = useState<IFavoriteTopic[]>([]);
   const [ boardStatuses, setBoardStatuses ] = useState<Record<string, BoardStatus>>({});
   const [ lastRefreshAt, setLastRefreshAt ] = useState<number | null>(null);
@@ -159,7 +161,11 @@ export function FavoritesOptions() {
   };
 
   const handleRemove = async (item: IFavoriteTopic) => {
-    const confirmed = confirm(`Убрать «${ decodeEntities(item.topicName) }» из списка эпизодов?`);
+    const confirmed = await confirmAction({
+      message: `Убрать «${ decodeEntities(item.topicName) }» из списка эпизодов?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!confirmed) return;
 
     const next = favorites.filter(fav => fav.id !== item.id);
@@ -189,6 +195,10 @@ export function FavoritesOptions() {
 
     return (
       <li className={ `favoritesOptionsItem ${ stale ? 'stale' : '' } ${ item.myTurn ? 'is-myTurn' : '' }` } key={ item.id }>
+        <TurnSwitch
+          myTurn={ item.myTurn }
+          onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
+        />
         <div className="favoritesOptionsBody">
           <div className="favoritesOptionsTitleRow">
             <a
@@ -230,7 +240,7 @@ export function FavoritesOptions() {
                 ? 'Вы вышли из аккаунта на этом форуме — тема не обновляется'
                 : 'Форум временно недоступен — тема не обновляется'
               }>
-                ⚠ не обновляется
+                Не обновляется
               </span>
             ) }
           </div>
@@ -248,12 +258,8 @@ export function FavoritesOptions() {
               } }
             />
           ) }
-          <TurnSwitch
-            myTurn={ item.myTurn }
-            onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
-          />
           <button
-            className="button small icon-only favoritesOptionsRemove"
+            className="button small icon-only ghost favoritesOptionsRemove"
             title="Убрать из списка эпизодов"
             aria-label="Убрать из списка эпизодов"
             onClick={ () => handleRemove(item) }
@@ -270,35 +276,41 @@ export function FavoritesOptions() {
       <div className="favoritesOptionsHeader">
         <div>
           <h2>Эпизоды</h2>
-          <p className="optionsSectionLead">Ваш ход { myTurnCount }/{ totalCount } · отслеживание новых ответов</p>
+          <p className="optionsSectionLead">
+            { refreshing
+              ? 'Проверяем новые ответы…'
+              : lastRefreshAt
+                ? `Обновлено в ${ new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) } · проверяем каждые ${ intervalMinutes } мин. Чем больше эпизодов, тем реже проверка каждого.`
+                : 'Отслеживание новых ответов в ваших эпизодах.' }
+          </p>
         </div>
         <div className="favoritesOptionsHeaderActions">
           <div className="favoritesOptionsViewToggle" role="group" aria-label="Вид списка">
             <button
               type="button"
-              className={ `button small ${ viewMode === 'byForum' ? 'primary' : '' }` }
+              className="favoritesOptionsSeg"
               aria-pressed={ viewMode === 'byForum' }
               onClick={ () => handleViewModeChange('byForum') }
             >
-              По форумам
+              По форуму
             </button>
             <button
               type="button"
-              className={ `button small ${ viewMode === 'byDate' ? 'primary' : '' }` }
+              className="favoritesOptionsSeg"
               aria-pressed={ viewMode === 'byDate' }
               onClick={ () => handleViewModeChange('byDate') }
             >
-              По дате
+              По дате ответа
             </button>
           </div>
           <button
-            className="button small icon-only"
+            className="button"
             disabled={ refreshing }
-            title="Обновить"
-            aria-label="Обновить"
+            title="Обновить (не чаще раза в минуту)"
             onClick={ () => requestRefresh(true) }
           >
             <MaskIcon src={ refreshIcon } />
+            Обновить
           </button>
         </div>
       </div>
@@ -306,11 +318,20 @@ export function FavoritesOptions() {
       { warning && <div className="text-secondary">{ warning }</div> }
       { error && <div className="text-error">{ error }</div> }
       { info && <div className="text-success">{ info }</div> }
-      { refreshing && <div className="text-secondary">Проверяем новые ответы…</div> }
-      { !refreshing && lastRefreshAt && (
-        <div className="text-secondary">
-          Проверено: { new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }
-          { ` · каждые ${ intervalMinutes } мин.` }
+      { favorites.length > 0 && (
+        <div className="favoritesOptionsStats">
+          <div className="favoritesOptionsStat">
+            <span>Новые ответы</span>
+            <strong className="is-new">{ favorites.filter(hasNewPosts).length }</strong>
+          </div>
+          <div className="favoritesOptionsStat">
+            <span>Мой ход</span>
+            <strong className="is-mine">{ myTurnCount }</strong>
+          </div>
+          <div className="favoritesOptionsStat">
+            <span>Всего эпизодов</span>
+            <strong>{ totalCount }</strong>
+          </div>
         </div>
       ) }
 

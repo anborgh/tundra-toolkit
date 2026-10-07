@@ -1,98 +1,67 @@
 .ignoreTab {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
-.ignoreHeader {
+.ignoreControls {
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.ignoreContext {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
 }
 
-.ignoreHeaderMeta {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+.ignoreContextText {
   flex: 1 1 auto;
+  min-width: 0;
 }
 
-.ignoreHeaderBoard,
-.ignoreHeaderForum {
-  margin: 0;
+.ignoreContextLabel {
+  font-size: 12px;
+  color: var(--tt-muted);
+}
+
+.ignoreContextName {
+  font-weight: 600;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.ignoreHeaderBoard {
-  font-family: var(--tt-font-display);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--popup-text);
-  line-height: 1.25;
+.ignoreReveal.is-active {
+  background: var(--tt-fg);
+  border-color: var(--tt-fg);
+  color: var(--tt-bg);
 }
 
-.ignoreHeaderForum {
-  font-size: 12px;
-  color: var(--popup-muted);
-  line-height: 1.25;
-}
-
-.ignoreHeaderActions {
+.ignoreSwitchRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  flex-shrink: 0;
-  justify-content: flex-end;
-  margin-left: auto;
+  gap: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--tt-border-soft);
+  cursor: pointer;
 }
 
-.ignoreStatus {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  color: var(--popup-muted);
-  cursor: help;
+.ignoreSwitchText {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.ignoreStatus--success {
-  color: var(--tt-success);
+.ignoreSwitchTitle {
+  display: block;
+  font-weight: 500;
 }
 
-.ignoreStatus--error {
-  color: var(--tt-danger);
-}
-
-.ignoreStatus--muted {
-  color: var(--popup-muted);
-}
-
-.ignoreControlsToggle {
-  white-space: nowrap;
-  touch-action: manipulation;
-}
-
-.ignoreHeaderReveal,
-.ignoreHeaderSettingsLink {
-  flex-shrink: 0;
-  touch-action: manipulation;
-}
-
-.ignoreHeaderReveal.is-active {
-  color: var(--tt-earth);
-}
-
-.ignoreHeaderActions .button:focus-visible {
-  outline: 2px solid var(--popup-accent, var(--tt-accent));
-  outline-offset: 2px;
+.ignoreSwitchHint {
+  display: block;
+  font-size: 12px;
+  color: var(--tt-muted);
 }
 
 .ignoreSection {
@@ -101,97 +70,95 @@
   gap: 8px;
 }
 
-.ignoreSectionTitle {
-  margin: 0;
-  color: var(--popup-muted);
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  font-family: var(--tt-font-body);
+.ignoreSectionHead {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.ignoreSectionTitle::before {
-  content: '››';
-  color: var(--tt-earth);
-  letter-spacing: -0.12em;
+.ignoreSectionHead .ttSectionLabel {
+  flex: 1 1 auto;
 }
 
-.ignoreForumGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.ignoreAllLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--tt-link);
+  font: 500 12px/1.2 var(--tt-font-body);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.ignoreAllLink .ttIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.ignoreGroupCard {
+  overflow: hidden;
 }
 
 .ignoreForumGroup + .ignoreForumGroup {
-  margin-top: 4px;
+  border-top: 1px solid var(--tt-border-soft);
 }
 
 .ignoreForumGroupTitle {
   margin: 0;
-  font-size: 11px;
+  padding: 8px 12px 4px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--popup-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.ignoreForumGroupTitle a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.ignoreForumGroupTitle a:hover {
-  text-decoration: underline;
+  color: var(--tt-frost);
 }
 
 .ignoreList {
+  list-style: none;
   margin: 0;
   padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .ignoreItem {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
-  border-left: 3px solid var(--tt-frost);
-  background: var(--popup-card);
+  padding: 6px 4px 6px 12px;
+  border-top: 1px solid var(--tt-border-soft);
 }
 
-.ignoreBody {
-  flex: 1;
-  min-width: 0;
+.ignoreItem:first-child {
+  border-top: 0;
 }
 
-.ignoreTitleRow {
+.ignoreAvatar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--tt-subtle);
+  color: var(--tt-text-2);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .ignoreTitle {
-  color: var(--popup-text);
-  font-weight: 600;
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--tt-text);
   text-decoration: none;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 a.ignoreTitle:hover {
+  color: var(--tt-frost);
   text-decoration: underline;
-}
-
-.ignoreRemove {
-  flex: 0 0 auto;
 }

@@ -1,53 +1,33 @@
 .favoritesTab {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   min-width: 0;
   max-width: 100%;
 }
 
 .favoritesHeader {
   display: flex;
-  justify-content: flex-end;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.favoritesHeader p {
-  margin: 2px 0 0;
-}
-
-.favoritesActions {
-  display: flex;
   gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  margin-left: auto;
 }
 
-
-.favoritesStatus {
-  display: inline-flex;
+.favoritesUpdated {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 auto;
-  color: var(--popup-muted);
-  cursor: help;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tt-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.favoritesStatus--success {
-  color: var(--tt-success);
-}
-
-.favoritesStatus--error {
-  color: var(--tt-danger);
-}
-
-.favoritesStatus--muted {
-  color: var(--popup-muted);
+.favoritesUpdated .ttIcon {
+  width: 14px;
+  height: 14px;
 }
 
 .favoritesSection {
@@ -55,30 +35,14 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  max-width: 100%;
 }
 
-.favoritesSectionTitle {
-  margin: 0;
-  color: var(--popup-muted);
-  text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  font-family: var(--tt-font-body);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-variant-numeric: tabular-nums;
+.favoritesSectionUpdated > .ttSectionLabel {
+  color: var(--tt-frost);
 }
 
-.favoritesSectionTitle::before {
-  content: '››';
-  color: var(--tt-earth);
-  letter-spacing: -0.12em;
-}
-
-.favoritesSectionUpdated .favoritesSectionTitle {
-  color: var(--popup-success);
+.favoritesSectionMine > .ttSectionLabel {
+  color: var(--tt-ember);
 }
 
 .favoritesList {
@@ -87,49 +51,38 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
-  max-width: 100%;
 }
 
 .favoriteItem {
   display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 10px;
-  border: 1px solid var(--popup-border);
-  border-radius: 0;
-  border-left: 3px solid var(--popup-card);
-  background: color-mix(in oklab, var(--tt-frost) 28%, var(--tt-bg));
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px 10px 10px;
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: 10px;
   min-width: 0;
-  max-width: 100%;
   box-sizing: border-box;
 }
 
-.favoriteItem.is-myTurn {
-  border-color: var(--tt-border-strong);
-  border-left: 3px solid var(--tt-frost);
-  background: var(--popup-card);
+.favoriteItem.is-new {
+  border-color: var(--tt-accent-border);
 }
 
 .favoriteItem.stale {
+  background: var(--tt-card-alt);
   border-style: dashed;
+  border-color: var(--tt-border-strong);
 }
 
-.favoriteItem.stale .favoriteTitle,
-.favoriteItem.stale .favoriteMeta {
-  color: var(--popup-muted);
-}
-
-.favoriteActions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: flex-start;
-  gap: 4px;
+.favoriteItem.stale .favoriteTitle {
+  color: var(--tt-text-2);
 }
 
 .favoriteBody {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -141,9 +94,9 @@
 }
 
 .favoriteTitle {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-width: 0;
-  color: var(--popup-text);
+  color: var(--tt-text);
   font-weight: 600;
   text-decoration: none;
   overflow: hidden;
@@ -152,74 +105,67 @@
 }
 
 .favoriteTitle:hover {
+  color: var(--tt-frost);
   text-decoration: underline;
 }
 
 .favoriteNewBadge {
+  display: inline-flex;
+  align-items: center;
   flex: 0 0 auto;
-  padding: 1px 6px;
-  border-radius: 0;
-  background: color-mix(in oklab, var(--tt-success) 14%, transparent);
-  border: 1px solid color-mix(in oklab, var(--tt-success) 40%, transparent);
-  color: var(--popup-success);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  user-select: none;
-  font-family: inherit;
-  line-height: 1.3;
+  height: 20px;
   margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-accent-soft);
+  color: var(--tt-accent-text);
+  font: 600 11px/1 var(--tt-font-body);
+  cursor: pointer;
 }
 
 .favoriteNewBadge:hover {
-  background: color-mix(in oklab, var(--tt-success) 22%, transparent);
-}
-
-.favoriteNewBadge:focus-visible {
-  outline: 2px solid var(--popup-accent);
-  outline-offset: 2px;
+  background: color-mix(in oklab, var(--tt-accent-soft) 70%, var(--tt-frost));
 }
 
 .favoriteMeta {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 3px;
+  gap: 4px;
+  min-width: 0;
   font-size: 12px;
-  color: var(--popup-muted);
+  color: var(--tt-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.favoriteBoard,
+.favoriteLastUser {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .favoriteBoard {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 160px;
+  flex: 0 1 auto;
 }
 
 .favoriteDot {
-  opacity: 0.6;
+  flex: 0 0 auto;
 }
 
-.favoriteLastUser {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 140px;
-  font-style: italic;
-}
-
-.favoriteStaleBadge {
-  padding: 1px 6px;
-  border-radius: 0;
-  background: color-mix(in oklab, var(--tt-danger) 12%, transparent);
-  border: 1px solid color-mix(in oklab, var(--tt-danger) 35%, transparent);
-  color: var(--popup-danger);
-  font-size: 10px;
-  font-weight: 600;
+.favoriteStale {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tt-earth);
   cursor: help;
+}
+
+.favoriteStale .ttIcon {
+  width: 14px;
+  height: 14px;
 }
 
 .favoriteRemove {

@@ -77,19 +77,18 @@
 
     .plaque {
       --tt-h3: 24px;
-      --tt-night: #152122;
-      --tt-bone: #F9F9F4;
-      --tt-frost: #275355;
-      --tt-earth: #7C5233;
-      --tt-ember: #A12830;
-      --tt-bg: var(--tt-bone);
-      --tt-fg: var(--tt-night);
-      --tt-muted: color-mix(in oklab, var(--tt-fg) 58%, var(--tt-frost));
-      --tt-border: color-mix(in oklab, var(--tt-frost) 28%, var(--tt-bg));
-      --tt-card: color-mix(in oklab, var(--tt-frost) 12%, var(--tt-bg));
-      --tt-on-frost: var(--tt-bone);
-      --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
-      --tt-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+      --tt-bg: #FFFFFF;
+      --tt-fg: #172227;
+      --tt-muted: #56646B;
+      --tt-subtle: #EDF0EF;
+      --tt-border: #DDE2E0;
+      --tt-frost: #0E6B62;
+      --tt-ember: #B54A12;
+      --tt-ember-soft: #FBEDE4;
+      --tt-head-bg: #14201F;
+      --tt-head-fg: #CFE0DD;
+      --tt-ornament: #4F9C91;
+      --tt-font-body: "Golos Text", "Golos UI", "Segoe UI", "SF Pro Text", system-ui, -apple-system, sans-serif;
 
       display: flex;
       flex-direction: column;
@@ -113,14 +112,15 @@
 
     @media (prefers-color-scheme: dark) {
       .plaque {
-        --tt-night: #0E1A1C;
-        --tt-bone: #E4EEF0;
-        --tt-frost: #275355;
-        --tt-earth: #C9A57A;
-        --tt-ember: #E07878;
-        --tt-bg: var(--tt-night);
-        --tt-fg: var(--tt-bone);
-        --tt-on-frost: var(--tt-bone);
+        --tt-bg: #172322;
+        --tt-fg: #E4EEEC;
+        --tt-muted: #9FB2B0;
+        --tt-subtle: #22302F;
+        --tt-border: #2A3938;
+        --tt-frost: #3BA897;
+        --tt-ember: #EE9566;
+        --tt-ember-soft: rgba(238, 149, 102, 0.16);
+        --tt-head-bg: #0B1413;
         color-scheme: dark;
       }
     }
@@ -134,19 +134,16 @@
       height: var(--tt-h3);
       margin: 0;
       padding: 0;
-      border: 1px solid var(--tt-earth);
-      border-left: 3px solid var(--tt-frost);
-      border-radius: 0;
-      background: var(--tt-frost);
-      color: var(--tt-on-frost);
+      border: 0;
+      border-radius: 25%;
+      background: var(--tt-ember-soft);
+      color: var(--tt-ember);
       cursor: default;
     }
 
     .plaque:not(.is-mine) .face {
-      background: var(--tt-card);
+      background: var(--tt-subtle);
       color: var(--tt-muted);
-      border-color: var(--tt-border);
-      border-left-color: var(--tt-earth);
     }
 
     .face svg {
@@ -176,9 +173,11 @@
       flex-direction: column;
       min-width: 220px;
       max-width: min(280px, calc(100vw - 16px));
+      overflow: hidden;
       background: var(--tt-bg);
       border: 1px solid var(--tt-border);
-      border-left: 3px solid var(--tt-frost);
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(20, 32, 31, 0.22);
     }
 
     .plaque.is-open .panel {
@@ -186,31 +185,36 @@
     }
 
     .brand {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 10px 4px;
-      background: var(--tt-frost);
-      color: var(--tt-on-frost);
+      padding: 7px 12px 15px;
+      background: var(--tt-head-bg);
+      color: var(--tt-head-fg);
       font-size: 10px;
-      font-weight: 700;
+      font-weight: 600;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      border-bottom: 1px solid var(--tt-earth);
     }
 
-    .brand::before {
-      content: '››';
-      letter-spacing: -0.12em;
-      opacity: 0.85;
+    .brand::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 8px;
+      background-color: var(--tt-ornament);
+      -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='8'%3E%3Cpath d='M0 7.6 6.5 2.4 13 7.6M4.9.6l3.2 3.2M8.1.6 4.9 3.8' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E") repeat-x left bottom / 13px 8px;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='8'%3E%3Cpath d='M0 7.6 6.5 2.4 13 7.6M4.9.6l3.2 3.2M8.1.6 4.9 3.8' fill='none' stroke='%23000' stroke-width='1.2'/%3E%3C/svg%3E") repeat-x left bottom / 13px 8px;
     }
 
     .row {
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 10px 9px;
-      background: var(--tt-card);
+      gap: 10px;
+      padding: 10px 12px;
     }
 
     .side {
@@ -220,8 +224,7 @@
       border: 0;
       background: transparent;
       color: var(--tt-muted);
-      font: 600 12px/1.2 var(--tt-font-body);
-      letter-spacing: 0.01em;
+      font: 500 13px/1.2 var(--tt-font-body);
       cursor: pointer;
       appearance: none;
     }
@@ -229,44 +232,48 @@
     .side--mine { text-align: right; }
     .side--theirs { text-align: left; }
 
-    .plaque.is-mine .side--mine,
+    .plaque.is-mine .side--mine {
+      color: var(--tt-ember);
+      font-weight: 600;
+    }
+
     .plaque:not(.is-mine) .side--theirs {
       color: var(--tt-fg);
-      font-family: var(--tt-font-display);
+      font-weight: 600;
     }
 
     .switch {
       flex: 0 0 auto;
       position: relative;
-      width: 36px;
-      height: 18px;
+      width: 40px;
+      height: 24px;
       margin: 0;
       padding: 0;
-      border: 1px solid var(--tt-frost);
-      border-radius: 0;
-      background: color-mix(in oklab, var(--tt-frost) 22%, var(--tt-bg));
+      border: 0;
+      border-radius: 12px;
+      background: var(--tt-muted);
       cursor: pointer;
       appearance: none;
       box-shadow: none;
     }
 
     .plaque.is-mine .switch {
-      background: var(--tt-frost);
+      background: var(--tt-ember);
     }
 
     .thumb {
       position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 12px;
-      height: 12px;
-      background: var(--tt-bg);
-      border: 1px solid var(--tt-frost);
+      top: 3px;
+      left: 3px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
       transition: transform 0.15s ease;
     }
 
     .plaque.is-mine .thumb {
-      background: var(--tt-on-frost);
       transform: translateX(0);
     }
 
@@ -554,7 +561,7 @@
     mineEl = document.createElement('button');
     mineEl.type = 'button';
     mineEl.className = 'side side--mine';
-    mineEl.textContent = 'Ход мой';
+    mineEl.textContent = 'Мой ход';
 
     switchEl = document.createElement('button');
     switchEl.type = 'button';
@@ -568,7 +575,7 @@
     theirsEl = document.createElement('button');
     theirsEl.type = 'button';
     theirsEl.className = 'side side--theirs';
-    theirsEl.textContent = 'соигрока';
+    theirsEl.textContent = 'Жду ответа';
 
     mineEl.addEventListener('click', (event) => {
       event.preventDefault();

@@ -1,49 +1,113 @@
 :root {
     /*
-     * Five primitives only. Everything else is derived via color-mix / relative color.
-     * Light: deep peat ink, bone paper, iced teal, dry earth, coal ember.
+     * Tundra palette — polar night header, snow ground, aurora teal accent,
+     * ember for "my turn", amber for local-only storage.
      */
-    --tt-night: #152122;
-    --tt-bone: #F9F9F4;
-    --tt-frost: #275355;
-    --tt-earth: #7C5233;
-    --tt-ember: #A12830;
+    --tt-night: #14201F;
+    --tt-bone: #F2F4F3;
+    --tt-frost: #0E6B62;
+    --tt-earth: #8A4B00;
+    --tt-ember: #B54A12;
 
     --tt-bg: var(--tt-bone);
-    --tt-fg: var(--tt-night);
+    --tt-fg: #172227;
 
     --bg-color: var(--tt-bg);
     --font-color: var(--tt-fg);
-    --color-primary: var(--tt-fg);
+    --color-primary: var(--tt-frost);
     --tt-text: var(--tt-fg);
     --width: 860px;
 
-    --tt-card: oklch(from var(--tt-bg) calc(l + 0.03) c h);
-    --tt-card-alt: color-mix(in oklab, var(--tt-frost) 12%, var(--tt-bg));
-    --tt-border: color-mix(in oklab, var(--tt-frost) 16%, var(--tt-bg));
-    --tt-border-strong: color-mix(in oklab, var(--tt-frost) 28%, var(--tt-bg));
-    --tt-muted: color-mix(in oklab, var(--tt-fg) 58%, var(--tt-frost));
-    --tt-input-bg: oklch(from var(--tt-bg) calc(l + 0.02) c h);
-    --tt-pine: oklch(from var(--tt-frost) calc(l + 0.1) calc(c * 1.05) calc(h - 28));
-    --tt-success: var(--tt-pine);
-    --tt-danger: var(--tt-ember);
-    --tt-warn: oklch(from var(--tt-earth) calc(l + 0.14) calc(c * 1.2) calc(h + 18));
-    --tt-accent: color-mix(in oklab, var(--tt-frost) 70%, var(--tt-fg));
-    --tt-accent-soft: color-mix(in oklab, var(--tt-frost) 20%, transparent);
+    --tt-card: #FFFFFF;
+    --tt-card-alt: #F7F8F7;
+    --tt-subtle: #EDF0EF;
+    --tt-border: #DDE2E0;
+    --tt-border-soft: #EEF1F0;
+    --tt-border-strong: #C9D1CE;
+    --tt-muted: #56646B;
+    --tt-text-2: #45535A;
+    --tt-input-bg: #FFFFFF;
+    --tt-pine: var(--tt-frost);
+    --tt-success: var(--tt-frost);
+    --tt-danger: #A3311B;
+    --tt-danger-soft: #FBE9E5;
+    --tt-warn: var(--tt-earth);
+    --tt-warn-soft: #FDF5E7;
+    --tt-warn-border: #F0DDB8;
+    --tt-warn-text: #5C3A00;
+    --tt-ember-soft: #FBEDE4;
+    --tt-accent: var(--tt-frost);
+    --tt-accent-soft: #DDF0EC;
+    --tt-accent-text: #0A5A52;
+    --tt-accent-border: #CFE6E1;
     --tt-focus: color-mix(in oklab, var(--tt-frost) 28%, transparent);
-    --tt-link: color-mix(in oklab, var(--tt-frost) 50%, var(--tt-fg));
-    --tt-on-frost: var(--tt-bone);
-    --tt-frost-hover: color-mix(in oklab, var(--tt-frost) 42%, var(--tt-bone));
-    --tt-night-lift: oklch(from var(--tt-night) calc(l + 0.06) c h);
-    --tt-overlay: color-mix(in oklab, var(--tt-fg) 27%, transparent);
+    --tt-link: var(--tt-frost);
+    --tt-on-frost: #FFFFFF;
+    --tt-frost-hover: #0A5A52;
+    --tt-night-lift: #1E2E2D;
+    --tt-overlay: rgba(20, 32, 31, 0.45);
+    --tt-shadow: 0 8px 24px rgba(20, 32, 31, 0.18);
 
-    --tt-radius: 0;
+    /* Header (always "polar night") */
+    --tt-head-bg: #14201F;
+    --tt-head-fg: #FFFFFF;
+    --tt-head-muted: #9FB2B0;
+    --tt-head-soft: #CFE0DD;
+    --tt-head-line: #2E4241;
+    --tt-head-accent: #3BA897;
+    --tt-ornament: #4F9C91;
+    --tt-logo-bg: #0E6B62;
+    --tt-logo-fg: #E3F3EF;
+
+    --tt-radius: 8px;
+    --tt-radius-lg: 12px;
+    --tt-radius-sm: 6px;
     --tt-border-width: 1px;
-    --tt-btn-height: 32px;
-    --tt-btn-height-sm: 28px;
-    --tt-font-display: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
-    --tt-font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+    --tt-btn-height: 36px;
+    --tt-btn-height-sm: 32px;
+    --tt-font-display: "Unbounded", "Golos Text", "Golos UI", "Segoe UI", system-ui, sans-serif;
+    --tt-font-body: "Golos Text", "Golos UI", "Segoe UI", "SF Pro Text", system-ui, -apple-system, sans-serif;
     --tt-font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --tt-night: #0B1413;
+        --tt-bone: #0F1817;
+        --tt-frost: #3BA897;
+        --tt-earth: #E0B26A;
+        --tt-ember: #EE9566;
+
+        --tt-bg: #0F1817;
+        --tt-fg: #E4EEEC;
+
+        --tt-card: #172322;
+        --tt-card-alt: #1B2928;
+        --tt-subtle: #22302F;
+        --tt-border: #2A3938;
+        --tt-border-soft: #22302F;
+        --tt-border-strong: #3A4A4C;
+        --tt-muted: #9FB2B0;
+        --tt-text-2: #C3D2D0;
+        --tt-input-bg: #121D1C;
+        --tt-danger: #F08A7A;
+        --tt-danger-soft: rgba(240, 138, 122, 0.12);
+        --tt-warn-soft: rgba(224, 178, 106, 0.1);
+        --tt-warn-border: rgba(224, 178, 106, 0.32);
+        --tt-warn-text: #F0D3A2;
+        --tt-ember-soft: rgba(238, 149, 102, 0.14);
+        --tt-accent-soft: rgba(59, 168, 151, 0.16);
+        --tt-accent-text: #7DD9C9;
+        --tt-accent-border: rgba(59, 168, 151, 0.35);
+        --tt-on-frost: #0B1716;
+        --tt-frost-hover: #52BBA9;
+        --tt-night-lift: #1E2E2D;
+        --tt-overlay: rgba(0, 0, 0, 0.6);
+        --tt-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+
+        --tt-head-bg: #0B1413;
+        --tt-head-line: #24363A;
+    }
 }
 
 body {
@@ -53,9 +117,20 @@ body {
 }
 
 h1, h2, h3, h4, h5 {
-    font-family: var(--tt-font-display);
-    letter-spacing: 0.01em;
+    font-family: var(--tt-font-body);
+    font-weight: 600;
+    letter-spacing: 0;
     text-wrap: balance;
+}
+
+.ttDisplay {
+    font-family: var(--tt-font-display);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+a {
+    color: var(--tt-link);
 }
 
 .sr-only {
@@ -79,6 +154,7 @@ h1, h2, h3, h4, h5 {
     background: var(--tt-frost);
     color: var(--tt-on-frost);
     text-decoration: none;
+    border-radius: var(--tt-radius);
 }
 
 .skipLink:focus-visible {
@@ -91,22 +167,32 @@ h1, h2, h3, h4, h5 {
     gap: 6px;
 }
 
-@media (prefers-color-scheme: dark) {
-    :root {
-        /* Five primitives — dark: peat void, mist bone, luminous ice, lichen, coals */
-        --tt-night: #0E1A1C;
-        --tt-bone: #E4EEF0;
-        --tt-frost: #275355;
-        --tt-earth: #C9A57A;
-        --tt-ember: #E07878;
-
-        --tt-bg: var(--tt-night);
-        --tt-fg: var(--tt-bone);
-        --color-primary: var(--tt-frost);
-    }
+/* Neutralise chota's global button hover fade / press scale */
+button,
+.button,
+[type="button"],
+[type="submit"] {
+    transform: none;
 }
 
-/* Shared sharp controls + unified button height */
+button:hover,
+.button:hover,
+[type="button"]:hover,
+[type="reset"]:hover,
+[type="submit"]:hover {
+    opacity: 1;
+}
+
+button:disabled,
+button:disabled:hover {
+    opacity: 0.45;
+}
+
+a:hover:not(.button) {
+    opacity: 1;
+}
+
+/* Shared controls */
 .button,
 input,
 textarea,
@@ -117,6 +203,36 @@ select,
     -webkit-tap-highlight-color: color-mix(in oklab, var(--tt-frost) 24%, transparent);
 }
 
+input,
+textarea,
+select {
+    transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+}
+
+input[type="text"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="number"],
+textarea,
+select {
+    background: var(--tt-input-bg);
+    color: var(--tt-text);
+    border: 1px solid var(--tt-border-strong);
+    font-family: inherit;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+input[type="search"]:focus,
+input[type="date"]:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--tt-frost);
+    box-shadow: 0 0 0 1px var(--tt-frost);
+    outline: none;
+}
+
 .button {
     box-sizing: border-box;
     display: inline-flex;
@@ -125,25 +241,35 @@ select,
     gap: 6px;
     height: var(--tt-btn-height);
     min-height: var(--tt-btn-height);
-    padding: 0 12px;
+    padding: 0 14px;
+    font-family: inherit;
+    font-weight: 500;
     line-height: 1;
+    white-space: nowrap;
     vertical-align: middle;
-    background: var(--tt-card-alt);
-    border: 1px solid var(--tt-border);
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border-strong);
     color: var(--tt-text);
     text-decoration: none;
+    cursor: pointer;
+    transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .button:hover {
-    border-color: var(--tt-earth);
-    background: var(--tt-input-bg);
+    background: var(--tt-card-alt);
+    border-color: var(--tt-border-strong);
     color: var(--tt-text);
     opacity: 1;
 }
 
+.button:disabled,
+.button[disabled] {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
 .button.primary,
 .button.success,
-.button.error,
 .button.dark,
 [type="submit"].button,
 button.primary {
@@ -154,37 +280,80 @@ button.primary {
 
 .button.primary:hover,
 .button.success:hover,
+[type="submit"].button:hover,
 button.primary:hover {
     background: var(--tt-frost-hover);
     border-color: var(--tt-frost-hover);
-    color: var(--tt-night);
+    color: var(--tt-on-frost);
     opacity: 1;
 }
 
-.button.clear {
+.button.error {
+    background: var(--tt-danger);
+    border-color: var(--tt-danger);
+    color: #FFFFFF;
+}
+
+.button.error:hover {
+    background: color-mix(in oklab, var(--tt-danger) 86%, #000);
+    border-color: color-mix(in oklab, var(--tt-danger) 86%, #000);
+    color: #FFFFFF;
+    opacity: 1;
+}
+
+.button.danger,
+.button.clear.danger {
     background: transparent;
     border-color: transparent;
+    color: var(--tt-danger);
+}
+
+.button.danger:hover {
+    background: var(--tt-danger-soft);
+    color: var(--tt-danger);
+}
+
+.button.outlineDanger {
+    background: transparent;
+    border-color: color-mix(in oklab, var(--tt-danger) 35%, transparent);
+    color: var(--tt-danger);
+}
+
+.button.outlineDanger:hover {
+    background: var(--tt-danger-soft);
+    color: var(--tt-danger);
+}
+
+.button.clear,
+.button.ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--tt-muted);
+}
+
+.button.clear:hover,
+.button.ghost:hover {
+    background: var(--tt-subtle);
     color: var(--tt-text);
 }
 
 .button.outline {
     background: transparent;
-    border-color: var(--tt-border);
+    border-color: var(--tt-border-strong);
     color: var(--tt-text);
 }
 
 .button.small {
     height: var(--tt-btn-height-sm);
     min-height: var(--tt-btn-height-sm);
-    padding: 0 10px;
-    font-size: 1.3rem;
+    padding: 0 12px;
+    font-size: 13px;
 }
 
 .button.icon-only {
     width: var(--tt-btn-height);
     min-width: var(--tt-btn-height);
     padding: 0;
-    color: var(--tt-text);
 }
 
 .button.small.icon-only {
@@ -202,56 +371,121 @@ input:focus-visible,
 textarea:focus-visible,
 select:focus-visible,
 a:focus-visible,
+button:focus-visible,
 .cloudSyncBtn:focus-visible {
-    outline: 2px solid var(--tt-accent);
+    outline: 2px solid var(--tt-frost);
     outline-offset: 2px;
 }
 
-@media (prefers-color-scheme: dark) {
-    .button.primary,
-    .button.success,
-    button.primary {
-        color: var(--tt-text);
-    }
+/* Sliding switch */
+.ttSwitch {
+    position: relative;
+    display: inline-flex;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 24px;
+    margin: 0;
 }
 
-/* Chevron fringe divider — icon side motif */
-.tt-fringe {
+.ttSwitch input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.ttSwitch > span[aria-hidden] {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    background: var(--tt-border-strong);
+    transition: background-color 0.15s ease;
+}
+
+.ttSwitch > span[aria-hidden]::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #FFFFFF;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    transition: transform 0.15s ease;
+}
+
+.ttSwitch input:checked + span {
+    background: var(--tt-frost);
+}
+
+.ttSwitch input:checked + span::after {
+    transform: translateX(16px);
+}
+
+.ttSwitch input:focus-visible + span {
+    outline: 2px solid var(--tt-frost);
+    outline-offset: 2px;
+}
+
+.ttSwitch input:disabled {
+    cursor: not-allowed;
+}
+
+.ttSwitch input:disabled + span {
+    opacity: 0.5;
+}
+
+.ttSwitch.onDark > span[aria-hidden] {
+    background: #3A4A4C;
+}
+
+.ttSwitch.onDark input:checked + span {
+    background: var(--tt-head-accent);
+}
+
+/* Ornament band under dark headers */
+.ttOrnament {
+    display: block;
+    width: 100%;
+    color: var(--tt-ornament);
+    background: var(--tt-head-bg);
+}
+
+/* Small uppercase section label */
+.ttSectionLabel {
+    margin: 0;
     display: flex;
-    align-items: stretch;
-    gap: 3px;
-    height: 14px;
-    opacity: 0.55;
-}
-
-.tt-fringe span {
-    width: 2px;
-    background: currentColor;
-}
-
-.tt-fringe span:nth-child(2) { height: 70%; align-self: flex-end; }
-.tt-fringe span:nth-child(3) { height: 100%; }
-.tt-fringe span:nth-child(4) { height: 55%; align-self: flex-end; }
-.tt-fringe span:nth-child(5) { height: 85%; }
-
-.tt-chevron-mark {
-    font-family: var(--tt-font-mono);
+    align-items: center;
+    gap: 8px;
+    font-family: var(--tt-font-body);
     font-size: 11px;
-    letter-spacing: -0.08em;
-    color: var(--tt-earth);
-    user-select: none;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tt-muted);
+}
+
+.ttSectionLabel .ttCount {
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--tt-muted);
+    font-variant-numeric: tabular-nums;
 }
 
 .storageLocalBadge {
     flex: 0 0 auto;
-    font-size: 0.68rem;
+    font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.02em;
     line-height: 1.2;
-    padding: 2px 5px;
-    border: 1px solid var(--tt-earth);
+    padding: 2px 6px;
+    border-radius: 4px;
     color: var(--tt-earth);
-    background: color-mix(in oklab, var(--tt-earth) 12%, transparent);
+    background: var(--tt-warn-soft);
     white-space: nowrap;
 }
 
@@ -259,26 +493,23 @@ a:focus-visible,
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: var(--tt-btn-height-sm);
-    height: var(--tt-btn-height-sm);
-    min-width: var(--tt-btn-height-sm);
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
     padding: 0;
     margin: 0;
     border: none;
-    border-radius: 0;
+    border-radius: var(--tt-radius-sm);
     background: transparent;
     box-shadow: none;
     color: var(--tt-frost);
     cursor: pointer;
     flex: 0 0 auto;
-    opacity: 0.85;
     touch-action: manipulation;
-    -webkit-tap-highlight-color: color-mix(in oklab, var(--tt-frost) 24%, transparent);
 }
 
 .cloudSyncBtn:hover {
-    background: transparent;
-    opacity: 1;
+    background: var(--tt-subtle);
 }
 
 .cloudSyncBtn:disabled {
@@ -287,13 +518,12 @@ a:focus-visible,
 }
 
 .cloudSyncBtn .ttIcon {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
 }
 
 .cloudSyncBtn--local {
-    color: var(--tt-muted);
-    opacity: 0.65;
+    color: var(--tt-danger);
 }
 
 .cloudSyncBtn--localPinned {
@@ -301,5 +531,16 @@ a:focus-visible,
 }
 
 .cloudSyncIconMuted {
-    opacity: 0.55;
+    opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    input,
+    textarea,
+    select,
+    .button,
+    .ttSwitch > span[aria-hidden],
+    .ttSwitch > span[aria-hidden]::after {
+        transition: none;
+    }
 }

@@ -3,13 +3,14 @@ import { safeStorageGet, safeStorageSet } from '../../utils/storage';
 import { openSettingsSection } from '../../utils/settingsSections';
 import { decodeEntities } from '../../utils';
 import { MaskIcon } from '../../components/MaskIcon';
-import externalLinkIcon from '../../assets/icons/external-link.svg';
+import arrowUpRightIcon from '../../assets/icons/arrow-up-right.svg';
 import eyeIcon from '../../assets/icons/eye.svg';
 import eyeOffIcon from '../../assets/icons/eye-off.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
 import { usePopupToast } from '../popupToast';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 import '../../components/icon.css';
 import './style.css';
@@ -118,6 +119,7 @@ const cleanupTopicsBoard = (
 
 export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls }: IgnoreListProps) {
   const { showError, clearToast } = usePopupToast();
+  const confirmAction = useConfirm();
   const [ state, setState ] = useState<IgnoreState>('loading');
   const [ context, setContext ] = useState<ForumContext | null>(null);
   const [ board, setBoard ] = useState<IBoardStore | null>(null);
@@ -227,7 +229,11 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
   const handleRemove = async (user: IUserStore) => {
     if (!context) return;
 
-    const confirmed = confirm(`Убрать ${ user.userName } из игнора?`);
+    const confirmed = await confirmAction({
+      message: `Убрать ${ user.userName } из игнора?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!confirmed) return;
 
     try {
@@ -235,11 +241,19 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
       const ignoreList: IBoardStore[] = storage?.ignoreList || [];
       const newData = cleanupBoard(ignoreList, context, `${ user.userID }`);
 
-      setUsers(prev => {
-        const newUsers = prev.filter(item => `${ item.userID }` !== `${ user.userID }`);
-        syncReadyState(newUsers, topics);
-        return newUsers;
+      const newUsers = users.filter(item => `${ item.userID }` !== `${ user.userID }`);
+      setUsers(newUsers);
+      setBoard(prev => {
+        if (!prev) return prev;
+        const forums = (prev.forums || [])
+          .map(forum => ({
+            ...forum,
+            users: (forum.users || []).filter(item => `${ item.userID }` !== `${ user.userID }`),
+          }))
+          .filter(forum => forum.users.length > 0);
+        return { ...prev, forums };
       });
+      syncReadyState(newUsers, topics);
 
       const result = await safeStorageSet({ ignoreList: newData });
       if (result.fallback) {
@@ -260,7 +274,11 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
     if (!context) return;
 
     const topicTitle = decodeEntities(topic.topicName) || `Тема ${ topic.topicID }`;
-    const confirmed = confirm(`Убрать тему «${ topicTitle }» из игнора?`);
+    const confirmed = await confirmAction({
+      message: `Убрать тему «${ topicTitle }» из игнора?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!confirmed) return;
 
     try {
@@ -314,25 +332,23 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
 
   const renderUserItem = (user: IUserStore, key: string) => (
     <li class="ignoreItem" key={ key }>
-      <div class="ignoreBody">
-        <div class="ignoreTitleRow">
-          { boardUrl ? (
-            <a
-              href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
-              target="_blank"
-              rel="noopener noreferrer"
-              class="ignoreTitle"
-              title={ user.userName }
-            >
-              { user.userName }
-            </a>
-          ) : (
-            <span class="ignoreTitle" title={ user.userName }>{ user.userName }</span>
-          ) }
-        </div>
-      </div>
+      <span class="ignoreAvatar" aria-hidden="true">{ (user.userName || '?').trim().charAt(0).toUpperCase() }</span>
+      { boardUrl ? (
+        <a
+          href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
+          target="_blank"
+          rel="noopener noreferrer"
+          class="ignoreTitle"
+          title={ user.userName }
+        >
+          { user.userName }
+        </a>
+      ) : (
+        <span class="ignoreTitle" title={ user.userName }>{ user.userName }</span>
+      ) }
       <button
-        class="button small icon-only ignoreRemove"
+        class="button small icon-only ghost"
+        type="button"
         title="Убрать из игнора"
         aria-label={ `Убрать ${ user.userName } из игнора` }
         onClick={ () => handleRemove(user) }
@@ -346,25 +362,22 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
     const title = decodeEntities(topic.topicName) || `Тема ${ topic.topicID }`;
     return (
       <li class="ignoreItem" key={ topic.topicID }>
-        <div class="ignoreBody">
-          <div class="ignoreTitleRow">
-            { boardUrl ? (
-              <a
-                href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
-                target="_blank"
-                rel="noopener noreferrer"
-                class="ignoreTitle"
-                title={ title }
-              >
-                { title }
-              </a>
-            ) : (
-              <span class="ignoreTitle" title={ title }>{ title }</span>
-            ) }
-          </div>
-        </div>
+        { boardUrl ? (
+          <a
+            href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+            target="_blank"
+            rel="noopener noreferrer"
+            class="ignoreTitle"
+            title={ title }
+          >
+            { title }
+          </a>
+        ) : (
+          <span class="ignoreTitle" title={ title }>{ title }</span>
+        ) }
         <button
-          class="button small icon-only ignoreRemove"
+          class="button small icon-only ghost"
+          type="button"
           title="Убрать тему из игнора"
           aria-label={ `Убрать тему ${ title } из игнора` }
           onClick={ () => handleRemoveTopic(topic) }
@@ -379,113 +392,111 @@ export function IgnoreList({ controlsVisible, controlsToggling, onToggleControls
     ? 'В этом разделе никого не игнорируете и нет скрытых тем'
     : 'На этом форуме никого не игнорируете и нет скрытых тем';
 
+  const userGroups = showForumGroups
+    ? (board?.forums || []).filter(forum => (forum.users || []).length > 0)
+    : null;
+
   return (
     <div class="ignoreTab">
       <h2 class="sr-only">Игнор-лист</h2>
-      <div class="ignoreHeader">
-        <div class="ignoreHeaderMeta">
-          { context ? (
-            <>
-              <p class="ignoreHeaderBoard" title={ context.boardName }>{ context.boardName }</p>
-              <p class="ignoreHeaderForum" title={ context.forumName || undefined }>
-                { context.forumName || 'Текущий раздел' }
-              </p>
-            </>
-          ) : (
-            <p class="ignoreHeaderForum">Текущий раздел</p>
-          ) }
-        </div>
-        <div class="ignoreHeaderActions">
+
+      <section class="ttCard ignoreControls">
+        <div class="ignoreContext">
+          <div class="ignoreContextText">
+            <div class="ignoreContextLabel">{ context?.forumID ? 'Текущий раздел' : 'Текущий форум' }</div>
+            <div class="ignoreContextName" title={ context?.forumName || undefined }>
+              { context?.forumName || 'Текущий раздел' }
+            </div>
+          </div>
           { statusView && (
             <span
-              class={ `ignoreStatus ignoreStatus--${ statusView.tone }` }
+              class={ `ttStatusIcon ttStatusIcon--${ statusView.tone }` }
               title={ statusView.text }
               aria-label={ statusView.text }
               role="status"
             >
-              <MaskIcon
-                src={ statusView.icon }
-                class={ statusView.spin ? 'ttIconSpin' : '' }
-              />
+              <MaskIcon src={ statusView.icon } class={ statusView.spin ? 'ttIconSpin' : '' } />
             </span>
           ) }
           <button
-            class="button small ignoreControlsToggle"
-            disabled={ controlsToggling || state === 'loading' }
-            onClick={ onToggleControls }
-            title={ controlsVisible
-              ? 'Скрыть кнопки ⊘ на страницах форума'
-              : 'Показать кнопки ⊘ на страницах форума'
-            }
-          >
-            { controlsVisible ? 'Скрыть кнопки' : 'Показать кнопки' }
-          </button>
-          <button
-            class={ `button small ignoreHeaderReveal icon-only${ contentRevealed ? ' is-active' : '' }` }
+            class={ `button small ignoreReveal ${ contentRevealed ? 'is-active' : '' }` }
+            type="button"
             disabled={ revealDisabled }
             title={ revealTitle }
-            aria-label={ revealTitle }
             aria-pressed={ contentRevealed }
             onClick={ handleToggleReveal }
           >
             <MaskIcon src={ contentRevealed ? eyeOffIcon : eyeIcon } />
-          </button>
-          <button
-            class="button small ignoreHeaderSettingsLink icon-only"
-            title="Открыть «Чёрный список» в настройках"
-            aria-label="Открыть «Чёрный список» в настройках"
-            onClick={ handleOpenSettings }
-          >
-            <MaskIcon src={ externalLinkIcon } />
+            { contentRevealed ? 'Скрыть снова' : 'Показать скрытое' }
           </button>
         </div>
-      </div>
+        <label class="ignoreSwitchRow">
+          <span class="ignoreSwitchText">
+            <span class="ignoreSwitchTitle">Кнопки ⊘ на страницах форума</span>
+            <span class="ignoreSwitchHint">Появятся у постов и тем — нажмите, чтобы скрыть</span>
+          </span>
+          <span class="ttSwitch">
+            <input
+              type="checkbox"
+              checked={ controlsVisible }
+              disabled={ controlsToggling || state === 'loading' }
+              onChange={ onToggleControls }
+            />
+            <span aria-hidden="true" />
+          </span>
+        </label>
+      </section>
 
       { state === 'empty' && (
         <div class="emptyList">{ emptyMessage }</div>
       ) }
 
       { state === 'ready' && users.length > 0 && (
-        <div class="ignoreSection">
-          <h3 class="ignoreSectionTitle">Пользователи</h3>
-          { showForumGroups ? (
-            (board?.forums || []).filter(forum => (forum.users || []).length > 0).map(forum => (
+        <section class="ignoreSection">
+          <div class="ignoreSectionHead">
+            <h3 class="ttSectionLabel">Пользователи <span class="ttCount">· { users.length }</span></h3>
+            <button type="button" class="ignoreAllLink" onClick={ handleOpenSettings }>
+              Весь список
+              <MaskIcon src={ arrowUpRightIcon } />
+            </button>
+          </div>
+          <div class="ttCard ignoreGroupCard">
+            { userGroups ? userGroups.map(forum => (
               <div class="ignoreForumGroup" key={ forum.forumID }>
-                <p class="ignoreForumGroupTitle">
-                  { boardUrl ? (
-                    <a
-                      href={ `https://${ boardUrl }/viewforum.php?id=${ forum.forumID }` }
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      { forum.forumName }
-                    </a>
-                  ) : (
-                    <span>{ forum.forumName }</span>
-                  ) }
-                </p>
+                <p class="ignoreForumGroupTitle">{ forum.forumName }</p>
                 <ul class="ignoreList">
                   { (forum.users || []).map(user =>
                     renderUserItem(user, `${ forum.forumID }-${ user.userID }`)
                   ) }
                 </ul>
               </div>
-            ))
-          ) : (
-            <ul class="ignoreList">
-              { users.map(user => renderUserItem(user, user.userID)) }
-            </ul>
-          ) }
-        </div>
+            )) : (
+              <div class="ignoreForumGroup">
+                { context?.forumName && <p class="ignoreForumGroupTitle">{ context.forumName }</p> }
+                <ul class="ignoreList">
+                  { users.map(user => renderUserItem(user, user.userID)) }
+                </ul>
+              </div>
+            ) }
+          </div>
+        </section>
       ) }
 
       { state === 'ready' && topics.length > 0 && (
-        <div class="ignoreSection">
-          <h3 class="ignoreSectionTitle">Темы</h3>
-          <ul class="ignoreList">
+        <section class="ignoreSection">
+          <div class="ignoreSectionHead">
+            <h3 class="ttSectionLabel">Скрытые темы <span class="ttCount">· { topics.length }</span></h3>
+            { !users.length && (
+              <button type="button" class="ignoreAllLink" onClick={ handleOpenSettings }>
+                Весь список
+                <MaskIcon src={ arrowUpRightIcon } />
+              </button>
+            ) }
+          </div>
+          <ul class="ttCard ignoreList">
             { topics.map(renderTopicItem) }
           </ul>
-        </div>
+        </section>
       ) }
     </div>
   );

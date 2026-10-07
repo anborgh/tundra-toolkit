@@ -1,3 +1,6 @@
+// Base styles first so component CSS (imported below) wins over chota's globals.
+import '../chota.min.css';
+import '../common.css';
 import { render } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 
@@ -6,15 +9,17 @@ import { Templates } from './templates';
 import { IgnoreList } from './ignoreList';
 import { Favorites } from './favorites';
 import { StyleTab } from './style';
-import settingsIcon from '../assets/icons/settings.svg';
+import settingsIcon from '../assets/icons/sliders.svg';
+import mountainIcon from '../assets/icons/mountain.svg';
+import infoIcon from '../assets/icons/info.svg';
 import stickerIcon from '../assets/icons/sticker.svg';
 import filePenIcon from '../assets/icons/file-pen.svg';
 import banIcon from '../assets/icons/ban.svg';
 import bookmarkIcon from '../assets/icons/bookmark.svg';
 import calculatorIcon from '../assets/icons/calculator.svg';
-import powerIcon from '../assets/icons/power.svg';
-import paintBucketIcon from '../assets/icons/paint-bucket.svg';
+import typeIcon from '../assets/icons/type.svg';
 import { MaskIcon } from '../components/MaskIcon';
+import { Ornament } from '../components/Ornament';
 import {
   isTrustedBoardHost,
   normalizeBoardHost,
@@ -24,12 +29,13 @@ import {
   CONTROLS_VISIBILITY_OPT_IN_KEY,
   isControlsVisibleForBoard,
   formatUnreadCount,
+  buildHttpsForumApiUrl,
+  assertHttpsResponse,
 } from '../utils';
 import { safeStorageGet, safeStorageSet } from '../utils/storage';
 import { PopupToastBar, PopupToastProvider, usePopupToast } from './popupToast';
+import { ConfirmDialogProvider } from '../components/ConfirmDialog';
 
-import '../chota.min.css';
-import '../common.css';
 import '../components/icon.css';
 import './popup.css';
 
@@ -57,12 +63,35 @@ const DEFAULT_POST_APPEARANCE: PostAppearanceSettings = {
 const TAB_META: Record<ContentTabId, { label: string; icon: string }> = {
   stickers: { label: 'Стикеры', icon: stickerIcon },
   templates: { label: 'Черновики', icon: filePenIcon },
-  ignore: { label: 'Игнор-лист', icon: banIcon },
+  ignore: { label: 'Игнор', icon: banIcon },
   favorites: { label: 'Эпизоды', icon: bookmarkIcon },
-  style: { label: 'Стиль', icon: paintBucketIcon },
+  style: { label: 'Стиль', icon: typeIcon },
 };
 
-const POST_COUNTER_TAB = { label: 'Счётчик постов', icon: calculatorIcon };
+const POST_COUNTER_TAB = { label: 'Счётчик', icon: calculatorIcon };
+const BOARD_NAMES_KEY = 'boardNamesByHost';
+
+const loadBoardName = async (host: string, allowFetch: boolean): Promise<string | null> => {
+  try {
+    const store = await chrome.storage.local.get(BOARD_NAMES_KEY);
+    const map: Record<string, string> = (store as any)?.[BOARD_NAMES_KEY] || {};
+    if (map[host]) return map[host];
+    if (!allowFetch) return null;
+
+    const response = assertHttpsResponse(await fetch(
+      buildHttpsForumApiUrl(host, 'method=board.get&fields=title'),
+      { credentials: 'include', redirect: 'follow' },
+    ));
+    if (!response.ok) return null;
+    const data = await response.json();
+    const title = typeof data?.response?.title === 'string' ? data.response.title.trim().slice(0, 120) : '';
+    if (!title) return null;
+    await chrome.storage.local.set({ [ BOARD_NAMES_KEY ]: { ...map, [ host ]: title } });
+    return title;
+  } catch (e) {
+    return null;
+  }
+};
 
 const sendMessageToActiveTab = (message: any) => new Promise<any>((resolve, reject) => {
   chrome.tabs.query({ currentWindow: true, active: true }, (tabs) => {
@@ -114,6 +143,8 @@ export function App() {
   const [ postAppearance, setPostAppearance ] = useState<PostAppearanceSettings>(DEFAULT_POST_APPEARANCE);
   const [ postAppearanceMap, setPostAppearanceMap ] = useState<Record<string, StoredPostAppearanceSettings>>({});
   const [ postAppearanceToggling, setPostAppearanceToggling ] = useState(false);
+  const [ boardName, setBoardName ] = useState<string | null>(null);
+  const [ tabHost, setTabHost ] = useState<string | null>(null);
 
   const loadUnreadCount = async () => {
     try {
@@ -149,6 +180,7 @@ export function App() {
         || availabilityResp?.boardUrl
         || hostFromUrl(tabUrl),
       );
+      setTabHost(hostFromUrl(tabUrl) || null);
       setBoardId(board);
       setForumId(forum);
       setBoardHost(host);
@@ -159,6 +191,11 @@ export function App() {
       const canTrust = Boolean(host && isAllowedBoardHost(host) && forumDetected);
 
       setHasForum(forumDetected);
+      if (host && forumDetected && isAllowedBoardHost(host)) {
+        loadBoardName(host, isTrusted).then(setBoardName);
+      } else {
+        setBoardName(null);
+      }
       setIsTrusted(isTrusted);
       setAvailability(
         computedAvailable
@@ -433,86 +470,124 @@ export function App() {
     );
   };
 
+  const forumOnlyDisabled = !hasForum || availability !== 'available';
+  const forumOnlyTitle = !hasForum
+    ? 'Доступно только на форуме MyBB/RusFF'
+    : 'Сначала включите Tundra Toolkit на этом форуме';
+
   const renderTabButton = (tabId: ContentTabId) => {
     const { label, icon } = TAB_META[tabId];
     const showBadge = tabId === 'favorites' && unreadCount > 0;
     const forumOnly = tabId === 'ignore' || tabId === 'style';
-    const disabled = forumOnly && (!hasForum || availability !== 'available');
-    const disabledTitle = !hasForum
-      ? 'Доступно только на форуме MyBB/RusFF'
-      : 'Сначала включите Tundra Toolkit на этом форуме';
+    const disabled = forumOnly && forumOnlyDisabled;
 
     return (
       <button
         key={ tabId }
-        class={ `button small tabButton ${ activeTab === tabId ? 'primary' : '' }` }
+        class="popupTab"
         type="button"
         onClick={ () => handleTabClick(tabId) }
         disabled={ disabled }
-        title={ disabled ? disabledTitle : label }
-        aria-label={ label }
+        title={ disabled ? forumOnlyTitle : undefined }
         aria-current={ activeTab === tabId ? 'page' : undefined }
       >
         <MaskIcon src={ icon } />
+        <span class="popupTabLabel">{ label }</span>
         { showBadge && renderTabBadge() }
       </button>
     );
   };
 
   const { label: postCounterLabel, icon: postCounterIcon } = POST_COUNTER_TAB;
+  const canTrustHere = hasForum && !!boardHost;
+  const showEnableBanner = canTrustHere && !isTrusted && availability !== 'unknown';
+  const enableBanner = showEnableBanner ? {
+    host: boardHost || '',
+    busy: forumPowerBusy,
+    onEnable: handleToggleForumPower,
+  } : null;
 
   return (
     <div class="popupWrapper">
       <h1 class="sr-only" translate={ false }>Tundra Toolkit</h1>
-      <nav class="popupTabs" aria-label="Разделы">
-        <div class="popupTabsMain">
-          { (Object.keys(TAB_META) as ContentTabId[]).map(renderTabButton) }
-          <button
-            type="button"
-            class="button small tabButton"
-            onClick={ () => handleTabClick('postCounter') }
-            disabled={ !hasForum || availability !== 'available' }
-            title={ !hasForum
-              ? 'Доступно только на форуме MyBB/RusFF'
-              : availability !== 'available'
-                ? 'Сначала включите Tundra Toolkit на этом форуме'
-                : postCounterLabel
-            }
-            aria-label={ postCounterLabel }
-          >
-            <MaskIcon src={ postCounterIcon } />
-          </button>
+      <header class="popupHeader">
+        <div class={ `popupLogo ${ hasForum && !isTrusted ? 'is-muted' : '' }` } aria-hidden="true">
+          <MaskIcon src={ mountainIcon } />
         </div>
-
-        <div class="popupTabsActions">
-          { hasForum && (
-            <button
-              type="button"
-              class={ `button small tabButton forumPowerToggle ${ isTrusted ? 'active' : 'muted' }` }
-              onClick={ handleToggleForumPower }
-              disabled={ forumPowerBusy || !boardHost }
-              title={ isTrusted ? 'Выключить Tundra Toolkit на этом форуме' : 'Включить Tundra Toolkit на этом форуме' }
-              aria-label={ isTrusted ? 'Выключить Tundra Toolkit на форуме' : 'Включить Tundra Toolkit на форуме' }
-              aria-pressed={ isTrusted }
-            >
-              <MaskIcon src={ powerIcon } />
-            </button>
+        <div class="popupHeaderMeta">
+          { hasForum ? (
+            <>
+              <div class="popupHeaderTitle" title={ boardName || boardHost || undefined }>
+                { boardName || boardHost || 'Форум' }
+              </div>
+              <div class="popupHeaderSub">{ boardHost }</div>
+            </>
+          ) : (
+            <>
+              <div class="popupHeaderTitle ttDisplay" translate={ false }>Tundra Toolkit</div>
+              <div class="popupHeaderSub" title={ tabHost || undefined }>
+                { availability === 'unknown'
+                  ? 'Проверяем страницу…'
+                  : tabHost
+                    ? `${ tabHost } — это не форум MyBB/RusFF`
+                    : 'Эта страница — не форум MyBB/RusFF' }
+              </div>
+            </>
           ) }
-          <button
-            type="button"
-            class="button small controlsSettings tabButton"
-            onClick={ handleOpenOptions }
-            title="Настройки"
-            aria-label="Настройки"
-          >
-            <MaskIcon src={ settingsIcon } />
-          </button>
         </div>
+        { hasForum && (
+          <label
+            class="popupPower"
+            title={ isTrusted ? 'Выключить Tundra Toolkit на этом форуме' : 'Включить Tundra Toolkit на этом форуме' }
+          >
+            <span class="popupPowerLabel">{ isTrusted ? 'Включено' : 'Выключено' }</span>
+            <span class="ttSwitch onDark">
+              <input
+                type="checkbox"
+                checked={ isTrusted }
+                disabled={ forumPowerBusy || !boardHost }
+                onChange={ handleToggleForumPower }
+                aria-label="Tundra Toolkit на этом форуме"
+              />
+              <span aria-hidden="true" />
+            </span>
+          </label>
+        ) }
+        <button
+          type="button"
+          class="popupHeaderButton"
+          onClick={ handleOpenOptions }
+          title="Настройки"
+          aria-label="Настройки"
+        >
+          <MaskIcon src={ settingsIcon } />
+        </button>
+      </header>
+      <Ornament size={ 10 } class="popupOrnament" />
+
+      <nav class="popupTabs" aria-label="Разделы">
+        { (Object.keys(TAB_META) as ContentTabId[]).map(renderTabButton) }
+        <button
+          type="button"
+          class="popupTab popupTabAction"
+          onClick={ () => handleTabClick('postCounter') }
+          disabled={ forumOnlyDisabled }
+          title={ forumOnlyDisabled ? forumOnlyTitle : 'Откроется окном на странице форума' }
+        >
+          <MaskIcon src={ postCounterIcon } />
+          <span class="popupTabLabel">{ postCounterLabel }</span>
+        </button>
       </nav>
 
       <main class="popupTabContent">
-        { activeTab === 'templates' && <Templates /> }
-        { activeTab === 'stickers' && <Stickers /> }
+        { !hasForum && availability !== 'unknown' && activeTab === 'favorites' && (
+          <div class="popupNotice">
+            <MaskIcon src={ infoIcon } />
+            <span>Эпизоды, стикеры и черновики работают везде. Игнор, стиль и счётчик постов — только на форумах MyBB/RusFF.</span>
+          </div>
+        ) }
+        { activeTab === 'templates' && <Templates enableBanner={ enableBanner } /> }
+        { activeTab === 'stickers' && <Stickers enableBanner={ enableBanner } /> }
         { activeTab === 'ignore' && (
           <IgnoreList
             controlsVisible={ controlsVisible }
@@ -552,9 +627,11 @@ export function App() {
 const root = document.getElementById('app');
 if (root) {
   render(
-    <PopupToastProvider>
-      <App />
-    </PopupToastProvider>,
+    <ConfirmDialogProvider>
+      <PopupToastProvider>
+        <App />
+      </PopupToastProvider>
+    </ConfirmDialogProvider>,
     root,
   );
 }

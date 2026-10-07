@@ -4,14 +4,7 @@ import gripVerticalIcon from '../../assets/icons/grip-vertical.svg';
 import pencilIcon from '../../assets/icons/pencil.svg';
 import { MaskIcon } from '../../components/MaskIcon';
 import { CloudSyncButton } from '../../components/CloudSyncButton';
-import {
-  ItemEditor,
-  PACK_BODY_PLACEHOLDER,
-  PACK_NAME_PLACEHOLDER,
-  PACK_REMOVE_CONFIRM,
-} from '../../components/ItemEditor';
 import { useBatchedItems } from '../../hooks/useBatchedItems';
-import { checkImageURL } from '../../utils';
 import type { ItemLocation } from '../../utils/storage';
 
 import '../../components/icon.css';
@@ -19,12 +12,8 @@ import './style.css';
 
 type Props = {
   pack: IStickerPack;
-  editing: boolean;
-  onEdit: () => void;
-  onCancelEdit: () => void;
+  onEdit: (packId: number) => void;
   onChange: (pack: IStickerPack) => void | Promise<void>;
-  onRemove: (packId: number) => void | Promise<void>;
-  onInvalid?: (message: string) => void;
   location?: ItemLocation;
   onCloudToggle?: () => void;
   reorderMode?: boolean;
@@ -32,12 +21,8 @@ type Props = {
 
 export default function ({
   pack,
-  editing,
   onEdit,
-  onCancelEdit,
   onChange,
-  onRemove,
-  onInvalid,
   location = 'local',
   onCloudToggle,
   reorderMode = false,
@@ -45,21 +30,12 @@ export default function ({
   const dragItem = useRef();
   const dragOverItem = useRef();
 
-  const [ name, setName ] = useState(pack.name);
   const [ items, setItems ] = useState<IStickerPack['items']>(pack.items || []);
-  const [ textItems, setTextItems ] = useState((pack.items || []).join('\n'));
-  const visibleStickers = useBatchedItems(items, !editing);
+  const visibleStickers = useBatchedItems(items, true);
 
-  const savePack = async () => {
-    const clearedItems = textItems.split('\n').filter(item => checkImageURL(item));
-
-    await onChange({
-      id: pack.id,
-      name: name.trim(),
-      items: clearedItems,
-    });
-    onCancelEdit();
-  };
+  useEffect(() => {
+    setItems(pack.items || []);
+  }, [ pack ]);
 
   const handleDragStart = event => {
     dragItem.current = event.currentTarget.dataset.index;
@@ -99,6 +75,7 @@ export default function ({
     dragItem.current = null;
     dragOverItem.current = null;
 
+    setItems(newData);
     onChange({
       id: pack.id,
       name: pack.name,
@@ -112,6 +89,7 @@ export default function ({
     const next = [ ...items ];
     const [ moved ] = next.splice(index, 1);
     next.splice(target, 0, moved);
+    setItems(next);
     onChange({
       id: pack.id,
       name: pack.name,
@@ -129,38 +107,10 @@ export default function ({
     }
   };
 
-  useEffect(() => {
-    setName(pack.name || 'UNKNOWN');
-    setItems(pack.items || []);
-    setTextItems((pack.items || []).join('\n'));
-  }, [ pack ]);
-
-  if (editing && !reorderMode) {
-    return (
-      <div className="stickerList">
-        <div className="stickerListEditor">
-          <ItemEditor
-            name={ name }
-            body={ textItems }
-            namePlaceholder={ PACK_NAME_PLACEHOLDER }
-            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
-            onNameChange={ setName }
-            onBodyChange={ setTextItems }
-            onSave={ savePack }
-            onCancel={ () => {
-              setName(pack.name);
-              setTextItems((pack.items || []).join('\n'));
-              onCancelEdit();
-            } }
-            onRemove={ () => onRemove(pack.id) }
-            onInvalid={ onInvalid }
-            removeConfirm={ PACK_REMOVE_CONFIRM }
-            bodySpellCheck={ false }
-          />
-        </div>
-      </div>
-    );
-  }
+  const handleEditPack = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+    onEdit(pack.id);
+  };
 
   return (
     <div className={ `stickerList${ reorderMode ? ' reorderMode' : '' }` }>
@@ -171,7 +121,7 @@ export default function ({
               <MaskIcon src={ gripVerticalIcon } />
             </span>
           ) }
-          <h3>{ name }</h3>
+          <h3>{ pack.name }</h3>
           { onCloudToggle && (
             <CloudSyncButton location={ location } onToggle={ onCloudToggle } />
           ) }
@@ -181,7 +131,7 @@ export default function ({
             <button
               type="button"
               className="button small icon-only"
-              onClick={ onEdit }
+              onClick={ handleEditPack }
               title="Редактировать стикерпак"
               aria-label="Редактировать стикерпак"
             >

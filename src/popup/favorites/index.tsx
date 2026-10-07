@@ -8,7 +8,9 @@ import plusIcon from '../../assets/icons/plus.svg';
 import xIcon from '../../assets/icons/x.svg';
 import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
 import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import alertIcon from '../../assets/icons/circle-alert.svg';
 import { usePopupToast } from '../popupToast';
+import { useConfirm } from '../../components/ConfirmDialog';
 
 import '../../components/icon.css';
 import './style.css';
@@ -114,6 +116,7 @@ const isStaleBoard = (boardUrl: string, boardStatuses: Record<string, BoardStatu
 
 export function Favorites() {
   const { showError, clearToast } = usePopupToast();
+  const confirmAction = useConfirm();
   const [ favorites, setFavorites ] = useState<IFavoriteTopic[]>([]);
   const [ loaded, setLoaded ] = useState(false);
   const [ refreshing, setRefreshing ] = useState(false);
@@ -269,7 +272,11 @@ export function Favorites() {
   };
 
   const handleRemove = async (item: IFavoriteTopic) => {
-    const confirmed = confirm(`Убрать «${ decodeEntities(item.topicName) }» из списка эпизодов?`);
+    const confirmed = await confirmAction({
+      message: `Убрать «${ decodeEntities(item.topicName) }» из списка эпизодов?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!confirmed) return;
 
     const next = favorites.filter(fav => fav.id !== item.id);
@@ -301,7 +308,7 @@ export function Favorites() {
 
     const myTurn = favorites
       .filter(item => item.myTurn && !updatedIds.has(item.id))
-      .sort((a, b) => (a.lastPostDate || 0) - (b.lastPostDate || 0));
+      .sort((a, b) => (b.lastPostDate || 0) - (a.lastPostDate || 0));
     const rest = favorites
       .filter(item => !item.myTurn && !updatedIds.has(item.id))
       .sort((a, b) => (b.lastPostDate || 0) - (a.lastPostDate || 0));
@@ -313,9 +320,14 @@ export function Favorites() {
     const stale = status === 'guest' || status === 'error';
     const isNew = hasNewPosts(item);
     const topicUrl = `https://${ item.boardUrl }/viewtopic.php?id=${ item.topicID }&action=${isNew ? 'new' : 'last'}`;
+    const title = decodeEntities(item.topicName);
 
     return (
-      <li class={ `favoriteItem ${ stale ? 'stale' : '' } ${ item.myTurn ? 'is-myTurn' : '' }` } key={ item.id }>
+      <li class={ `favoriteItem ${ stale ? 'stale' : '' } ${ isNew && !stale ? 'is-new' : '' }` } key={ item.id }>
+        <TurnSwitch
+          myTurn={ item.myTurn }
+          onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
+        />
         <div class="favoriteBody">
           <div class="favoriteTitleRow">
             <a
@@ -323,10 +335,10 @@ export function Favorites() {
               target="_blank"
               rel="noopener noreferrer"
               class="favoriteTitle"
-              title={ decodeEntities(item.topicName) }
+              title={ title }
               onClick={ () => { if (isNew) handleMarkSeen(item); } }
             >
-              { decodeEntities(item.topicName) }
+              { title }
             </a>
             { isNew && !stale && (
               <button
@@ -339,92 +351,85 @@ export function Favorites() {
               </button>
             ) }
           </div>
-          <div class="favoriteMeta">
-            <span class="favoriteBoard" title={ item.boardUrl }>{ decodeEntities(item.boardName) }</span>
-            <span class="favoriteDot">·</span>
-            <span title={ daysAgoTitle(item.lastPostDate) }>{ formatLastPost(item.lastPostDate) }</span>
-            { item.lastUsername && (
-              <>
-                <span class="favoriteDot">·</span>
-                <span class="favoriteLastUser" title="Автор последнего поста">
-                  { decodeEntities(item.lastUsername) }
-                </span>
-              </>
-            ) }
-            { stale && (
-              <span
-                class="favoriteStaleBadge"
-                title={ status === 'guest'
-                  ? 'Вы вышли из аккаунта на этом форуме — тема не обновляется'
-                  : 'Форум временно недоступен — тема не обновляется'
-                }
-              >
-                ⚠ не обновляется
-              </span>
-            ) }
-          </div>
+          { stale ? (
+            <div
+              class="favoriteStale"
+              title={ status === 'guest'
+                ? 'Вы вышли из аккаунта на этом форуме — тема не обновляется'
+                : 'Форум временно недоступен — тема не обновляется'
+              }
+            >
+              <MaskIcon src={ alertIcon } />
+              { status === 'guest' ? 'Не обновляется — войдите на форум' : 'Не обновляется — форум недоступен' }
+            </div>
+          ) : (
+            <div class="favoriteMeta">
+              <span class="favoriteBoard" title={ item.boardUrl }>{ decodeEntities(item.boardName) }</span>
+              <span class="favoriteDot" aria-hidden="true">·</span>
+              <span title={ daysAgoTitle(item.lastPostDate) }>{ formatLastPost(item.lastPostDate) }</span>
+              { item.lastUsername && (
+                <>
+                  <span class="favoriteDot" aria-hidden="true">·</span>
+                  <span class="favoriteLastUser" title="Автор последнего поста">
+                    { decodeEntities(item.lastUsername) }
+                  </span>
+                </>
+              ) }
+            </div>
+          ) }
         </div>
-
-        <div class="favoriteActions">
-          <TurnSwitch
-            myTurn={ item.myTurn }
-            onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
-          />
-          <button
-            class="button small icon-only favoriteRemove"
-            title="Убрать из списка эпизодов"
-            aria-label="Убрать из списка эпизодов"
-            onClick={ () => handleRemove(item) }
-          >
-            <MaskIcon src={ xIcon } />
-          </button>
-        </div>
+        <button
+          class="button small icon-only ghost favoriteRemove"
+          type="button"
+          title="Убрать из списка эпизодов"
+          aria-label={ `Убрать «${ title }» из эпизодов` }
+          onClick={ () => handleRemove(item) }
+        >
+          <MaskIcon src={ xIcon } />
+        </button>
       </li>
     );
   };
+
+  const refreshedLabel = lastRefreshAt
+    ? `Обновлено в ${ new Date(lastRefreshAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) } · каждые ${ intervalMinutes } мин`
+    : `Проверяем каждые ${ intervalMinutes } мин`;
 
   return (
     <div class="favoritesTab">
       <h2 class="sr-only">Эпизоды</h2>
       <div class="favoritesHeader">
-        <div class="favoritesActions">
-          { statusView && (
-            <span
-              class={ `favoritesStatus favoritesStatus--${ statusView.tone }` }
-              title={ statusView.text }
-              aria-label={ statusView.text }
-              role="status"
-            >
-              <MaskIcon
-                src={ statusView.icon }
-                class={ statusView.spin ? 'ttIconSpin' : '' }
-              />
-            </span>
-          ) }
-          <button
-            class="button small icon-only"
-            disabled={ refreshing }
-            title={refreshTitle}
-            aria-label="Обновить"
-            onClick={ () => requestRefresh(false, true) }
-          >
-            <MaskIcon src={ refreshIcon } />
-          </button>
-          <button
-            class="button small primary"
-            disabled={ !activeTopic || activeAlreadyAdded || adding }
-            title={ !activeTopic
-              ? 'Кнопка работает только на странице темы'
-              : (activeAlreadyAdded ? 'Эта тема уже в эпизодах' : 'Добавить открытую тему в «Эпизоды»')
-            }
-            onClick={ handleAddActive }
-          >
-            <span class="buttonLabel">
-              { !activeAlreadyAdded && <MaskIcon src={ plusIcon } /> }
-              { activeAlreadyAdded ? 'Уже в эпизодах' : 'Текущая тема' }
-            </span>
-          </button>
+        <div class="favoritesUpdated" role="status" title={ statusView?.text || refreshedLabel }>
+          { statusView ? (
+            <>
+              <MaskIcon src={ statusView.icon } class={ statusView.spin ? 'ttIconSpin' : '' } />
+              <span>{ statusView.text }</span>
+            </>
+          ) : refreshedLabel }
         </div>
+        <button
+          class="button small icon-only"
+          type="button"
+          disabled={ refreshing }
+          title={ refreshTitle }
+          aria-label="Обновить"
+          onClick={ () => requestRefresh(false, true) }
+        >
+          <MaskIcon src={ refreshIcon } />
+        </button>
+        <button
+          class="button small primary"
+          type="button"
+          disabled={ !activeTopic || activeAlreadyAdded || adding }
+          title={ !activeTopic
+            ? 'Кнопка работает только на странице темы'
+            : (activeAlreadyAdded ? 'Эта тема уже в эпизодах' : 'Добавить открытую тему в «Эпизоды»')
+          }
+          onClick={ handleAddActive }
+        >
+          { !activeAlreadyAdded && <MaskIcon src={ plusIcon } /> }
+          { activeAlreadyAdded ? 'Уже в эпизодах' : 'Текущая тема' }
+        </button>
       </div>
 
       { loaded && !favorites.length && (
@@ -434,34 +439,30 @@ export function Favorites() {
       ) }
 
       { updatedItems.length > 0 && (
-        <div class="favoritesSection favoritesSectionUpdated">
-          <h3 class="favoritesSectionTitle">Обновлённые</h3>
+        <section class="favoritesSection favoritesSectionUpdated">
+          <h3 class="ttSectionLabel">Новые ответы <span class="ttCount">{ updatedItems.length }</span></h3>
           <ul class="favoritesList">
             { updatedItems.map(renderItem) }
           </ul>
-        </div>
+        </section>
       ) }
 
-      { favorites.length > 0 && (
-        <div class="favoritesSection">
-          <h3 class="favoritesSectionTitle">Ваш ход { myTurnCount }/{ totalCount }</h3>
-          { myTurnItems.length > 0 && (
-            <ul class="favoritesList">
-              { myTurnItems.map(renderItem) }
-            </ul>
-          ) }
-        </div>
+      { myTurnItems.length > 0 && (
+        <section class="favoritesSection favoritesSectionMine">
+          <h3 class="ttSectionLabel">Мой ход <span class="ttCount">{ myTurnCount } из { totalCount }</span></h3>
+          <ul class="favoritesList">
+            { myTurnItems.map(renderItem) }
+          </ul>
+        </section>
       ) }
 
       { restItems.length > 0 && (
-        <div class="favoritesSection">
-          { (myTurnCount > 0 || updatedItems.length > 0) && (
-            <h3 class="favoritesSectionTitle">Жду ответа</h3>
-          ) }
+        <section class="favoritesSection">
+          <h3 class="ttSectionLabel">Жду ответа <span class="ttCount">{ restItems.length }</span></h3>
           <ul class="favoritesList">
             { restItems.map(renderItem) }
           </ul>
-        </div>
+        </section>
       ) }
     </div>
   );

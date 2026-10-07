@@ -1,7 +1,26 @@
+.stickerPackOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.stickerPackOptionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.stickerList {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
+    overflow: hidden;
+}
+
 .stickerPackOptionsHeader {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: flex-end;
     gap: 12px;
     flex-wrap: wrap;
 }
@@ -14,6 +33,7 @@
 
 .stickerPackOptionsActions {
     display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     align-items: center;
 }
@@ -56,10 +76,10 @@
 }
 
 .stickerListContent {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    padding: 16px 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 10px;
+    padding: 0 16px 16px;
 
     --bg-add-item: var(--tt-overlay);
 }
@@ -72,11 +92,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    height: 64px;
-    background: var(--tt-accent-soft);
-    border: 1px solid var(--tt-border);
-    border-left: 3px solid var(--tt-frost);
-    padding: 0 12px;
+    min-height: 56px;
+    padding: 8px 10px 8px 16px;
 }
 
 .stickerListHeader .actions {
@@ -88,8 +105,8 @@
 .stickerListHeader h3,
 .stickerListHeader h4 {
     margin: 0;
-    font-family: var(--tt-font-display);
-    font-size: 1.1rem;
+    font-family: var(--tt-font-body);
+    font-size: 16px;
     font-weight: 600;
 }
 
@@ -129,12 +146,17 @@
 }
 
 .stickerItem {
-    max-height: 100px;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
     cursor: grab;
-    padding: 0;
+    padding: 4px;
     border: 0;
-    background: transparent;
+    border-radius: 10px;
+    background: var(--tt-card-alt);
+    box-shadow: inset 0 0 0 1px var(--tt-border-soft);
 }
 
 .stickerItem:focus-visible {
@@ -168,6 +190,9 @@
     width: 4px;
 }
 .stickerItem img {
-    max-height: 100px;
-    max-width: 100px;
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
 }

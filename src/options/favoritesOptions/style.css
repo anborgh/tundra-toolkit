@@ -1,192 +1,211 @@
 .favoritesOptions {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 .favoritesOptionsHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
-  flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.favoritesOptionsHeader > div:first-child {
+    flex: 1 1 280px;
 }
 
 .favoritesOptionsHeader h2 {
-  margin: 0;
-}
-
-.favoritesOptionsHeader .optionsSectionLead {
-  margin: 4px 0 0;
-  color: var(--tt-muted);
-  font-variant-numeric: tabular-nums;
+    margin: 0;
 }
 
 .favoritesOptionsHeaderActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
 }
-
 
 .favoritesOptionsViewToggle {
-  display: inline-flex;
-  gap: 0;
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--tt-radius);
+    background: var(--tt-subtle);
 }
 
-.favoritesOptionsViewToggle .button {
-  border-radius: 0;
+.favoritesOptionsSeg {
+    height: 30px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--tt-radius-sm);
+    background: transparent;
+    color: var(--tt-text-2);
+    font: 500 13px/1 var(--tt-font-body);
+    cursor: pointer;
 }
 
-.favoritesOptionsViewToggle .button:first-child {
-  border-radius: 0;
+.favoritesOptionsSeg[aria-pressed="true"] {
+    background: var(--tt-card);
+    color: var(--tt-text);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
-.favoritesOptionsViewToggle .button:last-child {
-  border-radius: 0;
-  margin-left: -1px;
+.favoritesOptionsStats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
 }
 
-.favoritesOptionsListFlat {
-  margin-top: 0;
+.favoritesOptionsStat {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
 }
 
-.favoritesOptionsBoardTag {
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.favoritesOptionsStat span {
+    font-size: 13px;
+    color: var(--tt-muted);
 }
+
+.favoritesOptionsStat strong {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.favoritesOptionsStat strong.is-new { color: var(--tt-frost); }
+.favoritesOptionsStat strong.is-mine { color: var(--tt-ember); }
 
 .favoritesOptionsBoard {
-  border: 1px solid var(--tt-border);
-  border-radius: 0;
-  border-left: 3px solid var(--tt-frost);
-  padding: 0;
-  background: var(--tt-card);
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
+    overflow: hidden;
 }
 
 .favoritesOptionsBoardTitle {
-  display: block;
-  padding: 12px;
-  font-weight: 600;
-  color: var(--font-color);
-  text-decoration: none;
+    display: block;
+    padding: 14px 16px;
+    background: var(--tt-card-alt);
+    color: var(--tt-text);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
 }
 
 .favoritesOptionsBoardTitle:hover {
-  text-decoration: underline;
+    color: var(--tt-frost);
+}
+
+.favoritesOptionsBoardTag {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .favoritesOptionsList {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
 }
 
 .favoritesOptionsItem {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  background: transparent;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 10px 8px 10px 14px;
+    border-top: 1px solid var(--tt-border-soft);
 }
 
-.favoritesOptionsItem.is-myTurn {
-  border-color: var(--tt-border-strong);
-  background: color-mix(in oklab, var(--tt-frost) 28%, var(--tt-bg));
+.favoritesOptionsListFlat .favoritesOptionsItem:first-child {
+    border-top: 0;
 }
 
-.favoritesOptionsItem.stale {
-  border-style: dashed;
+.favoritesOptionsItem:hover {
+    background: var(--tt-card-alt);
 }
 
-.favoritesOptionsItem.stale .favoritesOptionsTitleRow a,
-.favoritesOptionsItem.stale .favoritesOptionsMeta {
-  color: var(--tt-muted);
-}
-
-.favoritesOptionsActions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: flex-start;
-  gap: 4px;
+.favoritesOptionsItem.stale .favoritesOptionsTitleRow a {
+    color: var(--tt-text-2);
 }
 
 .favoritesOptionsBody {
-  flex: 1;
-  min-width: 0;
+    flex: 1 1 260px;
+    min-width: 0;
 }
 
 .favoritesOptionsTitleRow {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
 }
 
 .favoritesOptionsTitleRow a {
-  color: var(--font-color);
-  font-weight: 600;
-  text-decoration: none;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+    min-width: 0;
+    color: var(--tt-text);
+    font-weight: 600;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .favoritesOptionsTitleRow a:hover {
-  text-decoration: underline;
+    color: var(--tt-frost);
+    text-decoration: underline;
 }
 
 .favoritesOptionsNewBadge {
-  flex: 0 0 auto;
-  padding: 1px 6px;
-  border-radius: 0;
-  border: 1px solid color-mix(in oklab, var(--tt-success) 40%, transparent);
-  background: color-mix(in oklab, var(--tt-success) 14%, transparent);
-  color: var(--tt-success);
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  font-family: inherit;
-  line-height: 1.3;
-}
-
-.favoritesOptionsNewBadge:hover {
-  background: color-mix(in oklab, var(--tt-success) 22%, transparent);
-}
-
-.favoritesOptionsNewBadge:focus-visible {
-  outline: 2px solid var(--tt-accent);
-  outline-offset: 2px;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    height: 20px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--tt-accent-soft);
+    color: var(--tt-accent-text);
+    font: 600 11px/1 var(--tt-font-body);
+    cursor: pointer;
 }
 
 .favoritesOptionsMeta {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: 3px;
-  font-size: 0.9em;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    font-size: 13px;
+    color: var(--tt-muted);
 }
 
 .favoritesOptionsStale {
-  padding: 1px 6px;
-  border-radius: 0;
-  border: 1px solid color-mix(in oklab, var(--tt-danger) 35%, transparent);
-  background: color-mix(in oklab, var(--tt-danger) 12%, transparent);
-  color: var(--tt-danger);
-  font-size: 10px;
-  font-weight: 600;
+    color: var(--tt-earth);
+    cursor: help;
+}
+
+.favoritesOptionsActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
 }
 
 .favoritesOptionsRemove {
-  flex: 0 0 auto;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 560px) {
+    .favoritesOptionsStats {
+        grid-template-columns: 1fr;
+    }
 }

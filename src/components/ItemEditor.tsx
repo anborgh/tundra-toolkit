@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MaskIcon } from './MaskIcon';
+import { useConfirm } from './ConfirmDialog';
 import loaderCircleIcon from '../assets/icons/loader-circle.svg';
 
 import './icon.css';
@@ -19,6 +20,11 @@ type ItemEditorProps = {
   onInvalid?: (message: string) => void;
   removeConfirm?: string;
   bodySpellCheck?: boolean;
+  /** Ask before closing the page while the editor is open (default: true). */
+  guardUnload?: boolean;
+  cancelLabel?: string;
+  /** Visible field labels instead of screen-reader-only ones. */
+  showLabels?: boolean;
 };
 
 export const PACK_NAME_PLACEHOLDER = 'Название…';
@@ -26,14 +32,14 @@ export const PACK_BODY_PLACEHOLDER = 'https://example.com/image.png…';
 export const TEMPLATE_NAME_PLACEHOLDER = 'Название…';
 export const TEMPLATE_BODY_PLACEHOLDER = 'Текст, BBCode или HTML…';
 export const PACK_REMOVE_CONFIRM = 'Удалить стикерпак? После удаления восстановить его нельзя.';
-export const TEMPLATE_REMOVE_CONFIRM = 'Удалить черновик или шаблон? После удаления восстановить его нельзя.';
+export const TEMPLATE_REMOVE_CONFIRM = 'Удалить черновик? После удаления восстановить его нельзя.';
 
 export function nextCollectionId(items: { id: number }[]) {
   const ids = items.map(item => item.id);
   return ids.length ? Math.max(...ids) + 1 : 0;
 }
 
-export function previewText(content: string, emptyLabel = 'Пустой шаблон') {
+export function previewText(content: string, emptyLabel = 'Пустой черновик') {
   if (!content) return emptyLabel;
   const cleaned = content.replace(/\s+/g, ' ').trim();
   return cleaned.length > 140 ? `${ cleaned.slice(0, 140) }…` : cleaned;
@@ -68,19 +74,24 @@ export function ItemEditor({
   onInvalid,
   removeConfirm,
   bodySpellCheck = true,
+  guardUnload = true,
+  cancelLabel = 'Отмена',
+  showLabels = false,
 }: ItemEditorProps) {
+  const confirmAction = useConfirm();
   const [ saving, setSaving ] = useState(false);
   const nameLabel = namePlaceholder.replace(/…$/, '');
   const bodyLabel = bodyPlaceholder?.replace(/…$/, '') || 'Текст';
 
   useEffect(() => {
+    if (!guardUnload) return undefined;
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
     };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => window.removeEventListener('beforeunload', onBeforeUnload);
-  }, []);
+  }, [ guardUnload ]);
 
   const handleSave = async (event: Event) => {
     event.preventDefault();
@@ -99,7 +110,10 @@ export function ItemEditor({
 
   const handleRemove = async () => {
     if (!onRemove || saving) return;
-    if (removeConfirm && !confirm(removeConfirm)) return;
+    if (removeConfirm) {
+      const confirmed = await confirmAction({ message: removeConfirm, confirmLabel: 'Удалить', destructive: true });
+      if (!confirmed) return;
+    }
     setSaving(true);
     try {
       await onRemove();
@@ -111,7 +125,7 @@ export function ItemEditor({
   return (
     <form className="itemEditor" aria-busy={ saving } onSubmit={ handleSave }>
       <label className="itemEditorField">
-        <span className="sr-only">{ nameLabel }</span>
+        <span className={ showLabels ? 'itemEditorLabel' : 'sr-only' }>{ nameLabel }</span>
         <input
           type="text"
           name="itemName"
@@ -125,7 +139,7 @@ export function ItemEditor({
         />
       </label>
       <label className="itemEditorField">
-        <span className="sr-only">{ bodyLabel }</span>
+        <span className={ showLabels ? 'itemEditorLabel' : 'sr-only' }>{ bodyLabel }</span>
         <textarea
           name="itemBody"
           autoComplete="off"
@@ -144,10 +158,10 @@ export function ItemEditor({
           { saving ? 'Сохранение…' : 'Сохранить' }
         </button>
         <button type="button" className="button small" disabled={ saving } onClick={ onCancel }>
-          Отмена
+          { cancelLabel }
         </button>
         { onRemove && (
-          <button type="button" className="button small clear" disabled={ saving } onClick={ handleRemove }>
+          <button type="button" className="button small danger itemEditorRemove" disabled={ saving } onClick={ handleRemove }>
             Удалить
           </button>
         ) }

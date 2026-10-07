@@ -200,42 +200,56 @@ const ensureTundraEmbedStyles = (() => {
     style.textContent = `
       a.tundra-btn,
       .tundra-btn {
-        --tt-night: #152122;
-        --tt-bone: #F9F9F4;
-        --tt-frost: #275355;
-        --tt-earth: #7C5233;
-        --tt-ember: #A12830;
+        --tt-fg: #172227;
+        --tt-muted: #56646B;
+        --tt-card: #FFFFFF;
+        --tt-border: #C9D1CE;
+        --tt-danger: #A3311B;
+        --tt-danger-soft: #FBE9E5;
+        --tt-frost: #0E6B62;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
-        min-width: 1.45em;
-        height: 1.45em;
-        padding: 0 0.28em;
-        margin: 0 0 0 0.2em;
-        border: 1px solid color-mix(in oklab, var(--tt-earth) 90%, transparent);
-        border-left: 2px solid var(--tt-earth);
-        border-radius: 0;
-        background: color-mix(in oklab, var(--tt-night) 7%, transparent);
-        color: inherit;
-        font: 700 0.82em/1 "Avenir Next", "Segoe UI", system-ui, sans-serif;
+        width: 1.6em;
+        min-width: 22px;
+        height: 1.6em;
+        min-height: 22px;
+        padding: 0;
+        margin: 0 0 0 0.25em;
+        border: 1px solid var(--tt-border);
+        border-radius: 6px;
+        background: var(--tt-card);
+        color: var(--tt-muted) !important;
+        font: 400 13px/1 "Golos Text", "Golos UI", "Segoe UI", system-ui, sans-serif;
         letter-spacing: 0;
         text-decoration: none !important;
-        opacity: 0.78;
         vertical-align: middle;
         cursor: pointer;
+        transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+      }
+      a.tundra-btn .tundra-btn__icon,
+      .tundra-btn .tundra-btn__icon {
+        display: block;
+        width: 62%;
+        height: 62%;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
       }
       a.tundra-btn:hover,
       .tundra-btn:hover {
-        opacity: 1;
-        background: color-mix(in oklab, var(--tt-frost) 32%, transparent);
-        border-color: color-mix(in oklab, var(--tt-frost) 45%, var(--tt-bone));
-        color: inherit;
+        background: var(--tt-danger-soft);
+        border-color: color-mix(in oklab, var(--tt-danger) 45%, transparent);
+        color: var(--tt-danger) !important;
       }
       a.tundra-btn:focus-visible,
       .tundra-btn:focus-visible {
-        outline: 2px solid color-mix(in oklab, var(--tt-frost) 45%, var(--tt-bone));
-        outline-offset: 1px;
+        outline: 2px solid var(--tt-frost);
+        outline-offset: 2px;
       }
       .post-links li.pl-email.ignore {
         list-style: none;
@@ -249,19 +263,12 @@ const ensureTundraEmbedStyles = (() => {
       @media (prefers-color-scheme: dark) {
         a.tundra-btn,
         .tundra-btn {
-          --tt-night: #0E1A1C;
-          --tt-bone: #E4EEF0;
-          --tt-frost: #7EC4C8;
-          --tt-earth: #C9A57A;
-          --tt-ember: #E07878;
-          background: color-mix(in oklab, var(--tt-bone) 8%, transparent);
-          border-color: color-mix(in oklab, var(--tt-frost) 55%, transparent);
-          border-left-color: var(--tt-frost);
-        }
-        a.tundra-btn:hover,
-        .tundra-btn:hover {
-          background: color-mix(in oklab, var(--tt-frost) 22%, transparent);
-          border-color: var(--tt-bone);
+          --tt-muted: #9FB2B0;
+          --tt-card: #172322;
+          --tt-border: #3A4A4C;
+          --tt-danger: #F08A7A;
+          --tt-danger-soft: rgba(240, 138, 122, 0.14);
+          --tt-frost: #3BA897;
         }
       }
       @media (prefers-reduced-motion: reduce) {
@@ -344,7 +351,7 @@ const hvTopicIgnore = /** @type {any} */ ({
       if (!topic || ignoredIds.has(topic.topicID)) return;
       if (row.querySelector('[data-link="ignoreTopicLink"]')) return;
 
-      const ignoreLink = '<a href="#" class="tundra-btn tundra-ignore-topic" data-link="ignoreTopicLink" data-topic-id="' + topic.topicID + '" title="Игнорировать тему [Tundra Toolkit]" aria-label="Игнорировать тему">⊘</a>';
+      const ignoreLink = '<a href="#" class="tundra-btn tundra-ignore-topic" data-link="ignoreTopicLink" data-topic-id="' + topic.topicID + '" title="Игнорировать тему [Tundra Toolkit]" aria-label="Игнорировать тему"><svg class="tundra-btn__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></a>';
       const byuser = topic.tclcon.querySelector('.byuser');
 
       if (byuser) {
@@ -615,7 +622,7 @@ function main() {
       postLinks.appendChild(linksList);
     }
 
-    const ignoreItem = `<li class="pl-email ignore"><a href="#" class="tundra-btn tundra-ignore-user" data-link="ignoreLink" data-user-id="${postUserId}" title="Игнорировать пользователя [Tundra Toolkit]" aria-label="Игнорировать пользователя">⊘</a></li>`;
+    const ignoreItem = `<li class="pl-email ignore"><a href="#" class="tundra-btn tundra-ignore-user" data-link="ignoreLink" data-user-id="${postUserId}" title="Игнорировать пользователя [Tundra Toolkit]" aria-label="Игнорировать пользователя"><svg class="tundra-btn__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></a></li>`;
     const emailLi = linksList.querySelector('li.pl-email.email')
       || linksList.querySelector('li.pl-email:not(.ignore)');
 

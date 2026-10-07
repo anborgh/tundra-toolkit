@@ -1,5 +1,3 @@
-import { useRef } from 'preact/hooks';
-import type { JSX } from 'preact';
 import { MaskIcon } from './MaskIcon';
 import featherIcon from '../assets/icons/feather.svg';
 import hourglassIcon from '../assets/icons/hourglass.svg';
@@ -11,57 +9,21 @@ type Props = {
   onChange: (myTurn: boolean) => void;
 };
 
-const WAIT_LABEL = 'Жду хода соигрока';
-const MINE_LABEL = 'Сейчас ваш ход';
+const MINE_LABEL = 'Мой ход — нажмите, чтобы снять отметку';
+const WAIT_LABEL = 'Жду ответа — нажмите, чтобы отметить свой ход';
 
 export function TurnSwitch({ myTurn, onChange }: Props) {
-  const waitRef = useRef<HTMLButtonElement>(null);
-  const mineRef = useRef<HTMLButtonElement>(null);
-
-  const handleKeyDown = (event: JSX.TargetedKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
-      event.preventDefault();
-      onChange(true);
-      mineRef.current?.focus();
-    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      onChange(false);
-      waitRef.current?.focus();
-    }
-  };
-
+  const label = myTurn ? MINE_LABEL : WAIT_LABEL;
   return (
-    <div
-      className={ `turnSwitch ${ myTurn ? 'is-myTurn' : '' }` }
-      role="radiogroup"
-      aria-label="Чей ход"
+    <button
+      type="button"
+      class={ `turnToggle ${ myTurn ? 'is-myTurn' : '' }` }
+      aria-pressed={ myTurn }
+      aria-label={ label }
+      title={ myTurn ? 'Мой ход' : 'Жду ответа' }
+      onClick={ () => onChange(!myTurn) }
     >
-      <button
-        ref={ waitRef }
-        type="button"
-        className="turnSwitchOpt"
-        role="radio"
-        aria-checked={ myTurn ? 'false' : 'true' }
-        aria-label={ WAIT_LABEL }
-        title={ WAIT_LABEL }
-        onClick={ () => onChange(false) }
-        onKeyDown={ handleKeyDown }
-      >
-        <MaskIcon src={ hourglassIcon } />
-      </button>
-      <button
-        ref={ mineRef }
-        type="button"
-        className="turnSwitchOpt"
-        role="radio"
-        aria-checked={ myTurn ? 'true' : 'false' }
-        aria-label={ MINE_LABEL }
-        title={ MINE_LABEL }
-        onClick={ () => onChange(true) }
-        onKeyDown={ handleKeyDown }
-      >
-        <MaskIcon src={ featherIcon } />
-      </button>
-    </div>
+      <MaskIcon src={ myTurn ? featherIcon : hourglassIcon } />
+    </button>
   );
 }

@@ -1,5 +1,5 @@
 export const RECENT_STICKERS_KEY = 'recentStickers';
-export const RECENT_STICKERS_LIMIT = 6;
+export const RECENT_STICKERS_LIMIT = 5;
 
 export async function getRecentStickers(): Promise<string[]> {
   const data = await chrome.storage.local.get(RECENT_STICKERS_KEY);

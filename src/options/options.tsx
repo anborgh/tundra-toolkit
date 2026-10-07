@@ -1,3 +1,6 @@
+// Base styles first so component CSS (imported below) wins over chota's globals.
+import '../chota.min.css';
+import '../common.css';
 import { render } from 'preact';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -14,9 +17,28 @@ import {
 	StorageFallbackMap,
 } from '../utils/storage';
 
-import '../chota.min.css';
-import '../common.css';
+import { ConfirmDialogProvider } from '../components/ConfirmDialog';
+import { MaskIcon } from '../components/MaskIcon';
+import { Ornament } from '../components/Ornament';
+import mountainIcon from '../assets/icons/mountain.svg';
+import bookIcon from '../assets/icons/book-open.svg';
+import stickerIcon from '../assets/icons/sticker.svg';
+import filePenIcon from '../assets/icons/file-pen.svg';
+import banIcon from '../assets/icons/ban.svg';
+import bookmarkIcon from '../assets/icons/bookmark.svg';
+import cloudIcon from '../assets/icons/cloud.svg';
+import cloudOffIcon from '../assets/icons/cloud-off.svg';
+import cloudAlertIcon from '../assets/icons/cloud-alert.svg';
+
+import '../components/icon.css';
 import './options.css';
+
+const SECTION_ICONS: Record<string, string> = {
+	stickers: stickerIcon,
+	templates: filePenIcon,
+	blackList: banIcon,
+	favorites: bookmarkIcon,
+};
 
 const getSectionFromHash = (): SettingsSection => {
 	const hash = window.location.hash.replace('#', '');
@@ -160,12 +182,12 @@ export function App() {
 							<h3>Быстрый старт</h3>
 							<ol>
 								<li>Откройте нужный форум MyBB/RusFF и нажмите на значок Tundra Toolkit.</li>
-								<li>Нажмите кнопку питания в правой части окна расширения и дождитесь, пока вкладки станут доступны.</li>
-								<li>Tundra Toolkit нужно включить отдельно на каждом форуме. На других сайтах и в новой вкладке браузера кнопка питания не работает.</li>
+								<li>Включите переключатель «Включено» в шапке окна расширения и дождитесь, пока вкладки станут доступны.</li>
+								<li>Tundra Toolkit нужно включить отдельно на каждом форуме. На других сайтах и в новой вкладке браузера переключателя нет: там работают только эпизоды, стикеры и черновики.</li>
 							</ol>
 							<p>
-								Чтобы отключить расширение на текущем форуме, снова нажмите кнопку питания.
-								Стикеры, шаблоны и эпизоды не удалятся.
+								Чтобы отключить расширение на текущем форуме, выключите переключатель.
+								Стикеры, черновики и эпизоды не удалятся.
 							</p>
 						</div>
 
@@ -178,7 +200,7 @@ export function App() {
 							<ul>
 								<li>Откройте тему и нажмите «Текущая тема». Если тема уже добавлена, на кнопке будет надпись «Уже в эпизодах».</li>
 								<li>Нажмите значок слева от темы, чтобы отметить или снять свой ход: перо — ваш ход, песочные часы — ждёте ответа. Tundra Toolkit не определяет очередь сам — отметку нужно ставить и снимать вручную.</li>
-								<li>«Обновлённые» — темы с новыми ответами. «Ваш ход» — темы, которые вы отметили вручную. «Жду ответа» — остальные активные эпизоды.</li>
+								<li>«Новые ответы» — темы с новыми ответами. «Мой ход» — темы, которые вы отметили вручную. «Жду ответа» — остальные активные эпизоды.</li>
 								<li>Чтобы отметить новые ответы как просмотренные, откройте тему или нажмите метку «новое».</li>
 								<li>Чем больше эпизодов в списке, тем реже расширение проверяет каждый из них. Обновлять список вручную можно не чаще чем раз в 1 мин.</li>
 								<li>Если вы вышли из аккаунта или форум временно недоступен, тема останется в списке с пометкой «не обновляется».</li>
@@ -193,7 +215,7 @@ export function App() {
 								и в форму ответа вставится BBCode.
 							</p>
 							<ul>
-								<li>Создайте стикерпак кнопкой «Новый стикерпак» и добавьте прямые ссылки на картинки — по одной на строку.</li>
+								<li>Создайте стикерпак кнопкой «+» рядом со стикерпаками и добавьте прямые ссылки на картинки — по одной на строку. Отдельный стикер можно добавить полем внизу вкладки.</li>
 								<li>Чтобы вставить стикер, откройте страницу темы с формой ответа, поставьте курсор и нажмите на картинку.</li>
 								<li>Если формы ответа нет, Tundra Toolkit скопирует прямую ссылку на картинку в буфер обмена.</li>
 								<li>Вверху вкладки собраны 6 недавно использованных стикеров. Этот список хранится только в текущем браузере.</li>
@@ -202,16 +224,16 @@ export function App() {
 						</div>
 
 						<div className="optionsGuideBlock" id="guide-drafts">
-							<h3>Черновики и шаблоны</h3>
+							<h3>Черновики</h3>
 							<p>
-								На вкладке «Черновики» черновик — это текст из формы ответа, а шаблон — текст,
-								который удобно использовать несколько раз. Они хранятся в одном списке.
+								На вкладке «Черновики» хранятся тексты из формы ответа и заготовки,
+								которые удобно использовать несколько раз.
 							</p>
 							<ul>
 								<li>«Сохранить из формы» сохраняет текст под названием темы.</li>
-								<li>«Добавить пустой» создаёт шаблон: в нём можно сохранить обычный текст, BBCode или HTML. Разметка сработает только на форумах, которые её поддерживают.</li>
+								<li>«Пустой черновик» создаёт новую запись: в ней можно сохранить обычный текст, BBCode или HTML. Разметка сработает только на форумах, которые её поддерживают.</li>
 								<li>«Вставить» возвращает текст в форму ответа. Если кнопка недоступна, сначала откройте страницу с формой ответа.</li>
-								<li>Если черновиков и шаблонов много, с большим списком удобнее работать в разделе «Настройки» → «Черновики». После удаления восстановить запись нельзя.</li>
+								<li>Если черновиков много, найти нужный поможет поиск, а с большим списком удобнее работать в разделе «Настройки» → «Черновики». После удаления восстановить запись нельзя.</li>
 							</ul>
 						</div>
 
@@ -222,10 +244,10 @@ export function App() {
 								посты и темы, а также цитаты, если удаётся распознать их автора. Изменения видны только вам.
 							</p>
 							<ul>
-								<li>По умолчанию кнопки ⊘ скрыты. На вкладке «Игнор-лист» нажмите «Показать кнопки».</li>
+								<li>По умолчанию кнопки ⊘ скрыты. На вкладке «Игнор» включите переключатель «Кнопки ⊘ на страницах форума».</li>
 								<li>Нажмите ⊘ рядом с постом, чтобы скрыть пользователя только в выбранном разделе: например, во флуде, но не в игровом разделе.</li>
 								<li>На странице раздела или в результатах поиска нажмите ⊘ рядом с темой. Она скроется из списков только у вас и останется доступна по прямой ссылке.</li>
-								<li>Кнопка с глазом временно показывает весь скрытый контент. Записи в «Игнор-листе» при этом не удаляются. Скрытое вернётся после обновления страницы или повторного нажатия.</li>
+								<li>Кнопка «Показать скрытое» временно показывает весь скрытый контент. Записи в «Игнор-листе» при этом не удаляются. Скрытое вернётся после обновления страницы или повторного нажатия.</li>
 								<li>Чтобы убрать пользователя или тему из игнора, откройте «Настройки» → «Чёрный список» и нажмите крестик рядом с записью.</li>
 							</ul>
 						</div>
@@ -261,12 +283,12 @@ export function App() {
 						<div className="optionsGuideBlock" id="guide-settings">
 							<h3>Настройки</h3>
 							<p>
-								Шестерёнка в окне расширения открывает настройки в отдельной вкладке.
-								Индикатор «Память Chrome» слева показывает, сколько места занято в Chrome Sync.
+								Кнопка с ползунками в шапке окна расширения открывает настройки в отдельной вкладке.
+								Карточка «Chrome Sync» слева показывает, сколько места занято, и предупреждает, если что-то хранится только в этом браузере.
 							</p>
 							<ul>
 								<li>«Стикеры» — добавлять, редактировать, удалять и менять порядок стикерпаков и картинок.</li>
-								<li>«Черновики» — редактировать названия и содержимое черновиков и шаблонов.</li>
+								<li>«Черновики» — искать, редактировать и удалять черновики.</li>
 								<li>«Чёрный список» — удалять пользователей и темы из игнора.</li>
 								<li>«Эпизоды» — группировать эпизоды по форуму или дате последнего ответа и удалять ненужные.</li>
 							</ul>
@@ -308,7 +330,7 @@ export function App() {
 							<h3>Частые вопросы</h3>
 							<dl className="optionsGuideFaq">
 								<dt>Почему часть вкладок недоступна?</dt>
-								<dd>Некоторые вкладки доступны только на страницах форума. Откройте форум MyBB/RusFF и включите Tundra Toolkit кнопкой питания.</dd>
+								<dd>Некоторые вкладки доступны только на страницах форума. Откройте форум MyBB/RusFF и включите Tundra Toolkit переключателем в шапке.</dd>
 								<dt>Почему кнопка «Текущая тема» не нажимается?</dt>
 								<dd>Кнопка работает только на странице темы. Если тема уже добавлена, на кнопке будет написано «Уже в эпизодах».</dd>
 								<dt>Почему эпизод помечен «не обновляется»?</dt>
@@ -316,15 +338,15 @@ export function App() {
 								<dt>Почему стикер не вставился в сообщение?</dt>
 								<dd>Откройте страницу с формой ответа. Если формы нет, Tundra Toolkit скопирует ссылку на картинку в буфер обмена — вставьте её вручную.</dd>
 								<dt>Куда пропали кнопки ⊘?</dt>
-								<dd>Откройте «Игнор-лист» и нажмите «Показать кнопки».</dd>
+								<dd>Откройте вкладку «Игнор» и включите переключатель «Кнопки ⊘ на страницах форума».</dd>
 								<dt>Как посмотреть скрытое, ничего не удаляя?</dt>
-								<dd>На вкладке «Игнор-лист» нажмите кнопку с глазом. Скрытые посты и темы снова появятся. Они останутся видимыми до обновления страницы или повторного нажатия, а записи в игноре не удалятся.</dd>
+								<dd>На вкладке «Игнор» нажмите «Показать скрытое». Скрытые посты и темы снова появятся. Они останутся видимыми до обновления страницы или повторного нажатия, а записи в игноре не удалятся.</dd>
 								<dt>Почему счётчик работает долго?</dt>
 								<dd>Счётчик проверяет темы по очереди. Чем больше разделов и пользователей вы выбрали и чем длиннее период, тем дольше идёт подсчёт. Не закрывайте страницу до завершения.</dd>
 								<dt>Почему данные есть на одном устройстве, но нет на другом?</dt>
 								<dd>Проверьте метку облака рядом с элементом. Перечёркнутое облако означает, что элемент хранится только в этом браузере. Облако с предупреждением показывает, что в Chrome Sync не хватило места. Освободите место и нажмите метку ещё раз.</dd>
 								<dt>Исчезнут ли данные, если выключить расширение на форуме?</dt>
-								<dd>Нет. Кнопка питания только отключает Tundra Toolkit на текущем форуме и не удаляет данные. Стикеры, шаблоны, эпизоды и записи в игноре сохранятся.</dd>
+								<dd>Нет. Переключатель только отключает Tundra Toolkit на текущем форуме и не удаляет данные. Стикеры, черновики, эпизоды и записи в игноре сохранятся.</dd>
 								<dt>Работает ли Tundra Toolkit на любом форуме?</dt>
 								<dd>Tundra Toolkit работает с форумами MyBB/RusFF. На форумах с другими движками расширение может работать неправильно или не работать совсем.</dd>
 							</dl>
@@ -355,6 +377,10 @@ export function App() {
 		}
 	};
 
+	const localSectionLabels = sections
+		.filter(section => isSectionLocal(section.id, storageFallbacks))
+		.map(section => section.label);
+
 	return (
 		<div class="wrapper">
 			<a
@@ -369,46 +395,51 @@ export function App() {
 			>
 				К содержимому
 			</a>
-			<header>
-				<div className="main">
-					<div className="logo">
-						<img src='./icon512.png' alt="" width={ 72 } height={ 72 } />
+			<header className="optionsHeader">
+				<div className="optionsHeaderInner">
+					<div className="optionsLogo" aria-hidden="true">
+						<MaskIcon src={ mountainIcon } />
 					</div>
-					<div>
-						<h1 translate={ false }>Tundra Toolkit <span>v3.2</span></h1>
-						<div className="headerMeta">Привычные инструменты — на любом поддерживаемом форуме MyBB/RusFF. От <a href="https://t.me/hvscripts" target="_blank" rel="noreferrer">Человека-Шамана</a>.</div>
+					<div className="optionsHeaderText">
+						<h1 translate={ false }><span className="ttDisplay">Tundra Toolkit</span> <span className="optionsVersion">v3.2</span></h1>
+						<div className="headerMeta">Инструменты для ролевых на MyBB/RusFF · от <a href="https://t.me/hvscripts" target="_blank" rel="noreferrer">Человека-Шамана</a></div>
 					</div>
+					<a
+						href="#guide"
+						className={ `optionsHeaderLink ${ activeSection === 'guide' ? 'active' : '' }` }
+						aria-current={ activeSection === 'guide' ? 'page' : undefined }
+						onClick={ () => selectSection('guide') }
+					>
+						<MaskIcon src={ bookIcon } />
+						Инструкция
+					</a>
 				</div>
+				<Ornament size={ 12 } />
 			</header>
 			<main id="options-main" tabIndex={ -1 }>
 				<div className="optionsLayout">
 					<aside className="optionsSidebar">
-						<nav className="optionsNav">
-							{ sections.map(section => {
-								const localOnly = isSectionLocal(section.id, storageFallbacks);
-								return (
+						<nav className="optionsNav" aria-label="Разделы настроек">
+							{ sections.map(section => (
 								<a
 									key={ section.id }
 									href={ `#${ section.id }` }
-									className={ `button outline optionsNavItem ${ activeSection === section.id ? 'active' : '' }` }
+									className="optionsNavItem"
 									aria-current={ activeSection === section.id ? 'page' : undefined }
 									onClick={ () => selectSection(section.id) }
 								>
-										<span className="optionsNavItemLabel">{ section.label }</span>
-										{ localOnly && (
-											<span
-												className="storageLocalBadge"
-												title="Сохранено только в этом браузере"
-											>
-												локально
-											</span>
-										) }
-									</a>
-								);
-							}) }
+									<MaskIcon src={ SECTION_ICONS[section.id] } />
+									<span className="optionsNavItemLabel">{ section.label }</span>
+								</a>
+							)) }
 						</nav>
-						<div className="storageUsageCard">
-							<div className="storageUsageTitle">Память Chrome</div>
+						<section className="storageUsageCard" aria-label="Память Chrome Sync">
+							<div className="storageUsageHead">
+								<span className="storageUsageTitle">Chrome Sync</span>
+								{ !syncUsageError && syncBytesInUse !== null && (
+									<span className="storageUsagePercent">{ syncUsagePercent }%</span>
+								) }
+							</div>
 							{ syncUsageError ? (
 								<div className="text-error">{ syncUsageError }</div>
 							) : (
@@ -416,6 +447,7 @@ export function App() {
 									<div
 										className="storageUsageBar"
 										role="progressbar"
+										aria-label="Занято в Chrome Sync"
 										aria-valuemin={ 0 }
 										aria-valuemax={ 100 }
 										aria-valuenow={ syncUsagePercent }
@@ -425,27 +457,36 @@ export function App() {
 											style={{ width: `${ syncUsagePercent }%` }}
 										/>
 									</div>
-									<div className="storageUsageMeta text-secondary">
+									<div className="storageUsageMeta">
 										{ syncBytesInUse === null
 											? 'Загрузка…'
-											: `${ (syncBytesInUse / 1024).toFixed(1) }\u00a0КБ из ${ (syncQuotaBytes / 1024).toFixed(0) }\u00a0КБ (${ syncUsagePercent }%)` }
+											: `${ (syncBytesInUse / 1024).toFixed(1).replace('.', ',') } КБ из ${ (syncQuotaBytes / 1024).toFixed(0) } КБ. Картинки стикеров место не занимают — только ссылки.` }
 									</div>
 								</>
 							) }
-						</div>
-						<a
-							href="#guide"
-							className={ `optionsGuideLink ${ activeSection === 'guide' ? 'active' : '' }` }
-							onClick={ () => selectSection('guide') }
-						>
-							Инструкция по расширению
-						</a>
+							<ul className="storageLegend">
+								<li><MaskIcon src={ cloudIcon } class="is-sync" />Синхронизируется</li>
+								<li><MaskIcon src={ cloudOffIcon } class="is-local" />Только в этом браузере</li>
+								<li><MaskIcon src={ cloudAlertIcon } class="is-full" />Не хватило места</li>
+							</ul>
+							{ localSectionLabels.length > 0 && (
+								<div className="storageLocalSummary" role="status">
+									<MaskIcon src={ cloudOffIcon } />
+									<span>
+										<span className="storageLocalSummaryTitle">Есть локальные элементы</span>
+										<span>{ localSectionLabels.join(', ') } — только в этом браузере</span>
+									</span>
+								</div>
+							) }
+						</section>
 					</aside>
 					<div className="optionsContent">
 						{ activeSectionIsLocal && activeSection !== 'stickers' && activeSection !== 'templates' && (
 							<div className="storageLocalNotice" role="status">
-								<span className="storageLocalBadge">локально</span>
-								<span>Эти данные сохранены только в этом браузере и не синхронизируются через Chrome Sync.</span>
+								<MaskIcon src={ cloudOffIcon } />
+								<span>
+									<strong>Хранится только в этом браузере.</strong> В Chrome Sync не хватило места, поэтому на других устройствах этих данных нет.
+								</span>
 							</div>
 						) }
 						{ renderSection() }
@@ -458,5 +499,10 @@ export function App() {
 
 const root = document.getElementById('app');
 if (root) {
-	render(<App />, root);
+	render(
+		<ConfirmDialogProvider>
+			<App />
+		</ConfirmDialogProvider>,
+		root,
+	);
 }
