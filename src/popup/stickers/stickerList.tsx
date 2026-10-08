@@ -35,7 +35,6 @@ export function StickerList({
               { cover && <img src={ cover } alt="" loading="lazy" /> }
             </span>
             <span class="stickerChipName">{ pack.name }</span>
-            <span class="stickerChipCount">{ pack.items.length }</span>
           </button>
         );
       }) }

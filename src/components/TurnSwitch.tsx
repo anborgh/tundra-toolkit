@@ -9,21 +9,19 @@ type Props = {
   onChange: (myTurn: boolean) => void;
 };
 
-const MINE_LABEL = 'Мой ход — нажмите, чтобы снять отметку';
-const WAIT_LABEL = 'Жду ответа — нажмите, чтобы отметить свой ход';
-
 export function TurnSwitch({ myTurn, onChange }: Props) {
-  const label = myTurn ? MINE_LABEL : WAIT_LABEL;
   return (
     <button
       type="button"
-      class={ `turnToggle ${ myTurn ? 'is-myTurn' : '' }` }
-      aria-pressed={ myTurn }
-      aria-label={ label }
-      title={ myTurn ? 'Мой ход' : 'Жду ответа' }
+      role="switch"
+      class={ `turnSwitch ${ myTurn ? 'is-myTurn' : 'is-waiting' }` }
+      aria-checked={ myTurn }
+      aria-label="Ожидается мой пост"
+      title={ myTurn ? 'Мой ход — нажмите, чтобы снять отметку' : 'Жду ответа — нажмите, чтобы отметить свой ход' }
       onClick={ () => onChange(!myTurn) }
     >
-      <MaskIcon src={ myTurn ? featherIcon : hourglassIcon } />
+      <span class="turnSwitchSeg turnSwitchWait"><MaskIcon src={ hourglassIcon } /></span>
+      <span class="turnSwitchSeg turnSwitchMine"><MaskIcon src={ featherIcon } /></span>
     </button>
   );
 }

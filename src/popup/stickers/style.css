@@ -56,6 +56,8 @@
   align-items: center;
   gap: 6px;
   overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-y: none;
   padding: 2px;
   scrollbar-width: thin;
 }
@@ -108,11 +110,6 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.stickerChipCount {
-  color: var(--tt-muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .stickerChip[aria-pressed="true"] .stickerChipCount {

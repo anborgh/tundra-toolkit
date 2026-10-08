@@ -1,41 +1,74 @@
-button.turnToggle {
+button.turnSwitch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  margin: 0;
+  padding: 2px;
+  border: 1px solid var(--tt-border);
+  border-radius: 8px;
+  background: var(--tt-card);
+  cursor: pointer;
+}
+
+button.turnSwitch .turnSwitchSeg {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 auto;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: var(--tt-radius);
-  background: var(--tt-subtle);
+  width: 26px;
+  height: 30px;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 6px;
   color: var(--tt-muted);
-  cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  opacity: 0.45;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
 
-button.turnToggle .ttIcon {
-  width: 18px;
-  height: 18px;
-}
-
-button.turnToggle:hover {
-  color: var(--tt-text);
-}
-
-button.turnToggle.is-myTurn {
+button.turnSwitch.is-myTurn {
   background: var(--tt-ember-soft);
-  color: var(--tt-ember);
+  border-color: color-mix(in oklab, var(--tt-ember) 30%, transparent);
 }
 
-button.turnToggle:focus-visible {
+button.turnSwitch.is-waiting {
+  background: var(--tt-accent-soft);
+  border-color: color-mix(in oklab, var(--tt-frost) 30%, transparent);
+}
+
+button.turnSwitch .ttIcon {
+  width: 16px;
+  height: 16px;
+}
+
+button.turnSwitch.is-waiting .turnSwitchWait {
+  opacity: 1;
+  color: var(--tt-frost);
+  background: var(--tt-accent-soft);
+  border-color: var(--tt-frost);
+}
+
+button.turnSwitch.is-myTurn .turnSwitchMine {
+  opacity: 1;
+  color: var(--tt-ember);
+  background: var(--tt-ember-soft);
+  border-color: var(--tt-ember);
+}
+
+button.turnSwitch:hover .turnSwitchSeg {
+  opacity: 0.75;
+}
+
+button.turnSwitch.is-waiting:hover .turnSwitchWait,
+button.turnSwitch.is-myTurn:hover .turnSwitchMine {
+  opacity: 1;
+}
+
+button.turnSwitch:focus-visible {
   outline: 2px solid var(--tt-frost);
   outline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .turnToggle {
+  button.turnSwitch .turnSwitchSeg {
     transition: none;
   }
 }

@@ -209,3 +209,11 @@
         grid-template-columns: 1fr;
     }
 }
+
+.favoritesOptionsItem.is-myTurn {
+    background: var(--tt-ember-soft);
+}
+
+.favoritesOptionsItem.is-myTurn:hover {
+    background: color-mix(in oklab, var(--tt-ember-soft) 85%, var(--tt-ember));
+}

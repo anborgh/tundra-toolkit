@@ -200,82 +200,82 @@ const ensureTundraEmbedStyles = (() => {
     style.textContent = `
       a.tundra-btn,
       .tundra-btn {
-        --tt-fg: #172227;
-        --tt-muted: #56646B;
-        --tt-card: #FFFFFF;
-        --tt-border: #C9D1CE;
-        --tt-danger: #A3311B;
-        --tt-danger-soft: #FBE9E5;
-        --tt-frost: #0E6B62;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-        width: 1.6em;
-        min-width: 22px;
-        height: 1.6em;
-        min-height: 22px;
-        padding: 0;
-        margin: 0 0 0 0.25em;
-        border: 1px solid var(--tt-border);
-        border-radius: 6px;
-        background: var(--tt-card);
-        color: var(--tt-muted) !important;
-        font: 400 13px/1 "Golos Text", "Golos UI", "Segoe UI", system-ui, sans-serif;
-        letter-spacing: 0;
+        all: initial !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        width: 24px !important;
+        min-width: 24px !important;
+        max-width: 24px !important;
+        height: 24px !important;
+        min-height: 24px !important;
+        max-height: 24px !important;
+        padding: 0 !important;
+        margin: 0 0 0 6px !important;
+        border: 1px solid rgba(128, 128, 128, 0.45) !important;
+        border-radius: 6px !important;
+        background: rgba(128, 128, 128, 0.14) !important;
+        background-image: none !important;
+        box-shadow: none !important;
+        color: #7d8b90 !important;
+        font: 400 13px/1 system-ui, sans-serif !important;
         text-decoration: none !important;
-        vertical-align: middle;
-        cursor: pointer;
-        transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+        text-indent: 0 !important;
+        vertical-align: middle !important;
+        float: none !important;
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        cursor: pointer !important;
+        transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease !important;
       }
-      a.tundra-btn .tundra-btn__icon,
-      .tundra-btn .tundra-btn__icon {
-        display: block;
-        width: 62%;
-        height: 62%;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        pointer-events: none;
+      a.tundra-btn svg.tundra-btn__icon,
+      #pun a.tundra-btn svg.tundra-btn__icon {
+        all: initial !important;
+        display: block !important;
+        width: 14px !important;
+        height: 14px !important;
+        min-width: 14px !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        fill: none !important;
+        stroke: currentColor !important;
+        stroke-width: 2 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+        color: inherit !important;
+        overflow: visible !important;
+        pointer-events: none !important;
+      }
+      a.tundra-btn svg.tundra-btn__icon *,
+      #pun a.tundra-btn svg.tundra-btn__icon * {
+        fill: none !important;
+        stroke: currentColor !important;
+        stroke-width: 2 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
       }
       a.tundra-btn:hover,
-      .tundra-btn:hover {
-        background: var(--tt-danger-soft);
-        border-color: color-mix(in oklab, var(--tt-danger) 45%, transparent);
-        color: var(--tt-danger) !important;
+      #pun a.tundra-btn:hover {
+        background: rgba(220, 80, 55, 0.16) !important;
+        border-color: rgba(220, 80, 55, 0.6) !important;
+        color: #d9553b !important;
       }
       a.tundra-btn:focus-visible,
-      .tundra-btn:focus-visible {
-        outline: 2px solid var(--tt-frost);
-        outline-offset: 2px;
+      #pun a.tundra-btn:focus-visible {
+        outline: 2px solid #3ba897 !important;
+        outline-offset: 2px !important;
       }
       .post-links li.pl-email.ignore {
-        list-style: none;
+        list-style: none !important;
       }
       .post-links li.pl-email.ignore a.tundra-btn {
-        margin-left: 0;
+        margin-left: 0 !important;
       }
       .tclcon a.tundra-btn.tundra-ignore-topic {
-        margin-left: 0.35em;
-      }
-      @media (prefers-color-scheme: dark) {
-        a.tundra-btn,
-        .tundra-btn {
-          --tt-muted: #9FB2B0;
-          --tt-card: #172322;
-          --tt-border: #3A4A4C;
-          --tt-danger: #F08A7A;
-          --tt-danger-soft: rgba(240, 138, 122, 0.14);
-          --tt-frost: #3BA897;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        a.tundra-btn,
-        .tundra-btn {
-          transition: none;
-        }
+        margin-left: 6px !important;
       }
     `;
     document.head.appendChild(style);

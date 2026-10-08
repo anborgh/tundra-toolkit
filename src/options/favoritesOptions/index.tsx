@@ -337,7 +337,7 @@ export function FavoritesOptions() {
 
       { !favorites.length && (
         <div className="emptyList">
-          Пока пусто. Откройте тему и добавьте её кнопкой «Текущая тема».
+          Пока пусто. Откройте тему и добавьте её кнопкой «Добавить тему».
         </div>
       ) }
 

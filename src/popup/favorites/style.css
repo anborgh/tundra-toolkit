@@ -171,3 +171,8 @@
 .favoriteRemove {
   flex: 0 0 auto;
 }
+
+.favoriteItem.is-myTurn {
+  background: var(--tt-ember-soft);
+  border-color: color-mix(in oklab, var(--tt-ember) 40%, transparent);
+}

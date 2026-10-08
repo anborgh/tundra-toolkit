@@ -323,7 +323,7 @@ export function Favorites() {
     const title = decodeEntities(item.topicName);
 
     return (
-      <li class={ `favoriteItem ${ stale ? 'stale' : '' } ${ isNew && !stale ? 'is-new' : '' }` } key={ item.id }>
+      <li class={ `favoriteItem ${ stale ? 'stale' : '' } ${ isNew && !stale ? 'is-new' : '' } ${ item.myTurn ? 'is-myTurn' : '' }` } key={ item.id }>
         <TurnSwitch
           myTurn={ item.myTurn }
           onChange={ (myTurn) => handleSetMyTurn(item, myTurn) }
@@ -428,13 +428,13 @@ export function Favorites() {
           onClick={ handleAddActive }
         >
           { !activeAlreadyAdded && <MaskIcon src={ plusIcon } /> }
-          { activeAlreadyAdded ? 'Уже в эпизодах' : 'Текущая тема' }
+          { activeAlreadyAdded ? 'Уже в эпизодах' : 'Добавить тему' }
         </button>
       </div>
 
       { loaded && !favorites.length && (
         <div class="emptyList">
-          Пока пусто. Откройте тему на форуме и нажмите «Текущая тема».
+          Пока пусто. Откройте тему на форуме и нажмите «Добавить тему».
         </div>
       ) }
 
