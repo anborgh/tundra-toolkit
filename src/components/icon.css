@@ -1,0 +1,30 @@
+.ttIcon {
+  width: 16px;
+  height: 16px;
+  display: block;
+  flex: 0 0 auto;
+  background-color: currentColor;
+  color: inherit;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.ttIconSpin {
+  animation: ttIconSpin 0.8s linear infinite;
+}
+
+@keyframes ttIconSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ttIconSpin {
+    animation: none;
+  }
+}

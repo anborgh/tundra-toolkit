@@ -1,14 +1,90 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  getCollectionLocations,
+  ItemLocation,
+  safeStorageGet,
+  safeStorageSet,
+  setItemCloudPinned,
+} from '../../utils/storage';
+import { decodeEntities } from '../../utils';
+import { MaskIcon } from '../../components/MaskIcon';
+import { CloudSyncButton, hasCloudOverflow } from '../../components/CloudSyncButton';
+import { useConfirm } from '../../components/ConfirmDialog';
+import xIcon from '../../assets/icons/x.svg';
+import loaderCircleIcon from '../../assets/icons/loader-circle.svg';
+import circleCheckIcon from '../../assets/icons/circle-check.svg';
+import circleAlertIcon from '../../assets/icons/circle-alert.svg';
 
+import '../../components/icon.css';
 import './style.css';
 
 export function BlackListOptions() {
-
+  const confirmAction = useConfirm();
   const [ data, setData ] = useState<IBoardStore[]>([]);
+  const [ topicsData, setTopicsData ] = useState<IBoardTopicsStore[]>([]);
+  const [ loaded, setLoaded ] = useState(false);
+  const [ warning, setWarning ] = useState<string | null>(null);
+  const [ error, setError ] = useState<string | null>(null);
+  const [ userLocations, setUserLocations ] = useState<Record<string, ItemLocation>>({});
+  const [ topicLocations, setTopicLocations ] = useState<Record<string, ItemLocation>>({});
 
-  const handleRemoveClick = (boardID: string, forumID: string, user: { userName: string, userID: string }) => {
-    const isConfirmed = confirm(`Разбанить ${ user.userName }?`);
+  const refreshLocations = async () => {
+    const [ users, topics ] = await Promise.all([
+      getCollectionLocations('ignoreList'),
+      getCollectionLocations('ignoredTopicsList'),
+    ]);
+    setUserLocations(users);
+    setTopicLocations(topics);
+  };
 
+  const usersCount = useMemo(
+    () => data.reduce(
+      (total, board) => total + (board.forums || []).reduce(
+        (forumTotal, forum) => forumTotal + (forum.users || []).length,
+        0,
+      ),
+      0,
+    ),
+    [ data ],
+  );
+
+  const topicsCount = useMemo(
+    () => topicsData.reduce((total, board) => total + (board.topics || []).length, 0),
+    [ topicsData ],
+  );
+
+  const statusView = useMemo(() => {
+    if (!loaded) {
+      return { icon: loaderCircleIcon, text: 'Загружаем…', tone: 'muted' as const, spin: true };
+    }
+    if (error) {
+      return { icon: circleAlertIcon, text: error, tone: 'error' as const, spin: false };
+    }
+    if (warning) {
+      return { icon: circleCheckIcon, text: warning, tone: 'success' as const, spin: false };
+    }
+    return null;
+  }, [ loaded, error, warning ]);
+
+  const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
+    refreshLocations().catch(() => {});
+    if (result.fallback) {
+      setWarning('В Chrome Sync не хватило места. Списки остались только в этом браузере.');
+    } else {
+      setWarning(null);
+    }
+  };
+
+  const handleSaveError = () => {
+    setError('Не удалось сохранить список: в Chrome Sync не хватило места.');
+  };
+
+  const handleRemoveClick = async (boardID: string, forumID: string, user: { userName: string, userID: string }) => {
+    const isConfirmed = await confirmAction({
+      message: `Убрать ${ user.userName } из игнора?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
+    });
     if (!isConfirmed) return;
 
     const newData = data.map(board => {
@@ -31,66 +107,226 @@ export function BlackListOptions() {
       } : null;
     }).filter(item => item !== null);
 
+    setError(null);
     setData(newData);
-    chrome.storage.local.set({
+    safeStorageSet({
       ignoreList: newData,
+    }).then(handleSaveResult).catch(() => handleSaveError());
+  };
+
+  const handleRemoveTopicClick = async (boardID: string, topic: { topicName: string, topicID: string }) => {
+    const isConfirmed = await confirmAction({
+      message: `Убрать тему «${ decodeEntities(topic.topicName) }» из игнора?`,
+      confirmLabel: 'Убрать',
+      destructive: true,
     });
-  }
+    if (!isConfirmed) return;
+
+    const newData = topicsData.map(board => {
+      if (board.boardID !== boardID) return board;
+
+      const newTopics = board.topics.filter(item => item.topicID !== topic.topicID);
+
+      return newTopics.length ? {
+        ...board,
+        topics: newTopics,
+      } : null;
+    }).filter(item => item !== null);
+
+    setError(null);
+    setTopicsData(newData);
+    safeStorageSet({
+      ignoredTopicsList: newData,
+    }).then(handleSaveResult).catch(() => handleSaveError());
+  };
 
   useEffect(() => {
-
     const fetchData = async () => {
-      const storage = await chrome.storage.local.get([ 'ignoreList' ]);
-      const storedData = storage[ 'ignoreList' ] || [];
+      try {
+        const storage = await safeStorageGet([ 'ignoreList', 'ignoredTopicsList' ]);
+        setData(storage[ 'ignoreList' ] || []);
+        setTopicsData(storage[ 'ignoredTopicsList' ] || []);
+        await refreshLocations();
+      } catch (e) {
+        setError('Не удалось загрузить чёрный список');
+      } finally {
+        setLoaded(true);
+      }
+    };
 
-      setData(storedData);
-    }
-
-    fetchData()
+    fetchData();
   }, []);
 
+  const toggleUserCloud = async (boardID: string, forumID: string) => {
+    const id = `${ boardID }:${ forumID }`;
+    const current = userLocations[id] || 'local';
+    const result = await setItemCloudPinned('ignoreList', id, current !== 'localPinned');
+    setUserLocations(prev => ({ ...prev, [id]: result.location }));
+    setError(result.error || null);
+  };
+
+  const toggleTopicCloud = async (boardID: string) => {
+    const id = `${ boardID }`;
+    const current = topicLocations[id] || 'local';
+    const result = await setItemCloudPinned('ignoredTopicsList', id, current !== 'localPinned');
+    setTopicLocations(prev => ({ ...prev, [id]: result.location }));
+    setError(result.error || null);
+  };
+
+  const showCloudControls = hasCloudOverflow(userLocations) || hasCloudOverflow(topicLocations);
+
   return (
-    <section>
-      <h3>Чёрный список</h3>
-      <ul class="blackList">
-        { data.map(({ boardID, boardName, boardUrl, forums }) => (
-          <>
-            <li class="blackListBoardItem" key={ boardID }>
-              <a href={ `https://${ boardUrl }` } target="_blank">{ boardName }</a>
-            </li>
-            <ul class="blackListForum">
+    <section className="blackListOptions">
+      <div className="blackListOptionsHeader">
+        <div>
+          <h2>Чёрный список</h2>
+          <p className="optionsSectionLead">
+            Пользователи { usersCount } · темы { topicsCount }
+          </p>
+        </div>
+        <div className="blackListOptionsHeaderActions">
+          { statusView && (
+            <span
+              className={ `blackListOptionsStatus blackListOptionsStatus--${ statusView.tone }` }
+              title={ statusView.text }
+              aria-label={ statusView.text }
+              role="status"
+            >
+              <MaskIcon
+                src={ statusView.icon }
+                class={ statusView.spin ? 'ttIconSpin' : '' }
+              />
+            </span>
+          ) }
+        </div>
+      </div>
+
+      { error && (
+        <div className="text-error optionsNotice">
+          { error }
+        </div>
+      ) }
+
+      { loaded && !data.length && !topicsData.length && (
+        <div className="emptyList">
+          Список пока пуст. Кнопка ⊘ появится в ссылках поста (рядом с E-mail) и в списке тем.
+        </div>
+      ) }
+
+      { data.length > 0 && (
+        <div className="blackListOptionsSection">
+          <h3 className="blackListOptionsSectionTitle">Пользователи</h3>
+          { data.map(({ boardID, boardName, boardUrl, forums }) => (
+            <div className="blackListOptionsBoard" key={ boardID }>
+              <a
+                href={ `https://${ boardUrl }` }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="blackListOptionsBoardTitle"
+              >
+                { boardName }
+              </a>
+
               { forums.map(({ forumID, forumName, users }) => (
-                <>
-                  <li className="blackListForumItem" key={ forumID }>
-                    <a href={ `https://${ boardUrl }/viewforum.php?id=${ forumID }` } target="_blank">{ forumName }</a>
-                  </li>
-                  <ul class="blackListUsers">
+                <div className="blackListOptionsForum" key={ forumID }>
+                  <div className="blackListOptionsForumHeader">
+                    <a
+                      href={ `https://${ boardUrl }/viewforum.php?id=${ forumID }` }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="blackListOptionsForumTitle"
+                    >
+                      { forumName }
+                    </a>
+                    { showCloudControls && (
+                      <CloudSyncButton
+                        location={ userLocations[`${ boardID }:${ forumID }`] || 'local' }
+                        onToggle={ () => toggleUserCloud(boardID, forumID) }
+                      />
+                    ) }
+                  </div>
+                  <ul className="blackListOptionsList">
                     { users.map(user => (
-                      <li className="blackListUserItem" key={ user.userID }>
-                        <a href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
-                           target="_blank">{ user.userName }</a>
+                      <li className="blackListOptionsItem" key={ user.userID }>
+                        <div className="blackListOptionsBody">
+                          <div className="blackListOptionsTitleRow">
+                            <a
+                              href={ `https://${ boardUrl }/profile.php?id=${ user.userID }` }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              { user.userName }
+                            </a>
+                          </div>
+                        </div>
                         <button
-                          className="button small icon-only blackListRemoveItem"
-                          title="Амнистировать пользователя"
+                          className="button small icon-only blackListOptionsRemove"
+                          title="Убрать из игнора"
+                          aria-label={ `Убрать ${ user.userName } из игнора` }
                           onClick={ () => handleRemoveClick(boardID, forumID, user) }
                         >
-                          X
+                          <MaskIcon src={ xIcon } />
                         </button>
                       </li>
                     )) }
                   </ul>
-                </>
+                </div>
               )) }
-            </ul>
-          </>
-        )) }
-      </ul>
-
-      {!data.length && (
-        <div className="emptyList">
-          Список пока пуст. Кнопка "Игнорировать" появится в постах пользователей на форуме.
+            </div>
+          )) }
         </div>
-      )}
+      ) }
+
+      { topicsData.length > 0 && (
+        <div className="blackListOptionsSection">
+          <h3 className="blackListOptionsSectionTitle">Темы</h3>
+          { topicsData.map(({ boardID, boardName, boardUrl, topics }) => (
+            <div className="blackListOptionsBoard" key={ `topic-${ boardID }` }>
+              <div className="blackListOptionsForumHeader">
+                <a
+                  href={ `https://${ boardUrl }` }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="blackListOptionsBoardTitle"
+                >
+                  { boardName }
+                </a>
+                { showCloudControls && (
+                  <CloudSyncButton
+                    location={ topicLocations[String(boardID)] || 'local' }
+                    onToggle={ () => toggleTopicCloud(boardID) }
+                  />
+                ) }
+              </div>
+              <ul className="blackListOptionsList">
+                { topics.map(topic => (
+                  <li className="blackListOptionsItem" key={ topic.topicID }>
+                    <div className="blackListOptionsBody">
+                      <div className="blackListOptionsTitleRow">
+                        <a
+                          href={ `https://${ boardUrl }/viewtopic.php?id=${ topic.topicID }` }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          { decodeEntities(topic.topicName) }
+                        </a>
+                      </div>
+                    </div>
+                    <button
+                      className="button small icon-only blackListOptionsRemove"
+                      title="Убрать тему из игнора"
+                      aria-label={ `Убрать тему ${ decodeEntities(topic.topicName) } из игнора` }
+                      onClick={ () => handleRemoveTopicClick(boardID, topic) }
+                    >
+                      <MaskIcon src={ xIcon } />
+                    </button>
+                  </li>
+                )) }
+              </ul>
+            </div>
+          )) }
+        </div>
+      ) }
     </section>
-  )
+  );
 }

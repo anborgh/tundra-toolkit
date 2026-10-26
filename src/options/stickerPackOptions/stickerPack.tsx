@@ -1,62 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { checkImageURL } from '../../utils';
+import gripVerticalIcon from '../../assets/icons/grip-vertical.svg';
+import pencilIcon from '../../assets/icons/pencil.svg';
+import { MaskIcon } from '../../components/MaskIcon';
+import { CloudSyncButton } from '../../components/CloudSyncButton';
+import { useBatchedItems } from '../../hooks/useBatchedItems';
+import type { ItemLocation } from '../../utils/storage';
 
+import '../../components/icon.css';
 import './style.css';
 
 type Props = {
   pack: IStickerPack;
-  onChange: (pack: IStickerPack) => void;
-  onRemove: (packId: number) => void;
-}
+  onEdit: (packId: number) => void;
+  onChange: (pack: IStickerPack) => void | Promise<void>;
+  location?: ItemLocation;
+  onCloudToggle?: () => void;
+  reorderMode?: boolean;
+};
 
-export default function ({ pack, onChange, onRemove }: Props) {
+export default function ({
+  pack,
+  onEdit,
+  onChange,
+  location = 'local',
+  onCloudToggle,
+  reorderMode = false,
+}: Props) {
   const dragItem = useRef();
   const dragOverItem = useRef();
 
-  const [ edit, setEdit ] = useState<boolean>(false);
-  const [ name, setName ] = useState<string>('');
-  const [ items, setItems ] = useState<IStickerPack['items']>([]);
-  const [ textItems, setTextItems ] = useState<string>('');
+  const [ items, setItems ] = useState<IStickerPack['items']>(pack.items || []);
+  const visibleStickers = useBatchedItems(items, true);
 
-  const handleNameChange = ({ target }) => {
-    setName(target.value);
-  }
-
-  const handleItemsChange = ({ target }) => {
-    setTextItems(target.value);
-  }
-
-  const showEditPack = () => setEdit(true);
-
-  const hideEditPack = () => {
-    setName(pack.name);
-    setEdit(false);
-  }
-
-  const savePack = () => {
-    const clearedItems = textItems.split('\n').filter(item => checkImageURL(item));
-
-    onChange({
-      id: pack.id,
-      name,
-      items: clearedItems,
-    });
-    setEdit(false);
-  }
-
-  const hideRemovePack = () => {
-    const isConfirmed = confirm('Удалить стикерпак? Это необратимо.')
-
-    if (!isConfirmed) return;
-
-    onRemove(pack.id);
-  }
+  useEffect(() => {
+    setItems(pack.items || []);
+  }, [ pack ]);
 
   const handleDragStart = event => {
     dragItem.current = event.currentTarget.dataset.index;
     event.currentTarget.classList.add('moving');
-  }
+  };
 
   const handleDragEnter = event => {
     dragOverItem.current = event.currentTarget.dataset.index;
@@ -67,12 +51,12 @@ export default function ({ pack, onChange, onRemove }: Props) {
     event.currentTarget.classList.toggle(
       'hoveredRight',
       Number(dragItem.current) < Number(dragOverItem.current));
-  }
+  };
 
   const handleDragLeave = event => {
     event.currentTarget.classList.remove('hoveredLeft');
     event.currentTarget.classList.remove('hoveredRight');
-  }
+  };
 
   const drop = event => {
     event.currentTarget.classList.remove('moving');
@@ -91,58 +75,92 @@ export default function ({ pack, onChange, onRemove }: Props) {
     dragItem.current = null;
     dragOverItem.current = null;
 
+    setItems(newData);
     onChange({
       id: pack.id,
       name: pack.name,
       items: newData,
-    })
-  }
+    });
+  };
 
-  useEffect(() => {
-    setName(pack.name || 'UNKNOWN');
-    setItems(pack.items || []);
-    setTextItems(pack?.items?.join('\n') || '');
-  }, [ pack ]);
+  const moveSticker = (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= items.length) return;
+    const next = [ ...items ];
+    const [ moved ] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    setItems(next);
+    onChange({
+      id: pack.id,
+      name: pack.name,
+      items: next,
+    });
+  };
+
+  const handleStickerKeyDown = (event: { key: string; preventDefault: () => void }, index: number) => {
+    if (event.key === 'ArrowLeft') {
+      event.preventDefault();
+      moveSticker(index, -1);
+    } else if (event.key === 'ArrowRight') {
+      event.preventDefault();
+      moveSticker(index, 1);
+    }
+  };
+
+  const handleEditPack = (event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+    onEdit(pack.id);
+  };
 
   return (
-    <div className="stickerList">
+    <div className={ `stickerList${ reorderMode ? ' reorderMode' : '' }` }>
       <div className="stickerListHeader">
-        { edit ? (
-          <div>
-            <input type="text" value={ name } onChange={ handleNameChange }/>
+        <div className="stickerListTitle">
+          { reorderMode && (
+            <span className="stickerListDragHandle" title="Перетащите стикерпак или используйте стрелки вверх и вниз">
+              <MaskIcon src={ gripVerticalIcon } />
+            </span>
+          ) }
+          <h3>{ pack.name }</h3>
+          { onCloudToggle && (
+            <CloudSyncButton location={ location } onToggle={ onCloudToggle } />
+          ) }
+        </div>
+        { !reorderMode && (
+          <div className="actions">
+            <button
+              type="button"
+              className="button small icon-only"
+              onClick={ handleEditPack }
+              title="Редактировать стикерпак"
+              aria-label="Редактировать стикерпак"
+            >
+              <MaskIcon src={ pencilIcon } />
+            </button>
           </div>
-        ) : (
-          <h4>{ name }</h4>
         ) }
-        <div className="actions">
-          { !edit && <button className="button small" onClick={ showEditPack } title="Редактировать стикерпак">🖋️</button> }
-          { edit && <button className="button success small" onClick={ savePack } title="Сохранить изменения">Сохранить</button> }
-          { edit && <button className="button small" onClick={ hideEditPack } title="Отменить изменения">Отменить</button> }
-          { edit && <button className="button clear small" onClick={ hideRemovePack } title="Удалить стикерпак">Удалить</button> }
-        </div>
       </div>
-      { edit ? (
-        <div className="stickerListContent edited">
-          <textarea rows={10} value={textItems} onChange={ handleItemsChange } />
-        </div>
-      ) : (
+      { !reorderMode && (
         <div className="stickerListContent">
-          { items ? items.map((sticker, index) => (
+          { visibleStickers.map((sticker, index) => (
             <div
               onDragStart={ handleDragStart }
               onDragEnter={ handleDragEnter }
               onDragLeave={ handleDragLeave }
               onDragEnd={ drop }
+              onKeyDown={ (event) => handleStickerKeyDown(event, index) }
               draggable
+              tabIndex={ 0 }
               className="stickerItem"
               key={ sticker }
               data-index={ index }
+              aria-label={ `Стикер ${ index + 1 } из ${ items.length }. Стрелки влево и вправо меняют порядок` }
             >
-              <img src={ sticker }/>
+              <img src={ sticker } alt="" />
             </div>
-          )) : '' }
+          )) }
         </div>
       ) }
     </div>
-  )
+  );
 }

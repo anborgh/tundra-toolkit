@@ -5,9 +5,13 @@
   "permissions": [
     "activeTab",
     "storage",
-    "contextMenus"
+    "alarms"
   ],
-  "version": "2.0",
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "version": "3.2.4",
   "action": {
     "default_popup": "index.html",
     "default_icon": "icon512.png"
@@ -22,6 +26,23 @@
         "<all_urls>"
       ],
       "js": [
+        "scripts/styleOverride.js",
+        "scripts/postAppearance.js"
+      ],
+      "run_at": "document_start",
+      "world": "ISOLATED"
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "scripts/ttBridgeChannel.js",
+        "scripts/postStatsModalStyles.js",
+        "scripts/postStatsPicker.js",
+        "scripts/postStatsResultFormat.js",
+        "scripts/postStatsScrape.js",
+        "scripts/mainPostStats.js",
         "scripts/main.js"
       ],
       "run_at": "document_end",
@@ -32,7 +53,11 @@
         "<all_urls>"
       ],
       "js": [
-        "scripts/isolated.js"
+        "scripts/ttBridgeChannelIsolated.js",
+        "scripts/boardUtils.js",
+        "scripts/safeStorage.js",
+        "scripts/isolated.js",
+        "scripts/favoritesTurnSwitch.js"
       ],
       "run_at": "document_end",
       "world": "ISOLATED"

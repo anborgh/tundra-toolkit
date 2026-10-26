@@ -1,4 +1,445 @@
-const hvIgnoreList = {
+(function() {
+'use strict';
+
+/**
+ * @typedef {{ type: string, [key: string]: any }} TTMessage
+ * @typedef {{ post: (payload: TTMessage) => void, isReady: () => boolean, whenReady: (callback: () => void) => void, subscribe: (callback: (data: TTMessage) => void) => void }} TTChannel
+ * @typedef {{ bridge?: TTChannel, createBridge?: (name: string) => TTChannel }} TTFactory
+ */
+
+const pageWindow = /** @type {Window & Record<string, any>} */ (window);
+const pageGlobal = /** @type {typeof globalThis & Record<string, any>} */ (globalThis);
+
+const FORUM_MARKER_ATTR = 'data-tt-forum-api';
+
+const hasForumAPITicketInDom = () => {
+  const scripts = document.scripts;
+  for (let i = 0; i < scripts.length; i++) {
+    const script = scripts[i];
+    if (script.src) continue;
+    if (/var\s+ForumAPITicket\s*=/.test(script.textContent || '')) return true;
+  }
+  return false;
+};
+
+const hasForumAPITicketNow = !!pageWindow.ForumAPITicket || hasForumAPITicketInDom();
+try {
+  if (hasForumAPITicketNow) {
+    document.documentElement.setAttribute(FORUM_MARKER_ATTR, '1');
+  } else {
+    document.documentElement.removeAttribute(FORUM_MARKER_ATTR);
+  }
+} catch (e) {
+  // ignore
+}
+
+const __ttFactory = /** @type {TTFactory} */ (pageGlobal.__TT_BRIDGE_FACTORY__ || {});
+delete pageGlobal.__TT_BRIDGE_FACTORY__;
+const createPostStats = /** @type {(args: any) => any} */ (pageGlobal.__TT_CREATE_POST_STATS__);
+delete pageGlobal.__TT_CREATE_POST_STATS__;
+
+if (!__ttFactory?.bridge && !__ttFactory?.createBridge) {
+  return;
+}
+
+const ttChannel = /** @type {TTChannel} */ (__ttFactory.bridge || __ttFactory.createBridge?.('main'));
+
+const createTTBridge = () => {
+  const NUMERIC_ID = /^\d+$/;
+
+  /** @param {any} value */
+  const isNumericId = (value) => NUMERIC_ID.test(String(value ?? ''));
+
+  /** @param {any} host */
+  const isCurrentHost = (host) => String(host ?? '') === window.location.host;
+
+  /**
+   * @param {any} value
+   * @param {number} [maxLen]
+   */
+  const sanitizeText = (value, maxLen = 200) => {
+    if (value == null) return '';
+    return String(value)
+      .replace(/[\x00-\x1f\x7f]/g, '')
+      .slice(0, maxLen);
+  };
+
+  /** @param {any} users */
+  const sanitizeIgnoreUsers = (users) => {
+    if (!Array.isArray(users)) return [];
+    return users
+      .filter(user => user && isNumericId(user.userID))
+      .map(user => ({
+        userID: String(user.userID),
+        userName: sanitizeText(user.userName, 100),
+        updatedAt: typeof user.updatedAt === 'number' ? user.updatedAt : Date.now(),
+      }));
+  };
+
+  /** @param {any} topics */
+  const sanitizeIgnoreTopics = (topics) => {
+    if (!Array.isArray(topics)) return [];
+    return topics
+      .filter(topic => topic && isNumericId(topic.topicID))
+      .map(topic => ({
+        topicID: String(topic.topicID),
+        topicName: sanitizeText(topic.topicName, 200),
+        updatedAt: typeof topic.updatedAt === 'number' ? topic.updatedAt : Date.now(),
+      }));
+  };
+
+  /** @param {any} url */
+  const checkImageURL = (url) => {
+    if (!url) return false;
+    return /^https?:\/\/.+\.(png|jpg|jpeg|bmp|gif|webp)$/i.test(url);
+  };
+
+  return {
+    isNumericId,
+    isCurrentHost,
+    sanitizeText,
+    sanitizeIgnoreUsers,
+    sanitizeIgnoreTopics,
+    checkImageURL,
+  };
+};
+
+/** @param {HTMLElement} post */
+const resolvePostUserId = (post) => {
+  const dataId = `${post.dataset.userId || ''}`.trim();
+  if (/^\d+$/.test(dataId)) return dataId;
+
+  const profileLink = post.querySelector('a[href*="profile.php?id="]');
+  if (profileLink instanceof HTMLAnchorElement) {
+    const href = profileLink.getAttribute('href') || '';
+    const match = href.match(/[?&]id=(\d+)/i);
+    if (match?.[1]) return match[1];
+  }
+
+  const nested = post.querySelector('[data-user-id]');
+  if (nested instanceof HTMLElement) {
+    const nestedId = `${nested.dataset.userId || ''}`.trim();
+    if (/^\d+$/.test(nestedId)) return nestedId;
+  }
+
+  return '';
+};
+
+const bridge = createTTBridge();
+/** @type {TTMessage | null} */
+let pendingInitData = null;
+let initDataSent = false;
+
+/** @param {TTMessage} payload */
+const ttPost = (payload) => {
+  ttChannel.post(payload);
+};
+
+const trySendInitData = () => {
+  if (!pendingInitData || initDataSent) return;
+  if (!ttChannel.isReady()) return;
+  initDataSent = true;
+  ttPost(pendingInitData);
+};
+
+ttChannel.whenReady(trySendInitData);
+
+/** HTTPS-only URL к api.php текущего хоста (не наследуем http:// страницы). */
+/** @param {any} query */
+const forumApiUrl = (query) => {
+  const host = window.location.host;
+  const q = String(query || '').replace(/^\?/, '');
+  return `https://${host}/api.php?${q}`;
+};
+
+/** @param {any} query */
+const fetchForumApi = async (query) => {
+  const url = forumApiUrl(query);
+  if (!url.startsWith('https:')) throw new Error('https_required');
+  const response = await fetch(url, { credentials: 'include', redirect: 'follow' });
+  if (response.url && !response.url.startsWith('https:')) {
+    throw new Error('https_required');
+  }
+  return response;
+};
+
+/** @param {Element | null} row */
+function getTopicFromRow(row) {
+  if (!row) return null;
+  const tclcon = row.querySelector('.tclcon');
+  if (!tclcon) return null;
+
+  const isNew = row.classList.contains('inew');
+  const titleLink = isNew
+    ? row.querySelector('.tclcon > strong a:first-of-type')
+    : row.querySelector('.tclcon > a:first-of-type');
+
+  if (!titleLink) return null;
+
+  const href = titleLink.getAttribute('href') || '';
+  const match = href.match(/viewtopic\.php\?id=(\d+)/);
+  if (!match) return null;
+
+  return {
+    topicID: match[1],
+    topicName: titleLink.textContent.trim(),
+    titleLink,
+    tclcon,
+  };
+}
+
+const ensureTundraEmbedStyles = (() => {
+  let injected = false;
+
+  return () => {
+    if (injected) return;
+    injected = true;
+
+    const style = document.createElement('style');
+    style.setAttribute('data-tundra-embed-style', 'true');
+    style.textContent = `
+      a.tundra-btn,
+      .tundra-btn {
+        all: initial !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        width: 24px !important;
+        min-width: 24px !important;
+        max-width: 24px !important;
+        height: 24px !important;
+        min-height: 24px !important;
+        max-height: 24px !important;
+        padding: 0 !important;
+        margin: 0 0 0 6px !important;
+        border: 1px solid rgba(128, 128, 128, 0.45) !important;
+        border-radius: 6px !important;
+        background: rgba(128, 128, 128, 0.14) !important;
+        background-image: none !important;
+        box-shadow: none !important;
+        color: #7d8b90 !important;
+        font: 400 13px/1 system-ui, sans-serif !important;
+        text-decoration: none !important;
+        text-indent: 0 !important;
+        vertical-align: middle !important;
+        float: none !important;
+        position: relative !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        cursor: pointer !important;
+        transition: background-color 0.12s ease, color 0.12s ease, border-color 0.12s ease !important;
+      }
+      a.tundra-btn svg.tundra-btn__icon,
+      #pun a.tundra-btn svg.tundra-btn__icon {
+        all: initial !important;
+        display: block !important;
+        width: 14px !important;
+        height: 14px !important;
+        min-width: 14px !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        fill: none !important;
+        stroke: currentColor !important;
+        stroke-width: 2 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+        color: inherit !important;
+        overflow: visible !important;
+        pointer-events: none !important;
+      }
+      a.tundra-btn svg.tundra-btn__icon *,
+      #pun a.tundra-btn svg.tundra-btn__icon * {
+        fill: none !important;
+        stroke: currentColor !important;
+        stroke-width: 2 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+      }
+      a.tundra-btn:hover,
+      #pun a.tundra-btn:hover {
+        background: rgba(220, 80, 55, 0.16) !important;
+        border-color: rgba(220, 80, 55, 0.6) !important;
+        color: #d9553b !important;
+      }
+      a.tundra-btn:focus-visible,
+      #pun a.tundra-btn:focus-visible {
+        outline: 2px solid #3ba897 !important;
+        outline-offset: 2px !important;
+      }
+      .post-links li.pl-email.ignore {
+        list-style: none !important;
+      }
+      .post-links li.pl-email.ignore a.tundra-btn {
+        margin-left: 0 !important;
+      }
+      .tclcon a.tundra-btn.tundra-ignore-topic {
+        margin-left: 6px !important;
+      }
+    `;
+    document.head.appendChild(style);
+  };
+})();
+
+const hvTopicIgnore = /** @type {any} */ ({
+  ignoredTopics: [],
+  boardID: null,
+  boardName: null,
+  boardUrl: null,
+  style: null,
+  buttonsVisible: true,
+  /**
+   * @param {any} boardData
+   * @param {any} topics
+   */
+  init: async function (boardData, topics) {
+    this.boardID = boardData.boardID;
+    this.boardUrl = window.location.host;
+    this.ignoredTopics = topics;
+    this.buttonsVisible = localStorage.getItem('tundraTopicIgnoreButtonsVisible') !== 'false';
+    await this.getBoardName();
+
+    this.style = document.createElement('style');
+    document.head.appendChild(this.style);
+    ensureTundraEmbedStyles();
+
+    this.apply();
+    this.applyButtonVisibility();
+    this.addIgnoreLinks();
+    document.addEventListener('click', this.handleClick.bind(this));
+  },
+  getBoardName: async function () {
+    const fetchData = await fetchForumApi('method=board.get&fields=title');
+    const { response: { title } } = await fetchData.json();
+
+    this.boardName = title;
+  },
+  getIgnoredIds: function () {
+    return new Set((/** @type {any[]} */ (this.ignoredTopics)).map(item => item.topicID));
+  },
+  getTopicRows: function () {
+    return /** @type {NodeListOf<HTMLTableRowElement>} */ (
+      document.querySelectorAll('.forum > .container > table > tbody > tr')
+    );
+  },
+  apply: function () {
+    const ignoredIds = this.getIgnoredIds();
+    const rowSelector = '.forum > .container > table > tbody > tr';
+    const hideSelectors = [...ignoredIds].map(
+      id => `#pun:not(.ignoreDisabled) ${rowSelector}[data-tundra-topic-id="${id}"]`
+    );
+    const defaultStyles = '#pun.tundra-topic-ignore-buttons-hidden .tundra-ignore-topic { display: none !important; }';
+
+    this.style.innerHTML = hideSelectors.length
+      ? hideSelectors.join(', ') + ' { display: none !important; }\n' + defaultStyles
+      : defaultStyles;
+
+    this.getTopicRows().forEach(/** @param {HTMLElement} row */ (row) => {
+      const topic = getTopicFromRow(row);
+      if (!topic) return;
+
+      row.dataset.tundraTopicId = topic.topicID;
+      row.classList.toggle('tundra-hidden-topic', ignoredIds.has(topic.topicID));
+    });
+  },
+  addIgnoreLinks: function () {
+    const ignoredIds = this.getIgnoredIds();
+
+    this.getTopicRows().forEach(/** @param {HTMLElement} row */ (row) => {
+      const topic = getTopicFromRow(row);
+      if (!topic || ignoredIds.has(topic.topicID)) return;
+      if (row.querySelector('[data-link="ignoreTopicLink"]')) return;
+
+      const ignoreLink = '<a href="#" class="tundra-btn tundra-ignore-topic" data-link="ignoreTopicLink" data-topic-id="' + topic.topicID + '" title="Игнорировать тему [Tundra Toolkit]" aria-label="Игнорировать тему"><svg class="tundra-btn__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></a>';
+      const byuser = topic.tclcon.querySelector('.byuser');
+
+      if (byuser) {
+        byuser.insertAdjacentHTML('afterend', ' ' + ignoreLink);
+      } else {
+        topic.tclcon.insertAdjacentHTML('beforeend', ' ' + ignoreLink);
+      }
+    });
+  },
+  applyButtonVisibility: function () {
+    document.querySelector('#pun')?.classList.toggle('tundra-topic-ignore-buttons-hidden', !this.buttonsVisible);
+  },
+  getToggleLabel: function () {
+    return this.buttonsVisible ? 'Скрыть кнопки' : 'Показать кнопки';
+  },
+  updateToggleLabels: function () {
+    const label = this.getToggleLabel();
+    document.querySelectorAll('[data-link="topicIgnoreToggle"]').forEach(el => {
+      el.textContent = label;
+    });
+  },
+  toggleButtons: function () {
+    this.buttonsVisible = !this.buttonsVisible;
+    localStorage.setItem('tundraTopicIgnoreButtonsVisible', String(this.buttonsVisible));
+    this.applyButtonVisibility();
+    this.updateToggleLabels();
+  },
+  /** @param {Event} event */
+  handleClick: function (event) {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) return;
+
+    if (target.dataset.link === 'topicIgnoreToggle') {
+      event.preventDefault();
+      this.toggleButtons();
+      return;
+    }
+
+    const ignoreLink = target.closest('[data-link="ignoreTopicLink"]');
+    if (!ignoreLink) return;
+    event.preventDefault();
+
+    const { topicId } = ignoreLink.dataset;
+    const row = ignoreLink.closest('tr');
+    const topic = getTopicFromRow(row);
+    if (!topic) return;
+
+    const isConfirmed = confirm(`Игнорировать тему «${topic.topicName}»?`);
+    if (!isConfirmed) return;
+
+    this.ignoredTopics.push({ topicID: topicId, topicName: topic.topicName, updatedAt: Date.now() });
+    this.apply();
+    ignoreLink.remove();
+
+    ttPost({
+      type: 'tundra_toolkit_update_topic_ignore_list',
+      boardID: this.boardID,
+      boardName: this.boardName,
+      boardUrl: this.boardUrl,
+      data: this.ignoredTopics,
+    });
+  },
+});
+
+const ttControlsVisibility = /** @type {any} */ ({
+  style: null,
+  visible: false,
+  ensureStyle: function () {
+    if (this.style) return;
+    this.style = document.createElement('style');
+    this.style.setAttribute('data-tundra-controls-style', 'true');
+    this.style.innerHTML = '.tundra-controls-hidden .tundra-ignore-topic, .tundra-controls-hidden [data-link=\"ignoreTopicLink\"], .tundra-controls-hidden .tundra-topic-ignore-toggle, .tundra-controls-hidden [data-link=\"topicIgnoreToggle\"], .tundra-controls-hidden [data-link=\"ignoreLink\"], .tundra-controls-hidden .tundra-ignore-user, .tundra-controls-hidden .pl-email.ignore { display: none !important; }';
+    document.head.appendChild(this.style);
+  },
+  apply: function () {
+    const root = document.querySelector('#pun') || document.body;
+    if (root) root.classList.toggle('tundra-controls-hidden', !this.visible);
+    document.body?.classList.toggle('tundra-controls-hidden', !this.visible);
+  },
+  /** @param {any} visible */
+  setVisible: function (visible) {
+    this.visible = visible === true;
+    this.ensureStyle();
+    this.apply();
+  },
+});
+
+const hvIgnoreList = /** @type {any} */ ({
   style: null,
   ignoreList: [],
   boardID: null,
@@ -7,14 +448,17 @@ const hvIgnoreList = {
   forumID: null,
   forumName: null,
   userID: null,
+  /**
+   * @param {any} forumData
+   * @param {any} data
+   */
   init: async function (forumData, data) {
     this.boardID = forumData.boardID;
     this.forumID = forumData.forumID;
     this.userID = forumData.userID;
-    // @ts-ignore
-    this.forumName = window.FORUM.get('topic.forum_name');
+    this.forumName = pageWindow.FORUM?.get?.('topic.forum_name') || 'Раздел';
     this.boardUrl = window.location.host;
-    this.getBoardName();
+    await this.getBoardName();
 
     this.ignoreList = data;
 
@@ -25,44 +469,45 @@ const hvIgnoreList = {
     this.hideQuotes();
   },
   getBoardName: async function () {
-    const fetchData = await fetch('/api.php?method=board.get&fields=title');
+    const fetchData = await fetchForumApi('method=board.get&fields=title');
     const { response: { title } } = await fetchData.json();
 
     this.boardName = title;
   },
   generateStyle: function () {
-    const defaultStyles = '#pun.ignoreDisabled .post { display: block !important; }\n' +
-      '#pun .post.topicpost { display: block !important; }\n' +
-      '.hidden { display: none; }';
-    let styleArray = [];
-    this.ignoreList.forEach(user => {
-      styleArray.push(`.post[data-user-id="${ user.userID }"]`)
+    const defaultStyles = '#pun .post.topicpost { display: block !important; }\n' +
+      '#pun:not(.ignoreDisabled) .hidden { display: none; }';
+    /** @type {string[]} */
+    const styleArray = [];
+    (/** @type {any[]} */ (this.ignoreList)).forEach(user => {
+      styleArray.push(`#pun:not(.ignoreDisabled) .post[data-user-id="${user.userID}"]`)
     });
 
-    this.style.innerHTML = styleArray.length ? styleArray.join(', ') + ' {display: none} \n' + defaultStyles : '';
+    this.style.innerHTML = (styleArray.length ? styleArray.join(', ') + ' { display: none; }\n' : '') + defaultStyles;
   },
   hideQuotes: function () {
     document.querySelectorAll('.quote-box').forEach(el => {
       const cite = el.querySelector('cite');
       if (!cite) return;
 
-      const userNames = this.ignoreList.map(item => item.userName);
+      const userNames = (/** @type {any[]} */ (this.ignoreList)).map(item => item.userName);
 
-      userNames.forEach(iUser => {
+      userNames.forEach((/** @type {string} */ iUser) => {
         el.classList.toggle('hidden', cite.innerText.toLocaleLowerCase().includes(iUser.toLocaleLowerCase()));
       });
     });
   },
+  /** @param {{ userID: any, userName: any }} user */
   addUser: function ({ userID, userName }) {
     const isConfirmed = confirm(`Игнорировать посты ${userName} в разделе [ ${this.forumName} ]?`);
 
-    if (!isConfirmed) return;
+    if (!isConfirmed) return false;
 
-    this.ignoreList.push({ userID, userName });
+    this.ignoreList.push({ userID, userName, updatedAt: Date.now() });
     this.generateStyle();
     this.hideQuotes();
 
-    window.postMessage({
+    ttPost({
       type: 'tundra_toolkit_update_ignore_list',
       boardID: this.boardID,
       boardName: this.boardName,
@@ -71,100 +516,293 @@ const hvIgnoreList = {
       forumName: this.forumName,
       data: this.ignoreList,
     });
+    return true;
   },
-}
+});
 
-main();
+let setupUnsafeFeatures = () => {};
+/** @type {any} */
+let postStatsApi = null;
+let syncForumMarkers = () => {};
+let ensureForumStarted = () => {};
+let unsafeEnabled = false;
 
 function main() {
-  // Проверка, на форуме mybb мы или нет
-  const ForumAPITicket = window[ 'ForumAPITicket' ];
-  if (!ForumAPITicket) return;
+  let started = false;
 
-  // Данные форума и пользователя для хранения
-  // @ts-ignore
-  const boardID = window.BoardID || 0;
-  // @ts-ignore
-  const userID = window.UserID || 0;
-  // @ts-ignore
-  const forumID = window.FORUM?.get('topic.forum_id') || null;
+  const FORUM_MARKER_ATTR = 'data-tt-forum-api';
 
-  window.postMessage({
+  /** @param {any} present */
+  const writeForumMarkerAttr = (present) => {
+    try {
+      if (present) {
+        document.documentElement.setAttribute(FORUM_MARKER_ATTR, '1');
+      } else {
+        document.documentElement.removeAttribute(FORUM_MARKER_ATTR);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
+  /** @param {any} present */
+  const notifyForumMarkers = (present) => {
+    writeForumMarkerAttr(present);
+    ttPost({
+      type: 'tundra_toolkit_forum_markers',
+      hasForumAPITicket: !!present,
+    });
+  };
+
+  syncForumMarkers = () => {
+    notifyForumMarkers(!!pageWindow.ForumAPITicket || hasForumAPITicketInDom());
+  };
+
+  const tryStart = () => {
+    const ForumAPITicket = pageWindow.ForumAPITicket || (hasForumAPITicketInDom() ? true : null);
+    if (!ForumAPITicket) return false;
+    if (started) {
+      notifyForumMarkers(true);
+      return true;
+    }
+    started = true;
+
+  const boardID = pageWindow.BoardID || 0;
+  const userID = pageWindow.UserID || 0;
+  const forumID = pageWindow.FORUM?.get('topic.forum_id') || null;
+  const forumName = pageWindow.FORUM?.get('topic.forum_name') || null;
+
+  let topicID = null;
+  let topicName = null;
+  if (/viewtopic\.php/.test(location.pathname)) {
+    topicID = pageWindow.FORUM?.get('topic.id') || (location.search.match(/[?&]id=(\d+)/) || [])[1] || null;
+    const heading = document.querySelector('#pun-main h1 span') || document.querySelector('#pun-main h1');
+    topicName = heading?.textContent?.trim() || null;
+  }
+
+  const needsTopicIgnore = /viewforum\.php|search\.php/.test(location.pathname);
+
+  pendingInitData = {
     type: 'tundra_toolkit_init_data',
     boardID,
     userID,
     forumID,
-  });
+    forumName,
+    topicID,
+    topicName,
+    needsTopicIgnore,
+  };
 
-  //   render ignore link
+  trySendInitData();
+  notifyForumMarkers(true);
+  ttChannel.whenReady(syncForumMarkers);
 
+  let unsafeReady = false;
+  setupUnsafeFeatures = () => {
+    if (unsafeReady && postStatsApi) return;
+
+    if (!unsafeReady) {
+      unsafeReady = true;
+
+  ensureTundraEmbedStyles();
+
+  /** @param {HTMLElement} post */
   const addIgnoreLink = post => {
     const postUserId = post.dataset.userId;
 
     if (!postUserId || +postUserId === userID || postUserId === '1') return;
+    if (post.querySelector('[data-link="ignoreLink"]')) return;
 
-    const postLinks = post.querySelector('.post-links > ul');
-
+    const postLinks = post.querySelector('.post-links');
     if (!postLinks) return;
 
-    const plEmail = postLinks.querySelectorAll('.pl-email');
-    const last = [ ...plEmail ].pop();
+    let linksList = postLinks.querySelector(':scope > ul');
+    if (!linksList) {
+      linksList = document.createElement('ul');
+      postLinks.appendChild(linksList);
+    }
 
-    last.insertAdjacentHTML(
-      'afterend',
-      `<li class="pl-email ignore"><a href="#" data-link="ignoreLink" data-user-id="${postUserId}">Игнорировать</a></li>`);
-    postLinks.addEventListener('click', addUserToIgnoreList);
-  }
+    const ignoreItem = `<li class="pl-email ignore"><a href="#" class="tundra-btn tundra-ignore-user" data-link="ignoreLink" data-user-id="${postUserId}" title="Игнорировать пользователя [Tundra Toolkit]" aria-label="Игнорировать пользователя"><svg class="tundra-btn__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg></a></li>`;
+    const emailLi = linksList.querySelector('li.pl-email.email')
+      || linksList.querySelector('li.pl-email:not(.ignore)');
+
+    if (emailLi) {
+      emailLi.insertAdjacentHTML('afterend', ignoreItem);
+      return;
+    }
+
+    const quoteLi = linksList.querySelector('li.pl-quote');
+    if (quoteLi) {
+      quoteLi.insertAdjacentHTML('beforebegin', ignoreItem);
+      return;
+    }
+
+    linksList.insertAdjacentHTML('beforeend', ignoreItem);
+  };
 
   document.querySelectorAll('.post').forEach(addIgnoreLink);
 
+  /** @param {Event} event */
   async function addUserToIgnoreList(event) {
-    if (event.target.dataset.link !== "ignoreLink") return;
+    const target = event.target instanceof Element
+      ? event.target.closest('[data-link="ignoreLink"]')
+      : null;
+    if (!target) return;
     event.preventDefault();
 
-    const { userId } = event.target.dataset;
+    const userId = target.getAttribute('data-user-id');
+    if (!userId) return;
 
     const fetchData = await fetch(`/api.php?method=users.get&user_id=${userId}`);
-    const { response: { users: [ user ] } } = await fetchData.json();
+    const { response: { users: [user] } } = await fetchData.json();
 
     if (!user) {
       // notify
       return;
     }
 
-    hvIgnoreList.addUser({
+    const added = hvIgnoreList.addUser({
       userID: userId,
       userName: user.username,
-    })
+    });
+    if (!added) return;
+
+    document.querySelectorAll(`[data-link="ignoreLink"][data-user-id="${userId}"]`).forEach(el => {
+      const item = el.closest('li.pl-email.ignore');
+      if (item) item.remove();
+      else el.remove();
+    });
   }
 
+  document.addEventListener('click', addUserToIgnoreList);
+
+    }
+
+  // count posts
+  if (!postStatsApi) {
+    try {
+      if (typeof createPostStats !== 'function') return;
+      const hvPostStats = createPostStats({ fetchForumApi, userID });
+      postStatsApi = hvPostStats;
+      hvPostStats.init();
+    } catch (e) {
+      postStatsApi = null;
+    }
+  }
+  };
+
+    return true;
+  };
+
+  ensureForumStarted = () => {
+    tryStart();
+  };
+
+  if (!tryStart()) {
+    notifyForumMarkers(false);
+  }
+
+  ttChannel.whenReady(syncForumMarkers);
 }
 
-window.addEventListener('message', ({ data }) => {
+const OPEN_POST_COUNTER_ATTR = 'data-tt-open-post-counter';
+
+const openPostCounterUi = () => {
+  try { ensureForumStarted(); } catch (e) { /* ignore */ }
+  try { setupUnsafeFeatures(); } catch (e) { /* ignore */ }
+  unsafeEnabled = true;
+  try { postStatsApi?.openModal?.(); } catch (e) { /* ignore */ }
+};
+
+const watchOpenPostCounterAttr = () => {
+  const run = () => {
+    if (!document.documentElement.hasAttribute(OPEN_POST_COUNTER_ATTR)) return;
+    document.documentElement.removeAttribute(OPEN_POST_COUNTER_ATTR);
+    openPostCounterUi();
+  };
+
+  run();
+  const observer = new MutationObserver(run);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: [ OPEN_POST_COUNTER_ATTR ],
+  });
+};
+
+watchOpenPostCounterAttr();
+
+ttChannel.subscribe((data) => {
+  if (data.type === 'tundra_toolkit_forum_markers_request') {
+    syncForumMarkers();
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_request_init') {
+    initDataSent = false;
+    trySendInitData();
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_enable_unsafe') {
+    unsafeEnabled = true;
+    try { ensureForumStarted(); } catch (e) { /* ignore */ }
+    try { setupUnsafeFeatures(); } catch (e) { /* ignore */ }
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_disable_unsafe') {
+    unsafeEnabled = false;
+    try { ttControlsVisibility.setVisible(false); } catch (e) { /* ignore */ }
+    try {
+      const modal = document.querySelector('#hvPostStatsModal');
+      if (!(modal instanceof HTMLDialogElement)) return;
+      if (modal?.open && typeof modal.close === 'function') modal.close();
+      else if (modal) modal.removeAttribute('open');
+    } catch (e) { /* ignore */ }
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_open_post_counter') {
+    openPostCounterUi();
+    return;
+  }
 
   if (data.type === 'tundra_toolkit_insert_sticker') {
-    // @ts-ignore
-    const editor = window.FORUM?.get('editor') || null;
+    const src = typeof data.src === 'string' ? data.src.trim() : '';
+    if (!bridge.checkImageURL(src)) return;
+
+    const editor = pageWindow.FORUM?.get('editor') || null;
 
     if (!editor) {
       if (navigator && navigator.clipboard && navigator.clipboard.writeText)
-        return navigator.clipboard.writeText(data.src);
+        return navigator.clipboard.writeText(src);
+      return;
     }
 
-    // @ts-ignore
-    window.smile(`[img]${ data.src }[/img]`);
+    pageWindow.smile(`[img]${src}[/img]`);
+    return;
   }
 
   if (data.type === 'tundra_toolkit_init_ignore') {
-    // @ts-ignore
-    const topic = window.FORUM?.get('topic') || null;
-    if (!topic) return;
-
     hvIgnoreList.init(data.forumData, data.data);
+    return;
+  }
+
+  if (data.type === 'tundra_toolkit_init_topic_ignore') {
+    hvTopicIgnore.init(data.boardData, data.data);
+    return;
   }
 
   if (data.type === 'tundra_toolkit_ignore_toggle') {
     document.querySelector('#pun')?.classList.toggle('ignoreDisabled');
+    return;
   }
 
+  if (data.type === 'tundra_toolkit_controls_visibility') {
+    ttControlsVisibility.setVisible(data.visible);
+  }
 });
+
+main();
+
+})();

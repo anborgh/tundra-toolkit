@@ -14,10 +14,49 @@ interface IForumStore {
 interface IUserStore {
   userID: string;
   userName: string;
+  updatedAt?: number;
+}
+
+interface ITopicStore {
+  topicID: string;
+  topicName: string;
+  updatedAt?: number;
+}
+
+interface IBoardTopicsStore {
+  boardID: string;
+  boardName: string;
+  boardUrl: string;
+  topics: ITopicStore[];
+}
+
+interface IFavoriteTopic {
+  id: string; // `${boardUrl}:${topicID}`
+  boardUrl: string;
+  boardName: string;
+  topicID: string;
+  topicName: string;
+  myTurn: boolean;
+  lastPostDate?: number;
+  lastUsername?: string;
+  numReplies?: number;
+  lastSeenPostDate?: number;
+  seenNumReplies?: number;
+  lastCheckedAt?: number;
+  addedAt: number;
+  updatedAt?: number;
 }
 
 interface IStickerPack {
   id: number,
   name: string,
   items: string[],
+  updatedAt?: number,
+}
+
+interface ITemplate {
+  id: number,
+  name: string,
+  content: string,
+  updatedAt?: number,
 }

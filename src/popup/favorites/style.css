@@ -1,0 +1,178 @@
+.favoritesTab {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.favoritesHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.favoritesUpdated {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tt-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favoritesUpdated .ttIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.favoritesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.favoritesSectionUpdated > .ttSectionLabel {
+  color: var(--tt-frost);
+}
+
+.favoritesSectionMine > .ttSectionLabel {
+  color: var(--tt-ember);
+}
+
+.favoritesList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.favoriteItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 6px 10px 10px;
+  background: var(--tt-card);
+  border: 1px solid var(--tt-border);
+  border-radius: 10px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.favoriteItem.is-new {
+  border-color: var(--tt-accent-border);
+}
+
+.favoriteItem.stale {
+  background: var(--tt-card-alt);
+  border-style: dashed;
+  border-color: var(--tt-border-strong);
+}
+
+.favoriteItem.stale .favoriteTitle {
+  color: var(--tt-text-2);
+}
+
+.favoriteBody {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.favoriteTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.favoriteTitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  color: var(--tt-text);
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favoriteTitle:hover {
+  color: var(--tt-frost);
+  text-decoration: underline;
+}
+
+.favoriteNewBadge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 20px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-accent-soft);
+  color: var(--tt-accent-text);
+  font: 600 11px/1 var(--tt-font-body);
+  cursor: pointer;
+}
+
+.favoriteNewBadge:hover {
+  background: color-mix(in oklab, var(--tt-accent-soft) 70%, var(--tt-frost));
+}
+
+.favoriteMeta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tt-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.favoriteBoard,
+.favoriteLastUser {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.favoriteBoard {
+  flex: 0 1 auto;
+}
+
+.favoriteDot {
+  flex: 0 0 auto;
+}
+
+.favoriteStale {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--tt-earth);
+  cursor: help;
+}
+
+.favoriteStale .ttIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.favoriteRemove {
+  flex: 0 0 auto;
+}
+
+.favoriteItem.is-myTurn {
+  background: var(--tt-ember-soft);
+  border-color: color-mix(in oklab, var(--tt-ember) 40%, transparent);
+}

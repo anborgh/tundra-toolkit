@@ -1,127 +1,254 @@
-.stickerList {
-    margin-bottom: 16px;
+/* Stickers tab: scrolling body + pinned "add by link" bar */
+.popupTabContent:has(> .stickerTab) {
+  padding: 0;
+  overflow: hidden;
 }
 
-.stickerList_empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 80dvh;
+.stickerTab {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
-.stickerList_emptyIcon {
-    width: 64px;
-    height: 64px;
-    background: url('../../../public/icon128.png');
-    background-size: contain;
-    opacity: .3;
-    cursor: pointer;
-    margin-bottom: 16px;
+.stickerScroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 14px 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.stickerList_emptyTitle {
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
+.stickerScroll > * {
+  flex: 0 0 auto;
 }
 
-.stickerListActions {
-    display: flex;
-    justify-content: center;
+.recentStickers {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-/* STICKER PACK */
+.recentStickersHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 20px;
+}
+
+.recentStickersHead .ttStatusIcon {
+  width: 20px;
+  height: 20px;
+}
+
+.recentStickersList {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* Pack chips */
+.stickerChips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-y: none;
+  padding: 2px;
+  scrollbar-width: thin;
+}
+
+.stickerChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  max-width: 200px;
+  height: 30px;
+  margin: 0;
+  padding: 0 12px 0 5px;
+  border: 1px solid var(--tt-border-strong);
+  border-radius: 15px;
+  background: var(--tt-card);
+  color: var(--tt-text);
+  font: 500 12px/1 var(--tt-font-body);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.stickerChip:hover {
+  border-color: var(--tt-muted);
+}
+
+.stickerChip[aria-pressed="true"] {
+  background: var(--tt-fg);
+  border-color: var(--tt-fg);
+  color: var(--tt-bg);
+}
+
+.stickerChipCover {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--tt-subtle);
+}
+
+.stickerChipCover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.stickerChipName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stickerChip[aria-pressed="true"] .stickerChipCount {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.stickerChipAdd {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+.stickerChipAdd .ttIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Active pack */
+.stickerPack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 .stickerPackHeader {
-    padding: 6px 12px;
-    display: flex;
-    justify-content: flex-start;
-    align-items: center;
-    gap: 12px;
-    cursor: pointer;
-    --bg-image: none;
-
-    position: sticky;
-    top: 0;
-    z-index: 1;
-
-    background: #8ba2a6;
-}
-
-.stickerPackTitleIcon {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    background-image: var(--bg-image);
-    background-size: contain;
-    flex: 0 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .stickerPackTitle {
-    flex: 0 1 100%;
-    color: #22272b;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.stickerPackTitleActions {
-    text-align: right;
-    flex: 0 0 60px;
+.stickerPackStorage {
+  display: inline-flex;
+  color: var(--tt-muted);
 }
 
-.stickerPackContent {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px;
+.stickerPackStorage.is-local {
+  color: var(--tt-earth);
+}
+
+.stickerPackGrid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .stickerItem {
-    max-height: 60px;
-    max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  margin: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--tt-card);
+  box-shadow: inset 0 0 0 1px var(--tt-border-soft);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.stickerItem:hover {
+  outline: 2px solid var(--tt-frost);
+  outline-offset: 2px;
 }
 
 .stickerItem img {
-    max-height: 60px;
-    cursor: pointer;
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
 }
 
-/* DIALOG */
-
-.editPackDialog {
-    width: 80%;
-    height: 75%;
-    padding: 0;
+.stickerEmptyCta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
 }
 
-.editPackDialogWrapper {
-    padding: 12px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    height: 100%;
+.stickerEmptyCta:hover {
+  border-color: var(--tt-frost);
 }
 
-.editPackDialogNameWrapper {
-    flex: 0 0 30px;
+/* Add-by-link bar */
+.stickerAddBar {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  background: var(--tt-card);
+  border-top: 1px solid var(--tt-border);
 }
 
-.editPackDialogItemsWrapper {
-    flex: 1 1 100%;
+.stickerAddLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tt-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.editPackDialogItemsWrapper textarea {
-    height: 100%;
+.stickerAddRow {
+  display: flex;
+  gap: 8px;
 }
 
-.editPackDialogActions {
-    text-align: center;
-    flex: 0 0 30px;
+.stickerAddRow input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0 12px;
+  font-size: 13px;
 }
 
-.editPackDialogActions button + button {
-    margin-left: 12px;
+.stickerAddHint {
+  font-size: 12px;
+  color: var(--tt-muted);
 }
 
-.editPackDialog > div {
-    margin-bottom: 12px;
+.popupTabContent > .stickerTab {
+  flex: 1 1 auto;
+  min-height: 0;
 }

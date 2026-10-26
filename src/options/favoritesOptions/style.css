@@ -1,0 +1,219 @@
+.favoritesOptions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.favoritesOptionsHeader {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+}
+
+.favoritesOptionsHeader > div:first-child {
+    flex: 1 1 280px;
+}
+
+.favoritesOptionsHeader h2 {
+    margin: 0;
+}
+
+.favoritesOptionsHeaderActions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.favoritesOptionsViewToggle {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--tt-radius);
+    background: var(--tt-subtle);
+}
+
+.favoritesOptionsSeg {
+    height: 30px;
+    margin: 0;
+    padding: 0 12px;
+    border: 0;
+    border-radius: var(--tt-radius-sm);
+    background: transparent;
+    color: var(--tt-text-2);
+    font: 500 13px/1 var(--tt-font-body);
+    cursor: pointer;
+}
+
+.favoritesOptionsSeg[aria-pressed="true"] {
+    background: var(--tt-card);
+    color: var(--tt-text);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.favoritesOptionsStats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.favoritesOptionsStat {
+    display: flex;
+    flex-direction: column;
+    padding: 14px 16px;
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
+}
+
+.favoritesOptionsStat span {
+    font-size: 13px;
+    color: var(--tt-muted);
+}
+
+.favoritesOptionsStat strong {
+    font-size: 24px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.favoritesOptionsStat strong.is-new { color: var(--tt-frost); }
+.favoritesOptionsStat strong.is-mine { color: var(--tt-ember); }
+
+.favoritesOptionsBoard {
+    background: var(--tt-card);
+    border: 1px solid var(--tt-border);
+    border-radius: var(--tt-radius-lg);
+    overflow: hidden;
+}
+
+.favoritesOptionsBoardTitle {
+    display: block;
+    padding: 14px 16px;
+    background: var(--tt-card-alt);
+    color: var(--tt-text);
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.favoritesOptionsBoardTitle:hover {
+    color: var(--tt-frost);
+}
+
+.favoritesOptionsBoardTag {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.favoritesOptionsList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.favoritesOptionsItem {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    padding: 10px 8px 10px 14px;
+    border-top: 1px solid var(--tt-border-soft);
+}
+
+.favoritesOptionsListFlat .favoritesOptionsItem:first-child {
+    border-top: 0;
+}
+
+.favoritesOptionsItem:hover {
+    background: var(--tt-card-alt);
+}
+
+.favoritesOptionsItem.stale .favoritesOptionsTitleRow a {
+    color: var(--tt-text-2);
+}
+
+.favoritesOptionsBody {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+.favoritesOptionsTitleRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.favoritesOptionsTitleRow a {
+    min-width: 0;
+    color: var(--tt-text);
+    font-weight: 600;
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.favoritesOptionsTitleRow a:hover {
+    color: var(--tt-frost);
+    text-decoration: underline;
+}
+
+.favoritesOptionsNewBadge {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    height: 20px;
+    margin: 0;
+    padding: 0 8px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--tt-accent-soft);
+    color: var(--tt-accent-text);
+    font: 600 11px/1 var(--tt-font-body);
+    cursor: pointer;
+}
+
+.favoritesOptionsMeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 6px;
+    font-size: 13px;
+    color: var(--tt-muted);
+}
+
+.favoritesOptionsStale {
+    color: var(--tt-earth);
+    cursor: help;
+}
+
+.favoritesOptionsActions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
+.favoritesOptionsRemove {
+    flex: 0 0 auto;
+}
+
+@media (max-width: 560px) {
+    .favoritesOptionsStats {
+        grid-template-columns: 1fr;
+    }
+}
+
+.favoritesOptionsItem.is-myTurn {
+    background: var(--tt-ember-soft);
+}
+
+.favoritesOptionsItem.is-myTurn:hover {
+    background: color-mix(in oklab, var(--tt-ember-soft) 85%, var(--tt-ember));
+}

@@ -1,30 +1,508 @@
+// Base styles first so component CSS (imported below) wins over chota's globals.
+import '../chota.min.css';
+import '../common.css';
 import { render } from 'preact';
+import { useEffect, useMemo, useState } from 'react';
 
 import { BlackListOptions } from './blackListOptions';
 import StickerPackOptions from './stickerPackOptions';
+import TemplateOptions from './templateOptions';
+import { FavoritesOptions } from './favoritesOptions';
+import { DEFAULT_SETTINGS_SECTION, isSettingsSection, SettingsSection } from '../utils/settingsSections';
+import {
+	getStorageFallbacks,
+	isStorageKeyLocal,
+	safeStoragePromoteFallbacks,
+	STORAGE_FALLBACKS_KEY,
+	StorageFallbackMap,
+} from '../utils/storage';
 
-import '../chota.min.css';
-import '../common.css';
+import { ConfirmDialogProvider } from '../components/ConfirmDialog';
+import { MaskIcon } from '../components/MaskIcon';
+import { Ornament } from '../components/Ornament';
+import mountainIcon from '../assets/icons/mountain.svg';
+import bookIcon from '../assets/icons/book-open.svg';
+import stickerIcon from '../assets/icons/sticker.svg';
+import filePenIcon from '../assets/icons/file-pen.svg';
+import banIcon from '../assets/icons/ban.svg';
+import bookmarkIcon from '../assets/icons/bookmark.svg';
+import cloudIcon from '../assets/icons/cloud.svg';
+import cloudOffIcon from '../assets/icons/cloud-off.svg';
+import cloudAlertIcon from '../assets/icons/cloud-alert.svg';
+
+import '../components/icon.css';
 import './options.css';
 
+const SECTION_ICONS: Record<string, string> = {
+	stickers: stickerIcon,
+	templates: filePenIcon,
+	blackList: banIcon,
+	favorites: bookmarkIcon,
+};
+
+const getSectionFromHash = (): SettingsSection => {
+	const hash = window.location.hash.replace('#', '');
+	if (hash.startsWith('guide')) return 'guide';
+	return isSettingsSection(hash) ? hash : DEFAULT_SETTINGS_SECTION;
+};
+
+const SECTION_STORAGE_KEYS: Partial<Record<SettingsSection, string[]>> = {
+	stickers: [ 'stickerPack' ],
+	templates: [ 'templates' ],
+	blackList: [ 'ignoreList', 'ignoredTopicsList' ],
+	favorites: [ 'favoriteTopics' ],
+};
+
+const isSectionLocal = (
+	section: SettingsSection,
+	fallbacks: StorageFallbackMap,
+) => {
+	const keys = SECTION_STORAGE_KEYS[section];
+	if (!keys?.length) return false;
+	return keys.some(key => isStorageKeyLocal(fallbacks, key));
+};
+
 export function App() {
+	const [ activeSection, setActiveSection ] = useState<SettingsSection>(getSectionFromHash);
+	const [ syncBytesInUse, setSyncBytesInUse ] = useState<number | null>(null);
+	const [ syncUsageError, setSyncUsageError ] = useState<string | null>(null);
+	const [ storageFallbacks, setStorageFallbacks ] = useState<StorageFallbackMap>({});
+
+	const syncQuotaBytes = chrome.storage?.sync?.QUOTA_BYTES || 102400;
+	const syncUsagePercent = useMemo(() => {
+		if (syncBytesInUse === null) return 0;
+		return Math.min(100, Math.round((syncBytesInUse / syncQuotaBytes) * 100));
+	}, [ syncBytesInUse, syncQuotaBytes ]);
+	const activeSectionIsLocal = isSectionLocal(activeSection, storageFallbacks);
+
+	useEffect(() => {
+		const updateSyncUsage = () => {
+			chrome.storage.sync.getBytesInUse(null, (bytes) => {
+				if (chrome.runtime.lastError) {
+					setSyncUsageError('Недоступно');
+					return;
+				}
+
+				setSyncUsageError(null);
+				setSyncBytesInUse(bytes || 0);
+			});
+		};
+
+		const updateFallbacks = () => {
+			getStorageFallbacks()
+				.then(setStorageFallbacks)
+				.catch(() => setStorageFallbacks({}));
+		};
+
+		const reconcileStorage = async () => {
+			try {
+				await safeStoragePromoteFallbacks();
+			} catch (e) {
+				// ignore promote errors; UI still reflects current fallbacks
+			}
+			updateSyncUsage();
+			updateFallbacks();
+		};
+
+		reconcileStorage();
+
+		const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>, areaName: string) => {
+			if (areaName !== 'sync' && areaName !== 'local') return;
+			updateSyncUsage();
+			if (changes[STORAGE_FALLBACKS_KEY] || changes['tt2/loc']) {
+				updateFallbacks();
+			}
+		};
+
+		chrome.storage.onChanged.addListener(handleStorageChange);
+		return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+	}, []);
+
+	useEffect(() => {
+		const handleHashChange = () => setActiveSection(getSectionFromHash());
+		window.addEventListener('hashchange', handleHashChange);
+		return () => window.removeEventListener('hashchange', handleHashChange);
+	}, []);
+
+	const selectSection = (section: SettingsSection) => {
+		setActiveSection(section);
+		if (window.location.hash !== `#${ section }`) {
+			window.location.hash = section;
+		}
+	};
+
+	const sections: {
+		id: SettingsSection;
+		label: string;
+	}[] = [
+		{ id: 'stickers', label: 'Стикеры' },
+		{ id: 'templates', label: 'Черновики' },
+		{ id: 'blackList', label: 'Чёрный список' },
+		{ id: 'favorites', label: 'Эпизоды' },
+	];
+
+	const renderSection = () => {
+		switch (activeSection) {
+			case 'guide':
+				return (
+					<section className="optionsGuide">
+						<h2>Инструкция по расширению</h2>
+						<p className="text-secondary">
+							Tundra Toolkit — расширение для форумных ролевых игр на MyBB/RusFF.
+							Оно добавляет в браузер привычные инструменты: стикеры, черновики, личный игнор,
+							счётчик постов и список активных эпизодов.
+						</p>
+						<p className="text-secondary">
+							Все эти инструменты работают прямо из расширения на любом поддерживаемом форуме.
+							Просить администратора установить отдельные скрипты не нужно — достаточно включить
+							Tundra Toolkit в браузере. Расширение меняет страницы только у вас: другие игроки
+							этого не увидят. Отдельный аккаунт не нужен.
+						</p>
+
+						<nav className="optionsGuideToc" aria-label="Содержание инструкции">
+							{[
+								[ 'guide-start', 'Быстрый старт' ],
+								[ 'guide-episodes', 'Эпизоды' ],
+								[ 'guide-stickers', 'Стикеры' ],
+								[ 'guide-drafts', 'Черновики' ],
+								[ 'guide-ignore', 'Игнор-лист' ],
+								[ 'guide-counter', 'Счётчик постов' ],
+								[ 'guide-style', 'Стиль' ],
+								[ 'guide-settings', 'Настройки' ],
+								[ 'guide-sync', 'Хранение' ],
+								[ 'guide-faq', 'Частые вопросы' ],
+							].map(([ id, label ]) => (
+								<a key={ id } href={ `#${ id }` }>
+									{ label }
+								</a>
+							)) }
+						</nav>
+
+						<div className="optionsGuideBlock" id="guide-start">
+							<h3>Быстрый старт</h3>
+							<ol>
+								<li>Откройте нужный форум MyBB/RusFF и нажмите на значок Tundra Toolkit.</li>
+								<li>Включите переключатель «Включено» в шапке окна расширения и дождитесь, пока вкладки станут доступны.</li>
+								<li>Tundra Toolkit нужно включить отдельно на каждом форуме. На других сайтах и в новой вкладке браузера переключателя нет: там работают только эпизоды, стикеры и черновики.</li>
+							</ol>
+							<p>
+								Чтобы отключить расширение на текущем форуме, выключите переключатель.
+								Стикеры, черновики и эпизоды не удалятся.
+							</p>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-episodes">
+							<h3>Эпизоды</h3>
+							<p>
+								На вкладке «Эпизоды» собраны активные темы с разных форумов. Здесь видны новые ответы,
+								а эпизоды, в которых сейчас ваш ход, можно отметить отдельно.
+							</p>
+							<ul>
+								<li>Откройте тему и нажмите «Добавить тему». Если тема уже добавлена, на кнопке будет надпись «Уже в эпизодах».</li>
+								<li>Нажмите значок слева от темы, чтобы отметить или снять свой ход: перо — ваш ход, песочные часы — ждёте ответа. Tundra Toolkit не определяет очередь сам — отметку нужно ставить и снимать вручную.</li>
+								<li>«Новые ответы» — темы с новыми ответами. «Мой ход» — темы, которые вы отметили вручную. «Жду ответа» — остальные активные эпизоды.</li>
+								<li>Чтобы отметить новые ответы как просмотренные, откройте тему или нажмите метку «новое».</li>
+								<li>Чем больше эпизодов в списке, тем реже расширение проверяет каждый из них. Обновлять список вручную можно не чаще чем раз в 1 мин.</li>
+								<li>Если вы вышли из аккаунта или форум временно недоступен, тема останется в списке с пометкой «не обновляется».</li>
+								<li>Полный список и группировка по форуму или дате последнего ответа — в разделе «Настройки» → «Эпизоды».</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-stickers">
+							<h3>Стикеры</h3>
+							<p>
+								Tundra Toolkit хранит ссылки на картинки, а не сами файлы. Нажмите на стикер,
+								и в форму ответа вставится BBCode.
+							</p>
+							<ul>
+								<li>Создайте стикерпак кнопкой «+» рядом со стикерпаками и добавьте прямые ссылки на картинки — по одной на строку. Отдельный стикер можно добавить полем внизу вкладки.</li>
+								<li>Чтобы вставить стикер, откройте страницу темы с формой ответа, поставьте курсор и нажмите на картинку.</li>
+								<li>Если формы ответа нет, Tundra Toolkit скопирует прямую ссылку на картинку в буфер обмена.</li>
+								<li>Вверху вкладки собраны 6 недавно использованных стикеров. Этот список хранится только в текущем браузере.</li>
+								<li>Порядок картинок и стикерпаков меняется в разделе «Настройки» → «Стикеры». Для стикерпаков включите «Изменить порядок» и перетащите их выше или ниже.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-drafts">
+							<h3>Черновики</h3>
+							<p>
+								На вкладке «Черновики» хранятся тексты из формы ответа и заготовки,
+								которые удобно использовать несколько раз.
+							</p>
+							<ul>
+								<li>«Сохранить из формы» сохраняет текст под названием темы.</li>
+								<li>«Пустой черновик» создаёт новую запись: в ней можно сохранить обычный текст, BBCode или HTML. Разметка сработает только на форумах, которые её поддерживают.</li>
+								<li>«Вставить» возвращает текст в форму ответа. Если кнопка недоступна, сначала откройте страницу с формой ответа.</li>
+								<li>Если черновиков много, найти нужный поможет поиск, а с большим списком удобнее работать в разделе «Настройки» → «Черновики». После удаления восстановить запись нельзя.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-ignore">
+							<h3>Игнор-лист</h3>
+							<p>
+								Игнор в Tundra Toolkit не блокирует пользователя на форуме. Он скрывает выбранные
+								посты и темы, а также цитаты, если удаётся распознать их автора. Изменения видны только вам.
+							</p>
+							<ul>
+								<li>По умолчанию кнопки ⊘ скрыты. На вкладке «Игнор» включите переключатель «Кнопки ⊘ на страницах форума».</li>
+								<li>Нажмите ⊘ рядом с постом, чтобы скрыть пользователя только в выбранном разделе: например, во флуде, но не в игровом разделе.</li>
+								<li>На странице раздела или в результатах поиска нажмите ⊘ рядом с темой. Она скроется из списков только у вас и останется доступна по прямой ссылке.</li>
+								<li>Кнопка «Показать скрытое» временно показывает весь скрытый контент. Записи в «Игнор-листе» при этом не удаляются. Скрытое вернётся после обновления страницы или повторного нажатия.</li>
+								<li>Чтобы убрать пользователя или тему из игнора, откройте «Настройки» → «Чёрный список» и нажмите крестик рядом с записью.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-counter">
+							<h3>Счётчик постов</h3>
+							<p>
+								Счётчик поможет подвести итоги эпизода, события или игрового периода.
+								Запустите его из окна расширения на форуме, где включён Tundra Toolkit.
+							</p>
+							<ul>
+								<li>В поле «Форумы» выберите один или несколько разделов, в поле «Пользователи» — аккаунты персонажей. Искать можно по названию, нику или ID.</li>
+								<li>Задайте период в полях «С» и «По». Если нужно, включите «считать количество символов в постах» и нажмите «Считать».</li>
+								<li>Чем больше разделов и чем длиннее период, тем дольше идёт подсчёт. Не закрывайте страницу до завершения.</li>
+								<li>После подсчёта включите «показать BBCode», скопируйте текст и вставьте его в банк, игровой отчёт или другое сообщение на форуме.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-style">
+							<h3>Стиль</h3>
+							<p>
+								На вкладке «Стиль» можно упростить оформление форума, изменить размер текста,
+								настроить красную строку и интервалы между абзацами. Настройки сохраняются
+								отдельно для каждого форума.
+							</p>
+							<ul>
+								<li>«SFW-стиль» уменьшает аватары и скрывает подписи, личные звания, шапку, подвал, объявления и часть декоративных изображений. Он меняет только оформление и не проверяет содержимое постов, поэтому нежелательный контент, в том числе 18+, может остаться видимым.</li>
+								<li>Кнопки − и + в блоке «Размер шрифта постов» меняют масштаб. Нажмите на значение в процентах, чтобы вернуть 100%. Если форум сам задаёт размер шрифта, текст в некоторых элементах может не измениться.</li>
+								<li>«Красная строка» настраивается отдельно для каждого раздела. Кнопками − и + задайте «Отступ между абзацами»; нажмите на значение, чтобы вернуть «Авто».</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-settings">
+							<h3>Настройки</h3>
+							<p>
+								Кнопка с ползунками в шапке окна расширения открывает настройки в отдельной вкладке.
+								Карточка «Chrome Sync» слева показывает, сколько места занято, и предупреждает, если что-то хранится только в этом браузере.
+							</p>
+							<ul>
+								<li>«Стикеры» — добавлять, редактировать, удалять и менять порядок стикерпаков и картинок.</li>
+								<li>«Черновики» — искать, редактировать и удалять черновики.</li>
+								<li>«Чёрный список» — удалять пользователей и темы из игнора.</li>
+								<li>«Эпизоды» — группировать эпизоды по форуму или дате последнего ответа и удалять ненужные.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-sync">
+							<h3>Где хранятся данные</h3>
+							<p>
+								Tundra Toolkit сохраняет данные в текущем браузере. Если в Chrome Sync хватает места,
+								часть из них может синхронизироваться с другими устройствами с тем же профилем Chrome.
+								Для данных расширения доступно около 100 КБ: тексты черновиков, ссылки на картинки
+								и записи о темах и пользователях. Сами изображения из стикерпаков в Chrome Sync не загружаются.
+							</p>
+							<ul>
+								<li>Обычное облако — элемент хранится в Chrome Sync. Нажмите метку, чтобы оставить его только в этом браузере.</li>
+								<li>Перечёркнутое облако — элемент есть только в этом браузере. Нажмите метку, чтобы попробовать добавить его в Chrome Sync.</li>
+								<li>Облако с предупреждением — в Chrome Sync не хватило места. Элемент остался в этом браузере. Освободите место и нажмите метку ещё раз.</li>
+							</ul>
+							<p>
+								Если места не хватает, данные не удаляются: они остаются в текущем браузере.
+								На других устройствах их не будет. Они могут исчезнуть, если вы очистите данные браузера,
+								удалите профиль или само расширение. Chrome Sync — не резервная копия.
+								Важные тексты сохраняйте отдельно.
+							</p>
+						</div>
+
+						<div className="optionsGuideBlock optionsGuideWarning">
+							<h3>Безопасность и приватность</h3>
+							<ul>
+								<li>Включайте Tundra Toolkit только на форумах, которым доверяете.</li>
+								<li>Не храните в черновиках пароли, токены доступа, резервные коды, платёжные и паспортные данные или приватные переписки.</li>
+								<li>Любой человек с доступом к вашему профилю браузера сможет увидеть данные Tundra Toolkit на этом устройстве.</li>
+								<li>Стикеры загружаются по ссылкам, которые вы добавили. Храните изображения на надёжном сервисе, который даёт прямые ссылки.</li>
+								<li>SFW-стиль не фильтрует содержимое постов — он меняет только оформление.</li>
+							</ul>
+						</div>
+
+						<div className="optionsGuideBlock" id="guide-faq">
+							<h3>Частые вопросы</h3>
+							<dl className="optionsGuideFaq">
+								<dt>Почему часть вкладок недоступна?</dt>
+								<dd>Некоторые вкладки доступны только на страницах форума. Откройте форум MyBB/RusFF и включите Tundra Toolkit переключателем в шапке.</dd>
+								<dt>Почему кнопка «Добавить тему» не нажимается?</dt>
+								<dd>Кнопка работает только на странице темы. Если тема уже добавлена, на кнопке будет написано «Уже в эпизодах».</dd>
+								<dt>Почему эпизод помечен «не обновляется»?</dt>
+								<dd>Так бывает, если вы вышли из аккаунта на форуме или сам форум временно недоступен. Откройте форум, войдите в аккаунт и попробуйте обновить список позже.</dd>
+								<dt>Почему стикер не вставился в сообщение?</dt>
+								<dd>Откройте страницу с формой ответа. Если формы нет, Tundra Toolkit скопирует ссылку на картинку в буфер обмена — вставьте её вручную.</dd>
+								<dt>Куда пропали кнопки ⊘?</dt>
+								<dd>Откройте вкладку «Игнор» и включите переключатель «Кнопки ⊘ на страницах форума».</dd>
+								<dt>Как посмотреть скрытое, ничего не удаляя?</dt>
+								<dd>На вкладке «Игнор» нажмите «Показать скрытое». Скрытые посты и темы снова появятся. Они останутся видимыми до обновления страницы или повторного нажатия, а записи в игноре не удалятся.</dd>
+								<dt>Почему счётчик работает долго?</dt>
+								<dd>Счётчик проверяет темы по очереди. Чем больше разделов и пользователей вы выбрали и чем длиннее период, тем дольше идёт подсчёт. Не закрывайте страницу до завершения.</dd>
+								<dt>Почему данные есть на одном устройстве, но нет на другом?</dt>
+								<dd>Проверьте метку облака рядом с элементом. Перечёркнутое облако означает, что элемент хранится только в этом браузере. Облако с предупреждением показывает, что в Chrome Sync не хватило места. Освободите место и нажмите метку ещё раз.</dd>
+								<dt>Исчезнут ли данные, если выключить расширение на форуме?</dt>
+								<dd>Нет. Переключатель только отключает Tundra Toolkit на текущем форуме и не удаляет данные. Стикеры, черновики, эпизоды и записи в игноре сохранятся.</dd>
+								<dt>Работает ли Tundra Toolkit на любом форуме?</dt>
+								<dd>Tundra Toolkit работает с форумами MyBB/RusFF. На форумах с другими движками расширение может работать неправильно или не работать совсем.</dd>
+							</dl>
+						</div>
+
+						<div className="optionsGuideBlock">
+							<h3>Если нужна помощь</h3>
+							<p>
+								Если что-то не работает, напишите разработчику и укажите ссылку на форум или страницу,
+								что вы сделали, что произошло и что ожидали увидеть, а также скриншот окна расширения
+								или сообщения об ошибке — без личных данных.
+							</p>
+							<p>
+								Написать разработчику: <a href="https://t.me/hvscripts" target="_blank" rel="noreferrer">Telegram — hvscripts</a>.
+							</p>
+						</div>
+					</section>
+				);
+			case 'templates':
+				return <TemplateOptions />;
+			case 'blackList':
+				return <BlackListOptions />;
+			case 'favorites':
+				return <FavoritesOptions />;
+			case 'stickers':
+			default:
+				return <StickerPackOptions />;
+		}
+	};
+
+	const localSectionLabels = sections
+		.filter(section => isSectionLocal(section.id, storageFallbacks))
+		.map(section => section.label);
+
 	return (
 		<div class="wrapper">
-			<header>
-				<div className="main">
-					<div className="logo">
-						<img src='./icon512.png' />
+			<a
+				className="skipLink"
+				href="#options-main"
+				onClick={ (event) => {
+					event.preventDefault();
+					const main = document.getElementById('options-main');
+					main?.focus();
+					main?.scrollIntoView({ block: 'start' });
+				} }
+			>
+				К содержимому
+			</a>
+			<header className="optionsHeader">
+				<div className="optionsHeaderInner">
+					<div className="optionsLogo" aria-hidden="true">
+						<MaskIcon src={ mountainIcon } />
 					</div>
-					<h1>Tundra Toolkit <span>v2.1-alpha</span></h1>
-					<div>Набор инструментов от <a href="https://t.me/hvscripts" target="_blank">Человека-Шамана</a>.</div>
+					<div className="optionsHeaderText">
+						<h1 translate={ false }><span className="ttDisplay">Tundra Toolkit</span> <span className="optionsVersion">v3.2</span></h1>
+						<div className="headerMeta">Инструменты для ролевых на MyBB/RusFF · от <a href="https://t.me/hvscripts" target="_blank" rel="noreferrer">Человека-Шамана</a></div>
+					</div>
+					<a
+						href="#guide"
+						className={ `optionsHeaderLink ${ activeSection === 'guide' ? 'active' : '' }` }
+						aria-current={ activeSection === 'guide' ? 'page' : undefined }
+						onClick={ () => selectSection('guide') }
+					>
+						<MaskIcon src={ bookIcon } />
+						Инструкция
+					</a>
 				</div>
+				<Ornament size={ 12 } />
 			</header>
-			<main>
-				<BlackListOptions />
-				<StickerPackOptions />
+			<main id="options-main" tabIndex={ -1 }>
+				<div className="optionsLayout">
+					<aside className="optionsSidebar">
+						<nav className="optionsNav" aria-label="Разделы настроек">
+							{ sections.map(section => (
+								<a
+									key={ section.id }
+									href={ `#${ section.id }` }
+									className="optionsNavItem"
+									aria-current={ activeSection === section.id ? 'page' : undefined }
+									onClick={ () => selectSection(section.id) }
+								>
+									<MaskIcon src={ SECTION_ICONS[section.id] } />
+									<span className="optionsNavItemLabel">{ section.label }</span>
+								</a>
+							)) }
+						</nav>
+						<section className="storageUsageCard" aria-label="Память Chrome Sync">
+							<div className="storageUsageHead">
+								<span className="storageUsageTitle">Chrome Sync</span>
+								{ !syncUsageError && syncBytesInUse !== null && (
+									<span className="storageUsagePercent">{ syncUsagePercent }%</span>
+								) }
+							</div>
+							{ syncUsageError ? (
+								<div className="text-error">{ syncUsageError }</div>
+							) : (
+								<>
+									<div
+										className="storageUsageBar"
+										role="progressbar"
+										aria-label="Занято в Chrome Sync"
+										aria-valuemin={ 0 }
+										aria-valuemax={ 100 }
+										aria-valuenow={ syncUsagePercent }
+									>
+										<div
+											className={ `storageUsageFill ${ syncUsagePercent >= 90 ? 'danger' : syncUsagePercent >= 75 ? 'warn' : '' }` }
+											style={{ width: `${ syncUsagePercent }%` }}
+										/>
+									</div>
+									<div className="storageUsageMeta">
+										{ syncBytesInUse === null
+											? 'Загрузка…'
+											: `${ (syncBytesInUse / 1024).toFixed(1).replace('.', ',') } КБ из ${ (syncQuotaBytes / 1024).toFixed(0) } КБ. Картинки стикеров место не занимают — только ссылки.` }
+									</div>
+								</>
+							) }
+							<ul className="storageLegend">
+								<li><MaskIcon src={ cloudIcon } class="is-sync" />Синхронизируется</li>
+								<li><MaskIcon src={ cloudOffIcon } class="is-local" />Только в этом браузере</li>
+								<li><MaskIcon src={ cloudAlertIcon } class="is-full" />Не хватило места</li>
+							</ul>
+							{ localSectionLabels.length > 0 && (
+								<div className="storageLocalSummary" role="status">
+									<MaskIcon src={ cloudOffIcon } />
+									<span>
+										<span className="storageLocalSummaryTitle">Есть локальные элементы</span>
+										<span>{ localSectionLabels.join(', ') } — только в этом браузере</span>
+									</span>
+								</div>
+							) }
+						</section>
+					</aside>
+					<div className="optionsContent">
+						{ activeSectionIsLocal && activeSection !== 'stickers' && activeSection !== 'templates' && (
+							<div className="storageLocalNotice" role="status">
+								<MaskIcon src={ cloudOffIcon } />
+								<span>
+									<strong>Хранится только в этом браузере.</strong> В Chrome Sync не хватило места, поэтому на других устройствах этих данных нет.
+								</span>
+							</div>
+						) }
+						{ renderSection() }
+					</div>
+				</div>
 			</main>
 		</div>
 	);
 }
 
-render(<App />, document.getElementById('app'));
+const root = document.getElementById('app');
+if (root) {
+	render(
+		<ConfirmDialogProvider>
+			<App />
+		</ConfirmDialogProvider>,
+		root,
+	);
+}

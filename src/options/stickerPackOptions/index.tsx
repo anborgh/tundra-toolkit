@@ -1,34 +1,139 @@
+import type { JSX } from 'preact';
 import { useEffect, useRef, useState } from 'react';
+import {
+  getCollectionLocations,
+  ItemLocation,
+  safeStorageGet,
+  safeStorageSet,
+  setItemCloudPinned,
+  STORAGE_FALLBACKS_KEY,
+} from '../../utils/storage';
+import { checkImageURL } from '../../utils';
 
 import StickerPack from './stickerPack';
+import { Modal } from '../../components/Modal';
+import {
+  ItemEditor,
+  nextCollectionId,
+  PACK_BODY_PLACEHOLDER,
+  PACK_NAME_PLACEHOLDER,
+  PACK_REMOVE_CONFIRM,
+  StorageSavingStatus,
+} from '../../components/ItemEditor';
+import { MaskIcon } from '../../components/MaskIcon';
+import plusIcon from '../../assets/icons/plus.svg';
+
+const STORAGE_KEY = 'stickerPack';
 
 export default function () {
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
+  const dragItem = useRef<string | null>(null);
+  const dragOverItem = useRef<string | null>(null);
 
   const [ data, setData ] = useState<IStickerPack[]>([]);
+  const [ warning, setWarning ] = useState<string | null>(null);
+  const [ error, setError ] = useState<string | null>(null);
+  const [ locations, setLocations ] = useState<Record<string, ItemLocation>>({});
+  const [ reorderMode, setReorderMode ] = useState(false);
+  const [ editingId, setEditingId ] = useState<number | null>(null);
+  const [ saving, setSaving ] = useState(false);
+  const [ creating, setCreating ] = useState(false);
+  const [ createDraft, setCreateDraft ] = useState({ name: '', body: '' });
+  const [ editDraft, setEditDraft ] = useState({ name: '', body: '' });
+
+  const refreshLocations = () => {
+    getCollectionLocations('stickerPack')
+      .then(setLocations)
+      .catch(() => setLocations({}));
+  };
+
+  const handleSaveResult = (result: Awaited<ReturnType<typeof safeStorageSet>>) => {
+    refreshLocations();
+    if (result.fallback) {
+      setWarning('В Chrome Sync не хватило места. Часть стикеров или все они остались только в этом браузере.');
+    } else {
+      setWarning(null);
+    }
+  };
+
+  const handleSaveError = () => {
+    setError('Не удалось сохранить стикеры: в Chrome Sync не хватило места.');
+  };
+
+  const writePacks = async (newData: IStickerPack[]) => {
+    setError(null);
+    setSaving(true);
+    try {
+      const result = await safeStorageSet({ stickerPack: newData });
+      handleSaveResult(result);
+      setData(newData);
+      return result;
+    } catch (e) {
+      handleSaveError();
+      throw e;
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const updateStickerPack = async (pack: IStickerPack) => {
     const newData = [ ...data ];
     const index = newData.findIndex(item => item.id === pack.id);
-    newData[ index ] = { ...pack };
-    await chrome.storage.local.set({ stickerPack: newData });
-    setData(newData);
+    newData[ index ] = { ...pack, updatedAt: Date.now() };
+    await writePacks(newData);
   }
 
-  const addStickerPack = async () => {
-    const newData = [ ...data ];
-    const indexes = data.map(item => item.id);
-    const newIndex = newData.length ? Math.max(...indexes) + 1 : 0;
-    newData.push({
+  const openCreateStickerPack = () => {
+    const newIndex = nextCollectionId(data);
+    setCreateDraft({ name: `Стикерпак ${ newIndex + 1 }`, body: '' });
+    setCreating(true);
+  };
+
+  const closeCreateStickerPack = () => setCreating(false);
+
+  // Only written on Save — Cancel/Escape/backdrop closes the modal and
+  // leaves storage untouched (no phantom empty pack).
+  const handleCreateStickerPack = async () => {
+    const newIndex = nextCollectionId(data);
+    const newPack: IStickerPack = {
       id: newIndex,
-      name: `New Pack ${ newIndex + 1 }`,
-      items: [],
-    });
-
-    await chrome.storage.local.set({ stickerPack: newData })
-    setData(newData);
-    ref.current.scrollIntoView();
+      name: createDraft.name.trim(),
+      items: createDraft.body.split('\n').filter(item => checkImageURL(item)),
+      updatedAt: Date.now(),
+    };
+    try {
+      await writePacks([ ...data, newPack ]);
+    } catch {
+      return;
+    }
+    setCreating(false);
+    ref.current?.scrollIntoView();
   }
+
+  const openEditPack = (packId: number) => {
+    const pack = data.find(item => item.id === packId);
+    if (!pack) return;
+    setError(null);
+    setEditDraft({ name: pack.name, body: (pack.items || []).join('\n') });
+    setEditingId(packId);
+  };
+
+  const closeEditPack = () => setEditingId(null);
+
+  const handleEditPackSave = async () => {
+    if (editingId == null) return;
+    const clearedItems = editDraft.body.split('\n').filter(item => checkImageURL(item));
+    try {
+      await updateStickerPack({
+        id: editingId,
+        name: editDraft.name.trim(),
+        items: clearedItems,
+      });
+    } catch {
+      return;
+    }
+    setEditingId(null);
+  };
 
   const removeStickerPack = async (packId: number) => {
     const newData = [ ...data ];
@@ -36,50 +141,234 @@ export default function () {
     if (index < 0) return;
 
     newData.splice(index, 1);
+    await writePacks(newData);
+    if (editingId === packId) setEditingId(null);
+  }
 
-    await chrome.storage.local.set({ stickerPack: newData });
-    setData(newData);
+  const savePackOrder = async (newData: IStickerPack[]) => {
+    await writePacks(newData);
+  }
+
+  const movePack = async (index: number, delta: number) => {
+    const target = index + delta;
+    if (target < 0 || target >= data.length) return;
+    const next = [ ...data ];
+    const [ moved ] = next.splice(index, 1);
+    next.splice(target, 0, moved);
+    await savePackOrder(next);
+  }
+
+  const handlePackKeyDown = (event: JSX.TargetedKeyboardEvent<HTMLDivElement>, index: number) => {
+    if (!reorderMode) return;
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      movePack(index, -1);
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      movePack(index, 1);
+    }
+  }
+
+  const handlePackDragStart = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    dragItem.current = event.currentTarget.dataset.index ?? null;
+    event.currentTarget.classList.add('moving');
+  }
+
+  const handlePackDragEnter = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    dragOverItem.current = event.currentTarget.dataset.index ?? null;
+
+    event.currentTarget.classList.toggle(
+      'hoveredTop',
+      Number(dragItem.current) > Number(dragOverItem.current));
+    event.currentTarget.classList.toggle(
+      'hoveredBottom',
+      Number(dragItem.current) < Number(dragOverItem.current));
+  }
+
+  const handlePackDragLeave = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    event.currentTarget.classList.remove('hoveredTop');
+    event.currentTarget.classList.remove('hoveredBottom');
+  }
+
+  const handlePackDrop = (event: JSX.TargetedDragEvent<HTMLDivElement>) => {
+    event.currentTarget.classList.remove('moving');
+    event.currentTarget.classList.remove('hoveredTop');
+    event.currentTarget.classList.remove('hoveredBottom');
+
+    if (
+      typeof dragItem.current !== 'string'
+      || typeof dragOverItem.current !== 'string'
+      || dragItem.current === dragOverItem.current
+    ) {
+      dragItem.current = null;
+      dragOverItem.current = null;
+      return;
+    }
+
+    const itemIndex = Number(dragItem.current);
+    const targetIndex = Number(dragOverItem.current);
+    const newData = [ ...data ];
+    const [ moved ] = newData.splice(itemIndex, 1);
+    newData.splice(targetIndex, 0, moved);
+
+    dragItem.current = null;
+    dragOverItem.current = null;
+
+    savePackOrder(newData);
   }
 
   useEffect(() => {
     const fetchData = async () => {
-      const result = await chrome.storage.local.get('stickerPack');
+      const result = await safeStorageGet([ STORAGE_KEY ]);
 
       const stickerPack = result.stickerPack || [];
 
       setData(stickerPack);
+      refreshLocations();
     }
 
     fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      areaName: string,
+    ) => {
+      if (areaName !== 'sync' && areaName !== 'local') return;
+      if (changes[STORAGE_FALLBACKS_KEY] || changes['tt2/loc']) {
+        refreshLocations();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleChange);
+    return () => chrome.storage.onChanged.removeListener(handleChange);
   }, []);
 
   return (
     <section className="stickerPackOptions">
       <div className="stickerPackOptionsHeader">
         <div>
-          <h3>Стикеры</h3>
-          <h6>Можно перетаскивать стикеры для сортировки</h6>
+          <h2>Стикеры</h2>
+          <p className="optionsSectionLead">
+            { reorderMode
+              ? 'Перетащите стикерпаки или переместите стрелками вверх и вниз'
+              : 'Перетащите стикеры или переместите стрелками влево и вправо' }
+          </p>
         </div>
-        <div>
-          <button className="button small" title="Добавить стикерпак" onClick={ addStickerPack }>Добавить</button>
+        <div className="stickerPackOptionsActions">
+          <StorageSavingStatus saving={ saving } />
+          { data.length > 1 && (
+            <button
+              className={ `button${ reorderMode ? ' success' : '' }` }
+              title={ reorderMode ? 'Завершить изменение порядка' : 'Изменить порядок стикерпаков' }
+              disabled={ saving }
+              onClick={ () => {
+                setEditingId(null);
+                setReorderMode(prev => !prev);
+              } }
+            >
+              { reorderMode ? 'Готово' : 'Порядок паков' }
+            </button>
+          ) }
+          { !reorderMode && (
+            <button
+              className="button primary"
+              disabled={ saving }
+              onClick={ openCreateStickerPack }
+            >
+              <MaskIcon src={ plusIcon } />
+              Новый стикерпак
+            </button>
+          ) }
         </div>
       </div>
-      <div>
-        { data.map((pack => (
-          <StickerPack
+      <div className="stickerPackOptionsList">
+        { warning && (
+          <div className="text-secondary optionsNotice">
+            { warning }
+          </div>
+        ) }
+        { error && (
+          <div className="text-error optionsNotice">
+            { error }
+          </div>
+        ) }
+        { data.map((pack, index) => (
+          <div
             key={ pack.id }
-            onChange={ updateStickerPack }
-            onRemove={ removeStickerPack }
-            pack={ pack }
-          />
-        ))) }
+            className={ reorderMode ? 'stickerPackReorderItem' : undefined }
+            draggable={ reorderMode }
+            data-index={ index }
+            tabIndex={ reorderMode ? 0 : undefined }
+            aria-label={ reorderMode
+              ? `${ pack.name }, ${ index + 1 } из ${ data.length }. Стрелки вверх и вниз меняют порядок`
+              : undefined }
+            onKeyDown={ reorderMode ? (event) => handlePackKeyDown(event, index) : undefined }
+            onDragStart={ reorderMode ? handlePackDragStart : undefined }
+            onDragEnter={ reorderMode ? handlePackDragEnter : undefined }
+            onDragLeave={ reorderMode ? handlePackDragLeave : undefined }
+            onDragEnd={ reorderMode ? handlePackDrop : undefined }
+            onDragOver={ reorderMode ? (e) => e.preventDefault() : undefined }
+          >
+            <StickerPack
+              onChange={ updateStickerPack }
+              pack={ pack }
+              onEdit={ openEditPack }
+              location={ locations[String(pack.id)] || 'local' }
+              onCloudToggle={ async () => {
+                const current = locations[String(pack.id)] || 'local';
+                const result = await setItemCloudPinned('stickerPack', pack.id, current !== 'localPinned');
+                setLocations(prev => ({ ...prev, [String(pack.id)]: result.location }));
+                setError(result.error || null);
+              } }
+              reorderMode={ reorderMode }
+            />
+          </div>
+        )) }
         {!data.length && (
           <div className="emptyList">
-            Список пока пуст. Создайте свой первый стикерпак по кнопке "Добавить".
+            Список пока пуст. Создайте первый стикерпак кнопкой «Новый стикерпак».
           </div>
         )}
         <div ref={ ref }></div>
       </div>
+
+      { editingId != null && (
+        <Modal title="Редактировать стикерпак" onClose={ closeEditPack }>
+          <ItemEditor
+            name={ editDraft.name }
+            body={ editDraft.body }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ name => setEditDraft(d => ({ ...d, name })) }
+            onBodyChange={ body => setEditDraft(d => ({ ...d, body })) }
+            onSave={ handleEditPackSave }
+            onCancel={ closeEditPack }
+            onRemove={ () => removeStickerPack(editingId) }
+            onInvalid={ setError }
+            removeConfirm={ PACK_REMOVE_CONFIRM }
+            bodySpellCheck={ false }
+          />
+        </Modal>
+      ) }
+
+      { creating && (
+        <Modal title="Новый стикерпак" onClose={ closeCreateStickerPack }>
+          <ItemEditor
+            name={ createDraft.name }
+            body={ createDraft.body }
+            namePlaceholder={ PACK_NAME_PLACEHOLDER }
+            bodyPlaceholder={ PACK_BODY_PLACEHOLDER }
+            onNameChange={ name => setCreateDraft(d => ({ ...d, name })) }
+            onBodyChange={ body => setCreateDraft(d => ({ ...d, body })) }
+            onSave={ handleCreateStickerPack }
+            onCancel={ closeCreateStickerPack }
+            onInvalid={ setError }
+            bodySpellCheck={ false }
+          />
+        </Modal>
+      ) }
     </section>
   )
 }

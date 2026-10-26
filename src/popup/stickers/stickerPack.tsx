@@ -1,70 +1,71 @@
-import {useEffect, useState} from "react";
+import { useBatchedItems } from '../../hooks/useBatchedItems';
+import { MaskIcon } from '../../components/MaskIcon';
+import editIcon from '../../assets/icons/pencil.svg';
+import cloudIcon from '../../assets/icons/cloud.svg';
+import cloudOffIcon from '../../assets/icons/cloud-off.svg';
+import { insertSticker } from './insertSticker';
+import { usePopupToast } from '../popupToast';
 
 type PackProps = {
   pack: IStickerPack;
-  opened: boolean;
-  onChange: (newActiveTab: number) => void;
-  editStickerPack: (packId: number) => void;
-}
+  onEdit: (packId: number) => void;
+  onStickerUsed?: (src: string) => void;
+  localOnly?: boolean;
+};
 
 export function StickerPack({
   pack,
-  onChange,
-  opened,
-  editStickerPack,
+  onEdit,
+  onStickerUsed,
+  localOnly = false,
 }: PackProps) {
+  const visibleStickers = useBatchedItems(pack.items, true);
+  const { showError } = usePopupToast();
 
-  const [titleImg, setTitleImg] = useState<string>('');
+  const handleStickerClick = async (src: string) => {
+    if (!src) return;
 
-  const handleTitleClick = () => {
-    onChange(pack.id)
-  }
-
-  const handleEditPack = event => {
-    event.stopPropagation();
-    editStickerPack(pack.id);
-  }
-
-  const handleStickerClick = async (event) => {
-    chrome.tabs.query({currentWindow: true, active: true}, function (tabs){
-      const activeTab = tabs[0];
-      chrome.tabs.sendMessage(activeTab.id, {
-        type: 'tundra_toolkit_insert_sticker',
-        src: event.target.src,
-      });
-    });
-  }
-
-  useEffect(() => {
-    if (!pack.items.length) return;
-
-    setTitleImg(pack.items[0]);
-  }, [pack])
+    onStickerUsed?.(src);
+    await insertSticker(src, { onUnavailable: showError });
+  };
 
   return (
-    <div class="stickerPack">
+    <section class="stickerPack" aria-label={ pack.name }>
       <div class="stickerPackHeader">
-        {titleImg && (
-          <div
-            className="stickerPackTitleIcon"
-            style={`--bg-image: url(${titleImg});`}
-            onClick={handleTitleClick}
-          ></div>
-        )}
-        <h4 class="stickerPackTitle" onClick={handleTitleClick}>{pack.name}</h4>
-        <div className="stickerPackTitleActions">
-          <button className="button small" onClick={handleEditPack}>🖋️</button>
-        </div>
+        <h3 class="stickerPackTitle">{ pack.name }</h3>
+        <span
+          class={ `stickerPackStorage ${ localOnly ? 'is-local' : '' }` }
+          title={ localOnly ? 'Сохранено только в этом браузере' : 'Хранится в Chrome Sync' }
+        >
+          <MaskIcon src={ localOnly ? cloudOffIcon : cloudIcon } />
+        </span>
+        <button
+          type="button"
+          class="button small icon-only ghost"
+          onClick={ () => onEdit(pack.id) }
+          title="Редактировать стикерпак"
+          aria-label="Редактировать стикерпак"
+        >
+          <MaskIcon src={ editIcon } />
+        </button>
       </div>
-      {opened && (
-        <div class="stickerPackContent">
-          {pack.items.map(sticker => (
-            <div class="stickerItem">
-              <img src={sticker} key={sticker} onClick={handleStickerClick} />
-            </div>
-          ))}
+      { pack.items.length > 0 ? (
+        <div class="stickerPackGrid">
+          { visibleStickers.map(sticker => (
+            <button
+              type="button"
+              class="stickerItem"
+              key={ sticker }
+              onClick={ () => handleStickerClick(sticker) }
+              aria-label="Вставить стикер"
+            >
+              <img src={ sticker } alt="" loading="lazy" />
+            </button>
+          )) }
         </div>
-      )}
-    </div>
-  )
+      ) : (
+        <div class="emptyList">В этом паке пока нет стикеров. Добавьте ссылку ниже.</div>
+      ) }
+    </section>
+  );
 }
