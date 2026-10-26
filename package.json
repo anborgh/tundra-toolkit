@@ -10,15 +10,15 @@
 		"preact": "^10.13.1"
 	},
 	"devDependencies": {
-		"@preact/preset-vite": "^2.5.0",
+		"@preact/preset-vite": "^2.10.6",
 		"@types/chrome": "^0.0.263",
 		"@types/node": "^20.11.30",
 		"esbuild": "0.25.0",
 		"eslint": "^8.57.0",
 		"eslint-config-preact": "^1.3.0",
 		"typescript": "^5.4.3",
-		"vite": "5.4.6",
-		"vite-plugin-static-copy": "^1.0.2"
+		"vite": "8.3.5",
+		"vite-plugin-static-copy": "^4.1.1"
 	},
 	"eslintConfig": {
 		"extends": "preact"
